@@ -26,8 +26,8 @@ set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "" FORCE)
 add_subdirectory (deps/spdlog)
 
+set( TARGET_NAME sutils )
 NewTargetSource()
-
 AddSourceFolder(INCLUDE RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src/public")
 AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/src/private")
 source_group( TREE ${PROJECT_SOURCE_DIR}  FILES ${SourceFiles})
@@ -55,6 +55,3 @@ endforeach()
 
 
 target_link_libraries (${TARGET_NAME} PUBLIC spdlog::spdlog)
-
-
-
