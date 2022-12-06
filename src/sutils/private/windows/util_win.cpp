@@ -3,7 +3,6 @@
  */
 
 #include "module_util.h"
-#include "common.h"
 #include "string_convert.h"
 #include <stdlib.h>
 #include <Windows.h>
