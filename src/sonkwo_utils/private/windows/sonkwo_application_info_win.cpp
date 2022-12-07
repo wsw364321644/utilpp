@@ -6,9 +6,8 @@
 #include <memory>
 const char regkey[] = "SOFTWARE\\sonkwo";
 const char regkey32[] = "SOFTWARE\\WOW6432Node\\sonkwo";
-const char PRODUCT_NAME[] = "Sonkwo";
 const char COMMAND_PATH[] = "shell\\open\\command";
-const char SONKWO_EXE_NAME[] = "sonkwoui.exe";
+
 bool IsSonkwoAppStarted() {
     BOOL avaible = WaitNamedPipe(SONKWO_RUNTIME_PIPE, NMPWAIT_USE_DEFAULT_WAIT);
     return avaible > 0 ? 1 : 0;
@@ -17,7 +16,7 @@ bool IsSonkwoAppStarted() {
 bool UpdateInfoBySonkwoDir(const char* instdir)
 {
 	HKEY hKey;
-	std::u16string u16str= sonkwo::U8ToU16(PRODUCT_NAME);
+	std::u16string u16str= sonkwo::U8ToU16(SONKWO_PRODUCT_NAME);
 	if (RegCreateKeyExW(HKEY_CLASSES_ROOT, (LPCWSTR)u16str.c_str(), NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == 0)
 	{
 		RegSetValueExW(hKey, NULL, NULL, REG_SZ, (BYTE*)L"URL:sonkwo", sizeof(L"URL:sonkwo")*2);
@@ -47,7 +46,7 @@ bool UpdateInfoBySonkwoDir(const char* instdir)
 		return false;
 	}
 
-	std::filesystem::path keyypath(PRODUCT_NAME);
+	std::filesystem::path keyypath(SONKWO_PRODUCT_NAME);
 	keyypath /= COMMAND_PATH;
 	if (RegCreateKeyExW(HKEY_CLASSES_ROOT, (LPCWSTR)keyypath.u16string().c_str(), NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL ,&hKey,NULL ) == 0) {
 		std::filesystem::path instpath((char8_t*)instdir);
@@ -69,7 +68,7 @@ bool UpdateInfoBySonkwoDir(const char* instdir)
 bool DeleteSonkwoInfo()
 {
 	HKEY hKey;
-	std::u16string u16str = sonkwo::U8ToU16(PRODUCT_NAME);
+	std::u16string u16str = sonkwo::U8ToU16(SONKWO_PRODUCT_NAME);
 	if (RegOpenKeyExW(HKEY_CLASSES_ROOT, NULL, NULL, DELETE| KEY_ENUMERATE_SUB_KEYS| KEY_QUERY_VALUE, &hKey) == 0)
 	{
 		auto result=RegDeleteTreeW(hKey, (LPCWSTR)u16str.c_str());
@@ -111,7 +110,7 @@ bool GetSonkwoDir(char *const* path,uint32_t* length)
 	}
 
 	HKEY hKey;
-	std::filesystem::path keyypath(PRODUCT_NAME);
+	std::filesystem::path keyypath(SONKWO_PRODUCT_NAME);
 	keyypath /= COMMAND_PATH;
 	DWORD dType = REG_SZ;
 	LSTATUS result;
