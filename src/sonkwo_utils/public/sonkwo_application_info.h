@@ -8,6 +8,8 @@ extern "C" {
     bool IsSonkwoAppStarted();
     bool UpdateInfoBySonkwoDir(const char*);
     bool DeleteSonkwoInfo();
+    bool UpdateServiceInfoBySonkwoDir(const char*);
+    bool DeleteServiceInfo();
     ///@param[out] path   buf could be null
     ///@param[in, out] length  in buf length  out string length
     bool GetSonkwoDir(char*const* path, uint32_t* length);

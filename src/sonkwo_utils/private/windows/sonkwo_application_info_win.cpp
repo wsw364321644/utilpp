@@ -4,9 +4,10 @@
 #include <Windows.h>
 #include <filesystem>
 #include <memory>
-const char regkey[] = "SOFTWARE\\sonkwo";
-const char regkey32[] = "SOFTWARE\\WOW6432Node\\sonkwo";
+//const char regkey[] = "SOFTWARE\\sonkwo";
+//const char regkey32[] = "SOFTWARE\\WOW6432Node\\sonkwo";
 const char COMMAND_PATH[] = "shell\\open\\command";
+const char EVENT_APP_PATH[] = R"(SYSTEM\CurrentControlSet\Services\EventLog\Application)";
 
 bool IsSonkwoAppStarted() {
     BOOL avaible = WaitNamedPipe(SONKWO_RUNTIME_PIPE, NMPWAIT_USE_DEFAULT_WAIT);
@@ -48,7 +49,8 @@ bool UpdateInfoBySonkwoDir(const char* instdir)
 
 	std::filesystem::path keyypath(SONKWO_PRODUCT_NAME);
 	keyypath /= COMMAND_PATH;
-	if (RegCreateKeyExW(HKEY_CLASSES_ROOT, (LPCWSTR)keyypath.u16string().c_str(), NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL ,&hKey,NULL ) == 0) {
+	auto keyypath16 = keyypath.u16string();
+	if (RegCreateKeyExW(HKEY_CLASSES_ROOT, (LPCWSTR)keyypath16.c_str(), NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL ,&hKey,NULL ) == 0) {
 		std::filesystem::path instpath((char8_t*)instdir);
 		auto exepath = instpath / SONKWO_EXE_NAME;
 		std::u16string u16command;
@@ -94,6 +96,47 @@ bool DeleteSonkwoInfo()
 				TEXT(" failed with error %d: %s"), dw, lpMsgBuf);
 			MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
 
+			return false;
+		}
+	}
+	else {
+		return false;
+	}
+	return true;
+}
+
+bool UpdateServiceInfoBySonkwoDir(const char* path)
+{
+	HKEY hKey;
+	std::filesystem::path regpath(EVENT_APP_PATH);
+	regpath /= SONKWO_SVCNAME;
+	auto regpath16=regpath.u16string();
+	if (RegCreateKeyExW(HKEY_LOCAL_MACHINE, (LPCWSTR)regpath16.c_str(), NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL) == 0) {
+		std::filesystem::path instpath((char8_t*)path);
+		auto dllpath = instpath / SONKWO_RESOURCE_DLL_NAME;
+		auto dllpath16=dllpath.u16string();
+		RegSetValueExW(hKey, NULL, NULL, REG_SZ, (BYTE*)dllpath16.c_str(), (dllpath16.size() + 1) * 2);
+		DWORD value = 7;
+		RegSetValueExW(hKey, L"TypesSupported", NULL, REG_DWORD, (BYTE*)&value, sizeof(value));
+		RegCloseKey(hKey);
+	}
+	else {
+		return false;
+	}
+	return true;
+}
+
+bool DeleteServiceInfo()
+{
+	HKEY hKey;
+	std::filesystem::path regpath(EVENT_APP_PATH);
+	regpath /= SONKWO_SVCNAME;
+	auto regpath16 = regpath.u16string();
+	if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, NULL, NULL, DELETE | KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE, &hKey) == 0)
+	{
+		auto result = RegDeleteTreeW(hKey, (LPCWSTR)regpath16.c_str());
+		RegCloseKey(hKey);
+		if (result != ERROR_SUCCESS) {
 			return false;
 		}
 	}
