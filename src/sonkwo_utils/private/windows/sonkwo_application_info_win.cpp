@@ -115,7 +115,7 @@ bool UpdateServiceInfoBySonkwoDir(const char* path)
 		std::filesystem::path instpath((char8_t*)path);
 		auto dllpath = instpath / SONKWO_RESOURCE_DLL_NAME;
 		auto dllpath16=dllpath.u16string();
-		RegSetValueExW(hKey, NULL, NULL, REG_SZ, (BYTE*)dllpath16.c_str(), (dllpath16.size() + 1) * 2);
+		RegSetValueExW(hKey, L"EventMessageFile", NULL, REG_SZ, (BYTE*)dllpath16.c_str(), (dllpath16.size() + 1) * 2);
 		DWORD value = 7;
 		RegSetValueExW(hKey, L"TypesSupported", NULL, REG_DWORD, (BYTE*)&value, sizeof(value));
 		RegCloseKey(hKey);

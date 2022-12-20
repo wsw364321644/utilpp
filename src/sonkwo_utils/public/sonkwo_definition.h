@@ -16,6 +16,7 @@ typedef uint32_t HSDKRequest;
 #define SONKWO_SVC_EXENAME "SonkwoClientService.exe"
 #define SONKWO_PRODUCT_NAME "Sonkwo"
 #define SONKWO_EXE_NAME "sonkwo.exe"
+#define SONKWO_UI_EXE_NAME "sonkwoui.exe"
 #define SONKWO_RESOURCE_DLL_NAME "SonkwoService.dll"
         // the pipe for sdk and client runtime
 #ifdef _WIN32 
