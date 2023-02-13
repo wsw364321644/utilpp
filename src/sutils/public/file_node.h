@@ -6,6 +6,7 @@
 
 #include "raw_file.h"
 #include "map_file.h"
+#include <vector>
 namespace sonkwo
 {
     class CFileNode;

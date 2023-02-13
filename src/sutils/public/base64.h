@@ -7,6 +7,17 @@ const char kBase64Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
 
+inline char Bin2Hex(char c)
+{
+    if (c < 10) {
+        return c += '0';
+    }
+    else {
+        return c += 'A' - 10;
+    }
+}
+
+
 class Base64 {
  public:
   static bool Encode(const std::string &in, std::string *out) {

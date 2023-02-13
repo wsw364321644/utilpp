@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "misc.h"
+#include <defs.h>
 #include <memory>
-
+#include <string>
 namespace sonkwo 
 {
 class CRawFile
