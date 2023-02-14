@@ -1,9 +1,10 @@
 cmake_minimum_required (VERSION 3.23)
+set (CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil;${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil/Modules")
+include(ProjectDefinition)
+
 set(VERSION "0.0.1")
 project(sutil VERSION ${VERSION})
 enable_language(CXX ASM )
-
-include(${CMAKE_CURRENT_SOURCE_DIR}/Cmake/CMakeLists.txt)
 
 option (SUTIL_STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
 
