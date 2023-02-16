@@ -28,6 +28,7 @@ namespace sonkwo {
         void Assign(const char* cstr, size_t size);
 
         const char* CStr() const;
+        char* Data();
         size_t Length()const;
         size_t Size()const;
         typedef char Ch;

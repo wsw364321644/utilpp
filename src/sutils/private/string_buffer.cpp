@@ -70,6 +70,10 @@ namespace sonkwo
         pBuf[cursor] = 0;
         return pBuf;
     }
+    char* CharBuffer::Data()
+    {
+        return pBuf;
+    }
     size_t CharBuffer::Length() const
     {
         return cursor;
