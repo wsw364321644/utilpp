@@ -75,6 +75,11 @@ namespace sonkwo
         return cursor;
     }
 
+    size_t CharBuffer::Size() const
+    {
+        return bufSize;
+    }
+
     char CharBuffer::Peek() const
     {
         return pBuf[readCursor];

@@ -29,7 +29,7 @@ namespace sonkwo {
 
         const char* CStr() const;
         size_t Length()const;
-
+        size_t Size()const;
         typedef char Ch;
 
         //! Read the current character from stream without moving the read cursor.
