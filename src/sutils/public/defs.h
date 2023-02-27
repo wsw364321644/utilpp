@@ -32,7 +32,7 @@ const uint32_t SK_OPEN_EXISTING = O_RDWR;
 #define ERR_ARGUMENT		(-2)	// argument error 
 #define ERR_FILE			(-3)	// file operation related
 #define ERR_METAPARSE		(-4)	// faile to parse mf file
-
+typedef void* (*fnmalloc)(size_t _Size);
 
 namespace sonkwo
 {
@@ -68,6 +68,4 @@ namespace sonkwo
     const uint32_t DEF_FILE_QUEUE_SIZE = 1;
     const uint32_t DEF_HTTP_QUEUE_SIZE = 1;
     const uint32_t DEF_TM_INTERVAL = 100;
-
-    typedef void*  (*fnmalloc)(size_t _Size);
 }
