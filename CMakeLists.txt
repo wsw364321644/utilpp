@@ -30,3 +30,7 @@ add_subdirectory (deps/spdlog)
 
 add_subdirectory (src/sutils)
 add_subdirectory (src/sonkwo_utils)
+
+if(WIN32)
+  add_subdirectory (src/windows_util)
+endif()
