@@ -36,19 +36,16 @@ void CFileProcesser::Destroy()
 
 void CFileProcesser::CreatePool(uint32_t content, uint32_t type)
 {
-    if (content != INVALID_GAMEID)
-    {
-        auto key = MakeTaskKey(content, type);
-        std::unique_lock<std::mutex> lock(m_FilePoolsLock);
+    auto key = MakeTaskKey(content, type);
+    std::unique_lock<std::mutex> lock(m_FilePoolsLock);
 
-        if (m_FilePools.find(key) != m_FilePools.end())
-        {
-            LOG_WARNING("File pool for content({}:{}) already existed", content, type);
-        }
-        else
-        {
-            m_FilePools[key] = CFilePoolPtr(new CFilePool());
-        }
+    if (m_FilePools.find(key) != m_FilePools.end())
+    {
+        LOG_WARNING("File pool for content({}:{}) already existed", content, type);
+    }
+    else
+    {
+        m_FilePools[key] = CFilePoolPtr(new CFilePool());
     }
 }
 

@@ -9,12 +9,6 @@
 #include <mutex>
 
 
-#define INVALID_USERID  0xffffffffU
-#define INVALID_GAMEID  0
-#define INVALID_DLCID  0
-#define INVALID_PATCHID  0
-#define INVALID_INDEX  0xffffffffU
-
 class CFileProcesser
 {
 public:
