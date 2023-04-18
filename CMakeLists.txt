@@ -1,9 +1,10 @@
 cmake_minimum_required (VERSION 3.23)
 
-list(APPEND CMAKE_MODULE_PATH  "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil" "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil/Modules")
+list(APPEND CMAKE_MODULE_PATH  "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil" "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil/Modules" "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil/Projects")
 list(REMOVE_DUPLICATES CMAKE_MODULE_PATH)
 set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} CACHE INTERNAL "CMAKE_MODULE_PATH")
 include(ProjectDefinition)
+include(ProjectImport)
 set(VERSION "0.0.1")
 project(utilpp VERSION ${VERSION})
 
