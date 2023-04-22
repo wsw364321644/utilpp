@@ -15,6 +15,7 @@ int util_dll_path(char* path, size_t* size)
     GetModuleFileNameW((HINSTANCE)&__ImageBase, modulestr, _countof(modulestr));
     auto u8str=U16ToU8((char16_t*)modulestr);
     memcpy(path, u8str.c_str(), u8str.size()+1);
+    *size = u8str.size();
     return 0;
 }
 
@@ -35,6 +36,7 @@ int util_exe_path(char* path, size_t* size)
     GetModuleFileNameW(NULL, modulestr, _countof(modulestr));
     auto u8str = U16ToU8((char16_t*)modulestr);
     memcpy(path, u8str.c_str(), u8str.size() + 1);
+    *size = u8str.size();
     return 0;
 }
 
