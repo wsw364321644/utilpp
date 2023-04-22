@@ -4,10 +4,10 @@
 
 #include "logger.h"
 #include "dir_util.h"
-
+#include "module_util.h"
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/rotating_file_sink.h"
-
+#include <filesystem>
 const char *Log_System = " **System** ";
 const char *Log_Server = " **Server** ";
 const char *Log_Client = " **Client** ";
@@ -63,7 +63,13 @@ std::shared_ptr<spdlog::logger> Logger::Instance()
 {
     if (!sLogger)
     {
-        Init("temp.log");
+        char path[MAX_PATH];
+        size_t size;
+        util_dll_path(path, &size);
+        std::filesystem::path logpath(path);
+        logpath = logpath.replace_extension(".log");
+        auto logpathu8 = logpath.u8string();
+        Init((const char*)logpathu8.c_str());
     }
     return sLogger;
 }
