@@ -4,7 +4,7 @@
 
 #include "dir_util.h"
 #include "string_convert.h"
-#include "logger.h"
+#include "logger_header.h"
 #include <stack>
 #include <assert.h>
 #include <filesystem>

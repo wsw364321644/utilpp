@@ -3,7 +3,7 @@
  */
 
 #include "file_node.h"
-#include "logger.h"
+#include "logger_header.h"
 #include "hash.h"
 #include <filesystem>
 

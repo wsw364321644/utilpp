@@ -13,6 +13,7 @@ enable_language(CXX ASM)
 
 option(UTILPP_STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
 option(UTILPP_ENABLE_LIBUV "ENABLE UTIL DEPEND ON UV." OFF)
+option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 
 if(UTILPP_STATIC_CRT)
   if(MSVC)
@@ -46,6 +47,7 @@ set(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "" FORCE)
 add_subdirectory(deps/spdlog)
 
 add_subdirectory(src/sutils)
+add_subdirectory(src/simple_logger)
 if(WIN32)
   add_subdirectory(src/windows_util)
 endif()

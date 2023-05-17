@@ -3,7 +3,7 @@
  */
 
 #include "file_processer.h"
-#include "logger.h"
+#include "logger_header.h"
 #include "defs.h"
 inline uint64_t MakeTaskKey(uint32_t content, uint32_t type)
 {

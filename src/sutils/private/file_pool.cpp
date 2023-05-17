@@ -3,9 +3,9 @@
  */
 
 #include "file_pool.h"
-#include "logger.h"
+#include "logger_header.h"
 #include "defs.h"
-
+#include <assert.h>
 CFilePool::CFilePool()
     : m_bStoped(false)
 {

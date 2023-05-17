@@ -3,7 +3,7 @@
  */
 
 #include "raw_file.h"
-#include "logger.h"
+#include "logger_header.h"
 #include "string_convert.h"
 #include "dir_util.h"
 #include <filesystem>

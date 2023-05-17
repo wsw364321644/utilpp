@@ -21,3 +21,6 @@ public:
 private:
     SHA1_CTX ctx_;
 };
+
+
+uint32_t simple_hash(const char* szName);
