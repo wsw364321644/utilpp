@@ -13,7 +13,7 @@ function(add_ipc_util TARGET_NAME)
     AddTargetInclude(${TARGET_NAME})
 
     target_link_libraries(${TARGET_NAME} PUBLIC sutils)
-
+    target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
     if(UTILPP_WITH_STATIC_LIBUV)
         target_link_libraries(${TARGET_NAME} PRIVATE uv_a)
     else()

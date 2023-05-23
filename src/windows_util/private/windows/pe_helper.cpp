@@ -55,7 +55,7 @@ PIMAGE_FILE_HEADER GetFileHeader(_In_ const char* pBase) {
 	return &(GetNtHeader(pBase)->FileHeader);
 }
 
-PIMAGE_OPTIONAL_HEADER32 GetOptHeader(_In_ const char* pBase) {
+PIMAGE_OPTIONAL_HEADER GetOptHeader(_In_ const char* pBase) {
 	return &(GetNtHeader(pBase)->OptionalHeader);
 }
 
