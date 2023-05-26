@@ -12,7 +12,7 @@
 PIMAGE_DOS_HEADER GetDosHeader(_In_ const char* pBase);
 PIMAGE_NT_HEADERS GetNtHeader(_In_ const char* pBase);
 PIMAGE_FILE_HEADER GetFileHeader(_In_ const char* pBase);
-PIMAGE_OPTIONAL_HEADER32 GetOptHeader(_In_ const char* pBase);
+PIMAGE_OPTIONAL_HEADER GetOptHeader(_In_ const char* pBase);
 PIMAGE_SECTION_HEADER GetLastSec(_In_ const char* pBase);
 PIMAGE_SECTION_HEADER GetSecByName(_In_ const char* pBase, _In_ const char* name);
 
