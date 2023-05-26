@@ -34,7 +34,7 @@ int Rva2Offset(sectionHeader* sections,unsigned int NumberOfSections ,unsigned i
 
 
 //****************
-//¶ÔÆë´¦Àí
+//å¯¹é½å¤„ç†
 //time:2020/11/5
 //****************
 inline int AlignMent(_In_ int size, _In_ int alignment) {
@@ -55,7 +55,7 @@ PIMAGE_FILE_HEADER GetFileHeader(_In_ const char* pBase) {
 	return &(GetNtHeader(pBase)->FileHeader);
 }
 
-PIMAGE_OPTIONAL_HEADER32 GetOptHeader(_In_ const char* pBase) {
+PIMAGE_OPTIONAL_HEADER GetOptHeader(_In_ const char* pBase) {
 	return &(GetNtHeader(pBase)->OptionalHeader);
 }
 
@@ -82,21 +82,21 @@ PIMAGE_SECTION_HEADER GetSecByName(_In_ const char* pBase, _In_ const char* name
 char* AddSec(_In_ char*& hpe, _In_ DWORD& filesize, _In_ const char* secname, _In_ const int secsize) {
 	GetFileHeader(hpe)->NumberOfSections++;
 	PIMAGE_SECTION_HEADER pesec = GetLastSec(hpe);
-	//ÉèÖÃÇø¶Î±íÊôĞÔ
+	//è®¾ç½®åŒºæ®µè¡¨å±æ€§
 	memcpy(pesec->Name, secname, 8);
 	pesec->Misc.VirtualSize = secsize;
 	pesec->VirtualAddress = (pesec - 1)->VirtualAddress + AlignMent((pesec - 1)->SizeOfRawData, GetOptHeader(hpe)->SectionAlignment);
 	pesec->SizeOfRawData = AlignMent(secsize, GetOptHeader(hpe)->FileAlignment);
 	pesec->PointerToRawData = AlignMent(filesize, GetOptHeader(hpe)->FileAlignment);
 	pesec->Characteristics = 0xE00000E0;
-	//ÉèÖÃOPTÍ·Ó³Ïñ´óĞ¡
+	//è®¾ç½®OPTå¤´æ˜ åƒå¤§å°
 	GetOptHeader(hpe)->SizeOfImage = pesec->VirtualAddress + pesec->SizeOfRawData;
-	//À©³äÎÄ¼şÊı¾İ
+	//æ‰©å……æ–‡ä»¶æ•°æ®
 	int newSize = pesec->PointerToRawData + pesec->SizeOfRawData;
 	char* nhpe = new char [newSize] {0};
-	//ÏòĞÂ»º³åÇøÂ¼ÈëÊı¾İ
+	//å‘æ–°ç¼“å†²åŒºå½•å…¥æ•°æ®
 	memcpy(nhpe, hpe, filesize);
-	//»º´æÇø¸üÌæ
+	//ç¼“å­˜åŒºæ›´æ›¿
 	delete hpe;
 	filesize = newSize;
 	return nhpe;
@@ -104,11 +104,11 @@ char* AddSec(_In_ char*& hpe, _In_ DWORD& filesize, _In_ const char* secname, _I
 
 void FixStub(DWORD targetDllbase, DWORD stubDllbase, DWORD targetNewScnRva, DWORD stubTextRva)
 {
-	//ÕÒµ½stub.dllµÄÖØ¶¨Î»±í
+	//æ‰¾åˆ°stub.dllçš„é‡å®šä½è¡¨
 	DWORD dwRelRva = GetOptHeader((char*)stubDllbase)->DataDirectory[5].VirtualAddress;
 	IMAGE_BASE_RELOCATION* pRel = (IMAGE_BASE_RELOCATION*)(dwRelRva + stubDllbase);
 
-	//±éÀúÖØ¶¨Î»±í
+	//éå†é‡å®šä½è¡¨
 	while (pRel->SizeOfBlock)
 	{
 		struct TypeOffset
@@ -118,31 +118,31 @@ void FixStub(DWORD targetDllbase, DWORD stubDllbase, DWORD targetNewScnRva, DWOR
 
 		};
 		TypeOffset* pTypeOffset = (TypeOffset*)(pRel + 1);
-		DWORD dwCount = (pRel->SizeOfBlock - 8) / 2;	//ĞèÒªÖØ¶¨Î»µÄÊıÁ¿
+		DWORD dwCount = (pRel->SizeOfBlock - 8) / 2;	//éœ€è¦é‡å®šä½çš„æ•°é‡
 		for (int i = 0; i < dwCount; i++)
 		{
 			if (pTypeOffset[i].type != 3)
 			{
 				continue;
 			}
-			//ĞèÒªÖØ¶¨Î»µÄµØÖ·
+			//éœ€è¦é‡å®šä½çš„åœ°å€
 			DWORD* pFixAddr = (DWORD*)(pRel->VirtualAddress + pTypeOffset[i].offset + stubDllbase);
 
 			DWORD dwOld;
-			//ĞŞ¸ÄÊôĞÔÎª¿ÉĞ´
+			//ä¿®æ”¹å±æ€§ä¸ºå¯å†™
 			VirtualProtect(pFixAddr, 4, PAGE_READWRITE, &dwOld);
-			//È¥µôdllµ±Ç°¼ÓÔØ»ùÖ·
+			//å»æ‰dllå½“å‰åŠ è½½åŸºå€
 			*pFixAddr -= stubDllbase;
-			//È¥µôÄ¬ÈÏµÄ¶ÎÊ×RVA
+			//å»æ‰é»˜è®¤çš„æ®µé¦–RVA
 			*pFixAddr -= stubTextRva;
-			//»»ÉÏÄ¿±êÎÄ¼şµÄ¼ÓÔØ»ùÖ·
+			//æ¢ä¸Šç›®æ ‡æ–‡ä»¶çš„åŠ è½½åŸºå€
 			*pFixAddr += targetDllbase;
-			//¼ÓÉÏĞÂÇø¶ÎµÄ¶ÎÊ×RVA
+			//åŠ ä¸Šæ–°åŒºæ®µçš„æ®µé¦–RVA
 			*pFixAddr += targetNewScnRva;
-			//°ÑÊôĞÔĞŞ¸Ä»ØÈ¥
+			//æŠŠå±æ€§ä¿®æ”¹å›å»
 			VirtualProtect(pFixAddr, 4, dwOld, &dwOld);
 		}
-		//ÇĞ»»µ½ÏÂÒ»¸öÖØ¶¨Î»¿é
+		//åˆ‡æ¢åˆ°ä¸‹ä¸€ä¸ªé‡å®šä½å—
 		pRel = (IMAGE_BASE_RELOCATION*)((DWORD)pRel + pRel->SizeOfBlock);
 	}
 
@@ -256,7 +256,6 @@ void EnumExportedFunctions(const char* szFilename, void (*callback)(const char*)
 void EnumExportedFunctionsHandle(HMODULE handle, EnumExportedCallback callback) {
     const char* content = (const char*)handle;
     const char* cur = content, pos = 0;
-    sectionHeader* sections;
     unsigned int NumberOfSections = 0;
     if (content == NULL) {
         return;
