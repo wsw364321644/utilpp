@@ -1,5 +1,9 @@
 
 #include <defs.h>
+
+
+#define REG_COMMAND_PATH "shell\\open\\command";
+
 #ifdef __cplusplus
 extern "C" {
 #endif
