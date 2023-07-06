@@ -6,7 +6,7 @@
 #include "string_convert.h"
 #include <stdlib.h>
 #include <Windows.h>
-
+#include <TlHelp32.h>
 #define threadtimeout 1000
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 int util_dll_path(char* path, size_t* size)
@@ -27,6 +27,36 @@ int util_dll_wpath(wchar_t* path, size_t* size)
 	wcscpy(path, module);
 	//memcpy(path, module, *size + 1);
 	return 0;
+}
+
+uint64_t GetProcessParentId(uint64_t* id)
+{
+    int parent_pid = -1;
+    HANDLE handle;
+    PROCESSENTRY32 pe;
+    DWORD current_pid = GetCurrentProcessId();
+
+    if (id == nullptr) {
+        current_pid = GetCurrentProcessId();
+    }
+    else {
+        current_pid = *id;
+    }
+
+    pe.dwSize = sizeof(PROCESSENTRY32);
+    handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+    if (Process32First(handle, &pe)) {
+        do {
+            if (pe.th32ProcessID == current_pid) {
+                parent_pid = pe.th32ParentProcessID;
+                break;
+            }
+        } while (Process32Next(handle, &pe));
+    }
+
+    CloseHandle(handle);
+    return parent_pid;
 }
 
 int util_exe_path(char* path, size_t* size)
