@@ -1,7 +1,8 @@
 #include "pe_helper.h"
 #include <stdio.h>
 #include <stdint.h>
-
+#include <vector>
+#include <functional>
 typedef struct {
     unsigned char Name[8];
     unsigned int VirtualSize;
@@ -30,17 +31,6 @@ int Rva2Offset(sectionHeader* sections,unsigned int NumberOfSections ,unsigned i
 
     return -1;
 }
-
-
-
-//****************
-//对齐处理
-//time:2020/11/5
-//****************
-inline int AlignMent(_In_ int size, _In_ int alignment) {
-    return (size) % (alignment) == 0 ? (size) : ((size) / alignment + 1) * (alignment);
-}
-
 
 
 PIMAGE_DOS_HEADER GetDosHeader(_In_ const char* pBase) {
@@ -79,6 +69,18 @@ PIMAGE_SECTION_HEADER GetSecByName(_In_ const char* pBase, _In_ const char* name
 	return nullptr;
 }
 
+PIMAGE_SECTION_HEADER FindSecByVirtualAddress(const char* pBase, DWORD address)
+{
+    DWORD Secnum = GetFileHeader(pBase)->NumberOfSections;
+    PIMAGE_SECTION_HEADER Section = IMAGE_FIRST_SECTION(GetNtHeader(pBase));
+    for (DWORD i = 0; i < Secnum; i++) {
+        if (Section[i].VirtualAddress <= address && Section[i].VirtualAddress + Section[i].Misc.VirtualSize >= address) {
+            return Section+i;
+        }
+    }
+    return nullptr;
+}
+
 char* AddSec(_In_ char*& hpe, _In_ DWORD& filesize, _In_ const char* secname, _In_ const int secsize) {
 	GetFileHeader(hpe)->NumberOfSections++;
 	PIMAGE_SECTION_HEADER pesec = GetLastSec(hpe);
@@ -102,14 +104,15 @@ char* AddSec(_In_ char*& hpe, _In_ DWORD& filesize, _In_ const char* secname, _I
 	return nhpe;
 }
 
-void FixStub(DWORD targetDllbase, DWORD stubDllbase, DWORD targetNewScnRva, DWORD stubTextRva)
+void FixStub(char* targetDllbase, char* stubDllbase, DWORD targetNewScnRva, DWORD stubTextRva)
 {
 	//找到stub.dll的重定位表
-	DWORD dwRelRva = GetOptHeader((char*)stubDllbase)->DataDirectory[5].VirtualAddress;
+	DWORD dwRelRva = GetOptHeader(stubDllbase)->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+    DWORD toltalSize = GetOptHeader(stubDllbase)->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
 	IMAGE_BASE_RELOCATION* pRel = (IMAGE_BASE_RELOCATION*)(dwRelRva + stubDllbase);
 
 	//遍历重定位表
-	while (pRel->SizeOfBlock)
+	while (toltalSize>0)
 	{
 		struct TypeOffset
 		{
@@ -121,31 +124,112 @@ void FixStub(DWORD targetDllbase, DWORD stubDllbase, DWORD targetNewScnRva, DWOR
 		DWORD dwCount = (pRel->SizeOfBlock - 8) / 2;	//需要重定位的数量
 		for (int i = 0; i < dwCount; i++)
 		{
-			if (pTypeOffset[i].type != 3)
-			{
-				continue;
-			}
-			//需要重定位的地址
-			DWORD* pFixAddr = (DWORD*)(pRel->VirtualAddress + pTypeOffset[i].offset + stubDllbase);
+            switch (pTypeOffset[i].type) {
+            case IMAGE_REL_BASED_HIGHLOW: {
+                //需要重定位的地址
+                DWORD* pFixAddrdw = (DWORD*)(pRel->VirtualAddress + pTypeOffset[i].offset + stubDllbase);
+                DWORD dwOld;
+                char** pFixAddr =(char**) pFixAddrdw;
+                //修改属性为可写
+                VirtualProtect(pFixAddr, 4, PAGE_READWRITE, &dwOld);
+                //去掉dll当前加载基址
+                //换上目标文件的加载基址
+                *pFixAddr += (targetDllbase - stubDllbase);
+               
+                //去掉默认的段首RVA
+                *pFixAddr -= stubTextRva;
 
-			DWORD dwOld;
-			//修改属性为可写
-			VirtualProtect(pFixAddr, 4, PAGE_READWRITE, &dwOld);
-			//去掉dll当前加载基址
-			*pFixAddr -= stubDllbase;
-			//去掉默认的段首RVA
-			*pFixAddr -= stubTextRva;
-			//换上目标文件的加载基址
-			*pFixAddr += targetDllbase;
-			//加上新区段的段首RVA
-			*pFixAddr += targetNewScnRva;
-			//把属性修改回去
-			VirtualProtect(pFixAddr, 4, dwOld, &dwOld);
+                //加上新区段的段首RVA
+                *pFixAddr += targetNewScnRva;
+                //把属性修改回去
+                VirtualProtect(pFixAddr, 4, dwOld, &dwOld);
+                break;
+            }
+            case IMAGE_REL_BASED_DIR64: {
+                //需要重定位的地址
+                ULONGLONG* pFixAddrdw = (ULONGLONG*)(pRel->VirtualAddress + pTypeOffset[i].offset + stubDllbase);
+                DWORD dwOld;
+                char** pFixAddr = (char**)pFixAddrdw;
+                VirtualProtect(pFixAddr, 8, PAGE_READWRITE, &dwOld);
+                *pFixAddr += (targetDllbase - stubDllbase);
+                *pFixAddr -= stubTextRva;
+                *pFixAddr += targetNewScnRva;
+                VirtualProtect(pFixAddr, 8, dwOld, &dwOld);
+                break;
+            }
+            default:
+                break;
+            }
 		}
 		//切换到下一个重定位块
-		pRel = (IMAGE_BASE_RELOCATION*)((DWORD)pRel + pRel->SizeOfBlock);
+        toltalSize -= pRel->SizeOfBlock;
+		pRel = (IMAGE_BASE_RELOCATION*)((char*)pRel + pRel->SizeOfBlock);
+        
 	}
 
+}
+
+class ResourceDirectoryIterator {
+    typedef std::function<void(PIMAGE_RESOURCE_DATA_ENTRY)> FnIterCallback;
+public:
+    
+    void StartIter(PIMAGE_RESOURCE_DIRECTORY _root, FnIterCallback fn) {
+        root = _root;
+        callback = fn;
+        IterResDir(root);
+    }
+private:
+    void IterResDir( PIMAGE_RESOURCE_DIRECTORY resDir) {
+        PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry = PIMAGE_RESOURCE_DIRECTORY_ENTRY(resDir + 1);
+        int i = 0, j = 0;
+        for (; i < resDir->NumberOfNamedEntries; i++) {
+            ParseResDirEntry( resDirEntry + i);
+        }
+        for (; j < resDir->NumberOfIdEntries; j++) {
+            ParseResDirEntry( resDirEntry + i + j);
+        }
+    };
+    void ParseResDirEntry( PIMAGE_RESOURCE_DIRECTORY_ENTRY resDirEntry) {
+        if (resDirEntry->DataIsDirectory) {
+            PIMAGE_RESOURCE_DIRECTORY resDir = PIMAGE_RESOURCE_DIRECTORY((uintptr_t)root + resDirEntry->OffsetToDirectory);
+            IterResDir(resDir);
+        }
+        else {
+            PIMAGE_RESOURCE_DATA_ENTRY resDir = PIMAGE_RESOURCE_DATA_ENTRY((uintptr_t)root + resDirEntry->OffsetToData);
+            callback(resDir);
+        }
+    }
+    PIMAGE_RESOURCE_DIRECTORY root;
+    FnIterCallback  callback;
+};
+
+
+void ModResourceDirectory(char* srcImage, IMAGE_SECTION_HEADER& desSection)
+{
+    DWORD srcResVirtualAddress = GetOptHeader(srcImage)->DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+    DWORD srcResSize = GetOptHeader(srcImage)->DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size;
+    if (!srcResSize) {
+        return;
+    }
+    PIMAGE_SECTION_HEADER srcSec=FindSecByVirtualAddress(srcImage,srcResVirtualAddress);
+    if (!srcSec) {
+        return;
+    }
+
+    auto SrcRvaToRaw = [&](DWORD rva)-> DWORD {
+        PIMAGE_SECTION_HEADER sec = FindSecByVirtualAddress(srcImage, rva);
+        if (sec != srcSec) {
+            printf("file Resource Directory bad format");
+            exit(1);
+        }
+        return  rva - sec->VirtualAddress + sec->PointerToRawData;
+    };
+
+    PIMAGE_RESOURCE_DIRECTORY resDir=PIMAGE_RESOURCE_DIRECTORY (srcImage+SrcRvaToRaw(srcResVirtualAddress));
+    ResourceDirectoryIterator resourceDirectoryIterator;
+    resourceDirectoryIterator.StartIter(resDir, [&](PIMAGE_RESOURCE_DATA_ENTRY entry) {
+        entry->OffsetToData = entry->OffsetToData - srcSec->VirtualAddress + desSection.VirtualAddress;
+        });
 }
 
 

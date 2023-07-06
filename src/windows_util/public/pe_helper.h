@@ -2,8 +2,12 @@
 #include <Windows.h>
 #include <winnt.h>
 #include <winternl.h>
+#include <iostream>
 
-
+inline int AlignMent(DWORD size, DWORD align, DWORD addr = 0) {
+    if (!(size % align)) return addr + size;
+    return addr + (size / align + 1) * align;
+}
 
 //***********************
 //PE信息获取函数簇
@@ -15,6 +19,7 @@ PIMAGE_FILE_HEADER GetFileHeader(_In_ const char* pBase);
 PIMAGE_OPTIONAL_HEADER GetOptHeader(_In_ const char* pBase);
 PIMAGE_SECTION_HEADER GetLastSec(_In_ const char* pBase);
 PIMAGE_SECTION_HEADER GetSecByName(_In_ const char* pBase, _In_ const char* name);
+PIMAGE_SECTION_HEADER FindSecByVirtualAddress(const char* pBase, DWORD  address);
 
 
 
@@ -26,7 +31,8 @@ PIMAGE_SECTION_HEADER GetSecByName(_In_ const char* pBase, _In_ const char* name
 //*********************
 char* AddSec(_In_ char*& hpe, _In_ DWORD& filesize, _In_ const char* secname, _In_ const int secsize);
 
-void FixStub(DWORD targetDllbase, DWORD stubDllbase, DWORD targetNewScnRva, DWORD stubTextRva);
+void FixStub(char* targetDllbase, char* stubDllbase, DWORD targetNewScnRva, DWORD stubTextRva);
+void ModResourceDirectory( char* srcImage, IMAGE_SECTION_HEADER& desSection);
 
 PPEB get_peb();
 
