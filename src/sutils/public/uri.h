@@ -9,6 +9,7 @@ typedef struct ParsedURL_t
     std::string* outPath{ nullptr };
     std::string* outQuery { nullptr };
     std::string* outFragment  { nullptr };
+    std::smatch url_match_result_t;
 }ParsedURL_t;
 inline void ParseUrl(const std::string& inurl, ParsedURL_t* pURL) {
     //https://www.rfc-editor.org/rfc/rfc3986#page-50
@@ -16,8 +17,8 @@ inline void ParseUrl(const std::string& inurl, ParsedURL_t* pURL) {
         R"(^(([^:\/?#]+)://)?(([^:\/?#]*)(:([0-9]+))?)?([^:?#]*)(\?([^#]*))?(#(.*))?)",
         std::regex::extended
     );
-    std::smatch url_match_result;
     int counter = 0;
+    auto& url_match_result = pURL->url_match_result_t;
     /*url.assign( R"###(localhost.com/path\?hue\=br\#cool)###");*/
     if (!std::regex_match(inurl, url_match_result, url_regex)) {
         return;
