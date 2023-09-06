@@ -2,7 +2,7 @@
 #include <uv.h>
 #include <logger.h>
 
-CommonHandle_t OpenSharedMemory(const char* name) {
+CommonHandle_t CreateSharedMemory(const char* name) {
     //uv_loop_t loop;
     //uv_loop_init(&loop);
     //uv_fs_t* preq = new uv_fs_t;
@@ -41,7 +41,22 @@ CommonHandle_t OpenSharedMemory(const char* name) {
     uv_fs_t req;
     int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
     uv_fs_req_cleanup(&req);
-    if (res<=0) {
+    if (res <= 0) {
+        LOG_ERROR("uv_fs_open error: {}\n", uv_strerror(res));
+        return out;
+    }
+    out = req.result;
+    return  out;
+}
+
+CommonHandle_t OpenSharedMemory(const char* name) {
+    int flags = UV_FS_O_RDWR | UV_FS_O_FILEMAP;
+    int mode = S_IREAD | S_IWRITE;
+    CommonHandle_t out{ 0 };
+    uv_fs_t req;
+    int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
+    uv_fs_req_cleanup(&req);
+    if (res <= 0) {
         LOG_ERROR("uv_fs_open error: {}\n", uv_strerror(res));
         return out;
     }
@@ -84,7 +99,7 @@ bool WriteSharedMemory(CommonHandle_t handle, void* content, size_t* len)
     uv_fs_t write_req;
     int res = uv_fs_write(uv_default_loop(), &write_req, handle.ID, &buf, 1, 0, NULL);
     uv_fs_req_cleanup(&write_req);
-    if (res!= *len) {
+    if (res != *len) {
         LOG_ERROR("uv_fs_write error: {}\n", uv_strerror(res));
     }
     *len = write_req.result;
