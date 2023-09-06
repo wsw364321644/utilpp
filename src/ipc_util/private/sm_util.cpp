@@ -41,13 +41,14 @@ CommonHandle_t OpenSharedMemory(const char* name) {
     uv_fs_t req;
     int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
     uv_fs_req_cleanup(&req);
-    if (res) {
+    if (res<=0) {
         LOG_ERROR("uv_fs_open error: {}\n", uv_strerror(res));
         return out;
     }
     out = req.result;
     return  out;
 }
+
 bool WriteSharedMemory(CommonHandle_t handle, void* content, size_t* len)
 {
     if (!handle.IsValid()) {
@@ -83,7 +84,7 @@ bool WriteSharedMemory(CommonHandle_t handle, void* content, size_t* len)
     uv_fs_t write_req;
     int res = uv_fs_write(uv_default_loop(), &write_req, handle.ID, &buf, 1, 0, NULL);
     uv_fs_req_cleanup(&write_req);
-    if (res) {
+    if (res!= *len) {
         LOG_ERROR("uv_fs_write error: {}\n", uv_strerror(res));
     }
     *len = write_req.result;
