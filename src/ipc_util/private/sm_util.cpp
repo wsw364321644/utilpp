@@ -4,7 +4,7 @@
 
 typedef struct WindowsHandle:public CommonHandle
 {
-    WindowsHandle(HANDLE _handle): HMapFile(_handle)
+    WindowsHandle(HANDLE _handle):CommonHandle(WindowsHandleCount), HMapFile(_handle)
     {
         if (HMapFile == NULL) {
             CommonHandle();
@@ -19,6 +19,7 @@ typedef struct WindowsHandle:public CommonHandle
     std::string Name;
     static std::atomic_uint32_t WindowsHandleCount;
 } WindowsHandle_t;
+std::atomic_uint32_t WindowsHandle_t::WindowsHandleCount{ 0 };
 
 CommonHandle_t* CreateSharedMemory(const char* name)
 {
@@ -35,22 +36,9 @@ CommonHandle_t* CreateSharedMemory(const char* name)
     //out = req.result;
     //return  out;
 
-    HANDLE hMapFile;
-    hMapFile = CreateFileMappingA(
-        INVALID_HANDLE_VALUE,    // use paging file
-        NULL,                    // default security
-        PAGE_READWRITE,          // read/write access
-        0,                       // maximum object size (high-order DWORD)
-        0,                // maximum object size (low-order DWORD)
-        name);                 // name of mapping object
-
-    if (hMapFile == NULL)
-    {
-        LOG_ERROR("Could not create file mapping object({}).\n", GetLastError());
-        return nullptr;
-    }
-    auto out=new WindowsHandle_t(hMapFile) ;
+    auto out=new WindowsHandle_t(nullptr) ;
     out->Name = name;
+    out->FileSize = 0;
     return out;
 }
 
@@ -87,7 +75,7 @@ CommonHandle_t* OpenSharedMemory(const char* name) {
 
 bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
 {
-    if (!phandle&&!phandle->IsValid()) {
+    if (!phandle||!phandle->IsValid()) {
         return false;
     }
     //uv_buf_t buf = uv_buf_init((char*)content, *len);
@@ -110,7 +98,7 @@ bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
             NULL,                    // default security
             PAGE_READWRITE,          // read/write access
             0,                       // maximum object size (high-order DWORD)
-            0,                // maximum object size (low-order DWORD)
+            *len,                // maximum object size (low-order DWORD)
             handle->Name.c_str());                 // name of mapping object
 
         if (handle->HMapFile == NULL)
@@ -144,7 +132,7 @@ bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
 }
 bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
 {
-    if (!phandle && !phandle->IsValid()) {
+    if (!phandle || !phandle->IsValid()) {
         return false;
     }
     //uv_buf_t buf = uv_buf_init((char*)content, *len);
@@ -179,7 +167,7 @@ bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
 }
 void CloseSharedMemory(CommonHandle_t* phandle)
 {
-    if (!phandle && !phandle->IsValid()) {
+    if (!phandle || !phandle->IsValid()) {
         return;
     }
     //uv_fs_t closeReq;
