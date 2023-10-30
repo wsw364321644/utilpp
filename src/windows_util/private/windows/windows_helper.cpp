@@ -1,9 +1,33 @@
 #include "windows_helper.h"
 #include <Windows.h>
 #include <psapi.h>
+#include <sddl.h>
 #include <string_convert.h>
 #include <string_buffer.h>
-bool ms_is_uwp_window(HWND hwnd)
+
+
+
+bool is_app_container(HANDLE process)
+{
+    DWORD size_ret;
+    DWORD ret = 0;
+    HANDLE token;
+
+    if (OpenProcessToken(process, TOKEN_QUERY, &token)) {
+        BOOL success = GetTokenInformation(token, TokenIsAppContainer,
+            &ret, sizeof(ret),
+            &size_ret);
+        if (!success) {
+            const DWORD error = GetLastError();
+            return false;
+        }
+
+        CloseHandle(token);
+    }
+    return !!ret;
+}
+
+bool is_uwp_window(HWND hwnd)
 {
     wchar_t name[256];
 
@@ -14,7 +38,34 @@ bool ms_is_uwp_window(HWND hwnd)
     return wcscmp(name, L"ApplicationFrameWindow") == 0;
 }
 
-HWND ms_get_uwp_actual_window(HWND parent)
+bool is_64bit_process(HANDLE process)
+{
+    BOOL x86 = true;
+    bool success;
+#ifndef _WIN64
+    success = !!IsWow64Process(GetCurrentProcess(), &x86);
+    if (!success) {
+        return false;
+    }
+    if (!x86) {
+        return false;
+    }
+#endif
+    success = !!IsWow64Process(process, &x86);
+    if (!success) {
+        return false;
+    }
+    return !x86;
+
+
+}
+
+BOOL is_main_window(HWND handle)
+{
+    return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
+}
+
+HWND get_uwp_actual_window(HWND parent)
 {
     DWORD parent_id = 0;
     HWND child;
@@ -35,7 +86,32 @@ HWND ms_get_uwp_actual_window(HWND parent)
     return NULL;
 }
 
-bool ms_get_window_exe(char** const name, HWND window, fnmalloc mallocptr)
+BOOL get_app_sid(HANDLE process, LPSTR* out)
+{
+    DWORD size_ret;
+    BOOL success;
+    HANDLE token;
+
+    if (OpenProcessToken(process, TOKEN_QUERY, &token)) {
+        DWORD info_len = GetSidLengthRequired(12) +
+            sizeof(TOKEN_APPCONTAINER_INFORMATION);
+
+        PTOKEN_APPCONTAINER_INFORMATION info = (PTOKEN_APPCONTAINER_INFORMATION)malloc(info_len);
+
+        success = GetTokenInformation(token, TokenAppContainerSid, info,
+            info_len, &size_ret);
+        if (success)
+            //free memory by localfree
+            ConvertSidToStringSidA(info->TokenAppContainer, out);
+
+        free(info);
+        CloseHandle(token);
+        return true;
+    }
+    return false;
+}
+
+bool get_window_exe(LPSTR* const name, HWND window, fnmalloc mallocptr)
 {
     wchar_t wname[MAX_PATH];
 
@@ -74,7 +150,7 @@ fail:
     return true;
 }
 
-void ms_get_window_title(char** const name, HWND hwnd, fnmalloc mallocptr)
+void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr)
 {
     int len;
 
@@ -98,7 +174,7 @@ void ms_get_window_title(char** const name, HWND hwnd, fnmalloc mallocptr)
     free(temp);
 }
 
-void ms_get_window_class(char** const name, HWND hwnd, fnmalloc mallocptr)
+void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr)
 {
     wchar_t temp[256];
 
@@ -115,10 +191,7 @@ struct handle_data {
 };
 
 
-BOOL is_main_window(HWND handle)
-{
-    return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
-}
+
 BOOL CALLBACK find_main_window_callback(HWND handle, LPARAM lParam)
 {
     handle_data& data = *(handle_data*)lParam;
@@ -135,8 +208,8 @@ HWND find_main_window(unsigned long process_id)
     data.process_id = process_id;
     data.window_handle = 0;
     EnumWindows(find_main_window_callback, (LPARAM)&data);
-    if (ms_is_uwp_window(data.window_handle))
-        data.window_handle = ms_get_uwp_actual_window(data.window_handle);
+    if (is_uwp_window(data.window_handle))
+        data.window_handle = get_uwp_actual_window(data.window_handle);
     return data.window_handle;
 }
 
@@ -164,25 +237,34 @@ HWND find_window_by_title(const char* name)
     return data.handle;
 }
 
-
-bool is_64bit_process(HANDLE process)
+HANDLE create_mutex(const char* name, BOOL is_app)
 {
-    BOOL x86 = true;
-    bool success;
-#ifndef _WIN64
-    success = !!IsWow64Process(GetCurrentProcess(), &x86);
-    if (!success) {
-        return false;
-    }
-    if (!x86) {
-        return false;
-    }
-#endif
-    success = !!IsWow64Process(process, &x86);
-    if (!success) {
-        return false;
-    }
-    return !x86;
+    if (is_app) {
 
+    }
+    CreateMutexA(NULL, false, name);
+}
 
+HANDLE open_mutex(const char* name, BOOL is_app)
+{
+    if (is_app) {
+
+    }
+    OpenMutexA((SYNCHRONIZE), false, name);
+}
+
+HANDLE create_event(const char* name, BOOL is_app)
+{
+    if (is_app) {
+
+    }
+    CreateEventA(NULL, false, false, name);
+}
+
+HANDLE open_event(const char* name, BOOL is_app)
+{
+    if (is_app) {
+
+    }
+    OpenEventA((EVENT_MODIFY_STATE | SYNCHRONIZE), false, name);
 }

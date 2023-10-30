@@ -1,4 +1,3 @@
-
 #include <defs.h>
 
 
@@ -7,17 +6,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    bool ms_is_uwp_window(HWND hwnd);
-    HWND ms_get_uwp_actual_window(HWND parent);
-    bool ms_get_window_exe(char** const name, HWND window, fnmalloc mallocptr);
-    void ms_get_window_title(char** const name, HWND hwnd, fnmalloc mallocptr);
-    void ms_get_window_class(char** const name, HWND hwnd, fnmalloc mallocptr);
+    bool is_app_container(HANDLE process);
+    bool is_uwp_window(HWND hwnd);
+    BOOL is_main_window(HWND handle);
+    bool is_64bit_process(HANDLE process);
+
+    HWND get_uwp_actual_window(HWND parent);
+    BOOL get_app_sid(HANDLE process, LPSTR* out);
+
+    bool get_window_exe(LPSTR* const name, HWND window, fnmalloc mallocptr);
+    void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
+    void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
     HWND find_main_window(unsigned long process_id);
     HWND find_window_by_title(const char* name);
 
-    BOOL is_main_window(HWND handle);
+    HANDLE create_mutex(const char* name, BOOL is_app);
+    HANDLE open_mutex(const char* name, BOOL is_app);
+    HANDLE create_event(const char* name, BOOL is_app);
+    HANDLE open_event(const char* name, BOOL is_app);
 
-    bool is_64bit_process(HANDLE process);
+
 #ifdef __cplusplus
 }
 #endif
