@@ -1,8 +1,9 @@
 /**
  *  string_buffer.h
  */
-#include <stdint.h>
 #pragma once
+#include <stdint.h>
+
 
 class CharBuffer
 {
@@ -15,17 +16,24 @@ public:
     ~CharBuffer();
     CharBuffer &operator()(const char *cstr);
 
+    friend void Swap(CharBuffer& l, CharBuffer& r);
+
     // template <typename T,
     //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, char>::value>::type>
     //     void Push(T&& c);
-
+    void Append(const char * cstr);
     void Append(const char *cstr, size_t size);
     void Append(CharBuffer &);
+    void Append(int);
+    void Append(double);
+    bool FormatAppend(const char* format, ...);
+    
     // template <typename T,
     //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, CharBuffer>::value>::type>
     // void Append(T&&);
 
     void Assign(const char *cstr, size_t size);
+    void Clear() { cursor = 0; }
 
     const char *CStr() const;
     char *Data();
@@ -53,6 +61,8 @@ public:
     void Resize(uint32_t size);
 
 private:
+
+
     void(__cdecl *freeptr)(void *const block);
     void *(__cdecl *mallocptr)(size_t _Size);
     uint32_t GetIncreasedSize()
