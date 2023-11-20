@@ -242,7 +242,7 @@ HANDLE create_mutex(const char* name, BOOL is_app)
     if (is_app) {
 
     }
-    CreateMutexA(NULL, false, name);
+    return CreateMutexA(NULL, false, name);
 }
 
 HANDLE open_mutex(const char* name, BOOL is_app)
@@ -250,7 +250,7 @@ HANDLE open_mutex(const char* name, BOOL is_app)
     if (is_app) {
 
     }
-    OpenMutexA((SYNCHRONIZE), false, name);
+    return OpenMutexA((SYNCHRONIZE), false, name);
 }
 
 HANDLE create_event(const char* name, BOOL is_app)
@@ -258,7 +258,7 @@ HANDLE create_event(const char* name, BOOL is_app)
     if (is_app) {
 
     }
-    CreateEventA(NULL, false, false, name);
+    return CreateEventA(NULL, false, false, name);
 }
 
 HANDLE open_event(const char* name, BOOL is_app)
@@ -266,5 +266,5 @@ HANDLE open_event(const char* name, BOOL is_app)
     if (is_app) {
 
     }
-    OpenEventA((EVENT_MODIFY_STATE | SYNCHRONIZE), false, name);
+    return OpenEventA((EVENT_MODIFY_STATE | SYNCHRONIZE), false, name);
 }
