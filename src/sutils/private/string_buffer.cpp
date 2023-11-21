@@ -59,7 +59,7 @@ void CharBuffer::Append(const char *str, size_t size)
     }
     if (bufSize == 0 || size + cursor > bufSize - 1)
     {
-        Reverse(GetIncreasedSize() > size + cursor ? GetIncreasedSize() : size + cursor);
+        Reverse(GetIncreasedSize() > size + cursor+1 ? GetIncreasedSize() : size + cursor+1);
     }
     memcpy(pBuf + cursor, str, size);
     cursor += size;
