@@ -6,6 +6,8 @@
 
 typedef struct CommonHandle
 {
+    struct _Tag {};
+    constexpr explicit CommonHandle(_Tag) { ID = 0; }
     CommonHandle()
     {
         ID = 0;
@@ -39,7 +41,7 @@ typedef struct CommonHandle
     static std::atomic_uint32_t atomic_count;
     uint32_t ID;
 } CommonHandle_t;
-
+inline constexpr CommonHandle NullHandle{ CommonHandle::_Tag{} };
 // inline bool operator< (const CommonHandle_t& lhs, const CommonHandle_t& rhs) {
 //     return lhs < rhs;
 // }
