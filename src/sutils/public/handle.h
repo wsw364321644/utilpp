@@ -7,7 +7,7 @@
 typedef struct CommonHandle
 {
     struct _Tag {};
-    constexpr explicit CommonHandle(_Tag) { ID = 0; }
+    constexpr explicit CommonHandle(_Tag):ID(0){ }
     CommonHandle()
     {
         ID = 0;
