@@ -96,7 +96,7 @@ public:
     typedef void(*download_done_cb)(DMcode code, int http_code, void* userp);
     typedef void(*download_progress_cb)(int64_t total, int64_t now, void* userp);
 
-    static FDownloader& instance();
+    static FDownloader& Instance();
     ~FDownloader();
     DMcode AddTask(std::string url, std::string folder);
     DMcode AddTask(std::string url, std::string* content);

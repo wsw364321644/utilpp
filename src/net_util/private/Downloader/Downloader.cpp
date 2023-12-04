@@ -379,7 +379,7 @@ size_t FDownloader::dl_write_callback(char* ptr, size_t size, size_t nmemb, void
     return res;
 }
 
-FDownloader& FDownloader::instance() {
+FDownloader& FDownloader::Instance() {
     static FDownloader* downloader;
     if (!downloader) {
         downloader = new FDownloader();
