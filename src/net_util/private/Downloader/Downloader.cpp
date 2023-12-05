@@ -2,31 +2,31 @@
 #include <chrono>
 #include <thread>
 #include <string>
-#include <filesystem>
+
 
 const int MAX_WRITE_SIZE = 16384;
 int FDownloadFile::CHUNK_SIZE = MAX_WRITE_SIZE * 16;
 int FDownloadFile::CHUNK_NUM = 4;
 
-FILE* fopen_cwd(const char* path, const char* mode)
+FILE* fopen_cwd(const std::filesystem::path& _path, const char* mode)
 {
-    std::filesystem::path p(path);
-    if (!p.is_absolute()) {
-        p = std::filesystem::current_path() / path;
-        p=p.lexically_normal();
+    std::filesystem::path path = _path;
+    if (!path.is_absolute()) {
+        path = std::filesystem::current_path() / _path;
+        path = path.lexically_normal();
     }
 
-    if (!std::filesystem::exists(p.parent_path())) {
-        std::filesystem::create_directories(p.parent_path());
+    if (!std::filesystem::exists(path.parent_path())) {
+        std::filesystem::create_directories(path.parent_path());
     }
-    return fopen((char*)p.u8string().c_str(), mode);
+    return fopen((char*)path.u8string().c_str(), mode);
 }
 
-FDownloadFile::FDownloadFile(std::string url, std::string path) :size(-1), buf_size(0), dl_size(0), url(url), path(path), content(nullptr), fp(nullptr) {}
-FDownloadFile::FDownloadFile(std::string url, std::string* content) : size(-1), buf_size(0), dl_size(0), url(url), content(content), fp(nullptr) {}
+FDownloadFile::FDownloadFile(std::string url, std::string path) : path(path){}
+FDownloadFile::FDownloadFile(std::string url, std::string* content) : content(content){}
+FDownloadFile::FDownloadFile(std::string url, std::filesystem::path folder) : path(folder) {}
 FDownloadFile::~FDownloadFile()
 {
-    this;
     if (fp != nullptr) {
         fclose(fp);
     }
@@ -91,7 +91,6 @@ bool FDownloadFile::Init()
 
 std::string FDownloadFile::Geturl()
 {
-    printf("+++++++++++++url:[%s]\n", url.c_str());
     return url;
 }
 
@@ -198,7 +197,7 @@ bool FDownloadFile::AddBuf()
 bool FDownloadFile::Open()
 {
     if (size > 0) {
-        fp = fopen_cwd(path.c_str(), "r");
+        fp = fopen_cwd(path, "r");
         if (fp) {
             fseek(fp, 0, SEEK_END);
             buf_size = dl_size = ftell(fp);
@@ -207,12 +206,12 @@ bool FDownloadFile::Open()
                 goto redownload;
             }
         }
-        fp = fopen_cwd(path.c_str(), "ab+");
+        fp = fopen_cwd(path, "ab+");
     }
     else {
     redownload:
         buf_size = dl_size = 0;
-        fp = fopen_cwd(path.c_str(), "wb+");
+        fp = fopen_cwd(path, "wb+");
     }
     if (fp != nullptr)
         return true;
@@ -246,6 +245,33 @@ void FDownloadFile::GetContentLength()
     curl_easy_cleanup(curl);
 }
 
+FDownloader::DMcode FDownloader::AddTask(FDownloadFile* df, download_done_cb done_cb, void* userp)
+{
+    if (!df->Init()) {
+        return DMcode::DM_INTERNAL_ERROR;
+    }
+    cfiles.push_back(df);
+    if (done_cb) {
+        file_ex_data_t* data = new file_ex_data_t;
+        data->done_cb = done_cb;
+        data->userp = userp;
+        cfiles_ex.insert(files_ex_map::value_type(df, data));
+    }
+
+    if (size_sum >= 0) {
+        if (df->GetLength() >= 0) {
+            size_sum += df->GetLength();
+            dl_size_sum += df->GetDlLength();
+        }
+        else {
+            size_sum = -1;
+            dl_size_sum += df->GetDlLength();
+        }
+    }
+
+    return DMcode::DM_OK;
+}
+
 FDownloader::FDownloader() : thread_num(5), file_sel_num(0), progress_cb(nullptr), userp(nullptr),
 dl_size_sum(0), size_sum(0), overtime(0) {
     CURLcode code = curl_global_init(CURL_GLOBAL_ALL);
@@ -260,9 +286,9 @@ FDownloader::DMcode FDownloader::Init()
 {
     hcurlm = curl_multi_init();
     if (hcurlm == nullptr) {
-        return  DM_INTERNAL_ERROR;
+        return  DMcode::DM_INTERNAL_ERROR;
     }
-    return DM_OK;
+    return DMcode::DM_OK;
 }
 void FDownloader::Clear()
 {
@@ -300,7 +326,7 @@ bool FDownloader::CheckTimeout()
 FDownloader::DMcode FDownloader::AddFilechunk()
 {
     if (cfiles.size() == 0) {
-        return DM_FINISHED;
+        return DMcode::DM_FINISHED;
     }
     while (tasks.size() < thread_num) {
         if (cfiles.size() == 0) {
@@ -316,7 +342,7 @@ FDownloader::DMcode FDownloader::AddFilechunk()
         }
         CURL* curl = curl_easy_init();
         if (curl == nullptr) {
-            return DM_INTERNAL_ERROR;
+            return DMcode::DM_INTERNAL_ERROR;
         }
         char buf[BUFSIZ];
         if (file_chunk->length) {
@@ -345,12 +371,12 @@ FDownloader::DMcode FDownloader::AddFilechunk()
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, false);
         if (curl_multi_add_handle(hcurlm, curl) != CURLM_OK) {
-            return DM_INTERNAL_ERROR;
+            return DMcode::DM_INTERNAL_ERROR;
         }
         ++file_sel_num;
         tasks.emplace(curl, file_chunk);
     }
-    return DM_OK;
+    return DMcode::DM_OK;
 }
 size_t FDownloader::dl_write_callback(char* ptr, size_t size, size_t nmemb, void* userdata)
 {
@@ -372,7 +398,7 @@ size_t FDownloader::dl_write_callback(char* ptr, size_t size, size_t nmemb, void
     auto file_ex = map->find(file);
     if (file_ex != map->end()) {
         if (file->GetLength() == file->GetDlLength() && file_ex->second->done_cb) {
-            file_ex->second->done_cb(DM_OK, 200, file_ex->second->userp);
+            file_ex->second->done_cb(DMcode::DM_OK, 200, file_ex->second->userp);
         }
     }
 
@@ -391,70 +417,20 @@ FDownloader::~FDownloader()
     curl_global_cleanup();
 
 }
-FDownloader::DMcode FDownloader::AddTask(std::string url, std::string path) {
+FDownloader::DMcode FDownloader::AddTask(std::string url, std::string path, download_done_cb done_cb , void* userp ) {
     FDownloadFile* df = new FDownloadFile(url, path);
-
-    if (!df->Init()) {
-        return DM_INTERNAL_ERROR;
-    }
-    cfiles.push_back(df);
-    if (size_sum >= 0) {
-        if (df->GetLength() >= 0) {
-            size_sum += df->GetLength();
-            dl_size_sum += df->GetDlLength();
-        }
-        else {
-            size_sum = -1;
-            dl_size_sum += df->GetDlLength();
-        }
-    }
-
-    return DM_OK;
+    return AddTask(df, done_cb, userp);
 }
-FDownloader::DMcode FDownloader::AddTask(std::string url, std::string* content) {
-    FDownloadFile* df = new FDownloadFile(url, content);
 
-    if (!df->Init()) {
-        return DM_INTERNAL_ERROR;
-    }
-    cfiles.push_back(df);
-    if (size_sum >= 0) {
-        if (df->GetLength() >= 0) {
-            size_sum += df->GetLength();
-            dl_size_sum += df->GetDlLength();
-        }
-        else {
-            size_sum = -1;
-            dl_size_sum += df->GetDlLength();
-        }
-    }
-
-    return DM_OK;
-}
-FDownloader::DMcode FDownloader::AddTask(std::string url, std::string* content, download_done_cb _done_cb, void* _userp)
+FDownloader::DMcode FDownloader::AddTask(std::string url, std::string* content, download_done_cb done_cb, void* userp)
 {
     FDownloadFile* df = new FDownloadFile(url, content);
-
-    if (!df->Init()) {
-        return DM_INTERNAL_ERROR;
-    }
-    cfiles.push_back(df);
-    file_ex_data_t* data = new file_ex_data_t;
-    data->done_cb = _done_cb;
-    data->userp = _userp;
-    cfiles_ex.insert(files_ex_map::value_type(df, data));
-    if (size_sum >= 0) {
-        if (df->GetLength() >= 0) {
-            size_sum += df->GetLength();
-            dl_size_sum += df->GetDlLength();
-        }
-        else {
-            size_sum = -1;
-            dl_size_sum += df->GetDlLength();
-        }
-    }
-
-    return DM_OK;
+    return AddTask(df, done_cb, userp);
+}
+FDownloader::DMcode FDownloader::AddTask(std::string url, std::filesystem::path folder, download_done_cb done_cb, void* userp)
+{
+    FDownloadFile* df = new FDownloadFile(url, folder.u8string().c_str());
+    return AddTask(df, done_cb, userp);
 }
 FDownloader::DMcode FDownloader::Perform()
 {
@@ -464,12 +440,12 @@ FDownloader::DMcode FDownloader::Perform()
     int numfds = 0;
     CURLMsg* curlmsgp = nullptr;
     CURLMsg curlmsg;
-    DMcode res = DM_OK;
+    DMcode res = DMcode::DM_OK;
     int pending_messages = 0;
     AddFilechunk();
     CURLMcode mcode = curl_multi_perform(hcurlm, &still_running);
     if (mcode != CURLM_OK) {
-        return DM_INTERNAL_ERROR;
+        return DMcode::DM_INTERNAL_ERROR;
     }
     if (still_running == 0) {
         return res;
@@ -477,10 +453,10 @@ FDownloader::DMcode FDownloader::Perform()
     while (true) {
         mcode = curl_multi_wait(hcurlm, nullptr, 0, 1000, &numfds);
         if (CheckTimeout()) {
-            return DM_TIMEOUT;
+            return DMcode::DM_TIMEOUT;
         };
         if (mcode != CURLM_OK) {
-            return DM_INTERNAL_ERROR;
+            return DMcode::DM_INTERNAL_ERROR;
         }
         if (!numfds) {
             if (++repeats > 1) {
@@ -492,7 +468,7 @@ FDownloader::DMcode FDownloader::Perform()
         }
         mcode = curl_multi_perform(hcurlm, &still_running);
         if (mcode != CURLM_OK) {
-            return DM_INTERNAL_ERROR;
+            return DMcode::DM_INTERNAL_ERROR;
         }
         while ((curlmsgp = curl_multi_info_read(hcurlm, &pending_messages)) != nullptr) {
             // @see: https://curl.haxx.se/libcurl/c/curl_multi_info_read.html
@@ -507,18 +483,18 @@ FDownloader::DMcode FDownloader::Perform()
                 case CURLE_OK: {
                     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
                     if (http_code < 200 || http_code >= 300) {
-                        res = DM_SERVER_ERROR;
+                        res = DMcode::DM_SERVER_ERROR;
                     }
                     break;
                 }
                 case CURLE_COULDNT_CONNECT:
-                    res = DM_COULDNT_CONNECT;
+                    res = DMcode::DM_COULDNT_CONNECT;
                     break;
                 case CURLE_SSL_CONNECT_ERROR:
-                    res = DM_SSL_CONNECT_ERROR;
+                    res = DMcode::DM_SSL_CONNECT_ERROR;
                     break;
                 default:
-                    res = DM_INTERNAL_ERROR;
+                    res = DMcode::DM_INTERNAL_ERROR;
                     break;
                 }
                 if (file->GetLength() == -1) {
@@ -534,7 +510,7 @@ FDownloader::DMcode FDownloader::Perform()
                 curl_easy_cleanup(curl);
             }
         }
-        if (AddFilechunk() == DM_FINISHED && still_running == 0) {
+        if (AddFilechunk() == DMcode::DM_FINISHED && still_running == 0) {
             break;
         }
     }
@@ -550,4 +526,12 @@ void FDownloader::SetProgressCB(FDownloader::download_progress_cb _progress_cb, 
 void FDownloader::SetOvertime(uint32_t seconde)
 {
     overtime = seconde;
+}
+
+void FDownloader::Tick()
+{
+}
+
+void FDownloader::ThreadTick()
+{
 }

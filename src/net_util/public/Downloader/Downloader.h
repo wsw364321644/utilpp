@@ -4,7 +4,8 @@
 #include <vector>
 #include <unordered_map>
 #include <mutex>
-#include <curl\curl.h>
+#include <filesystem>
+#include <HTTP/CurlHttpManager.h>
 
 
 //typedef void(*download_done_cb)(int err, void *userp);
@@ -27,6 +28,7 @@ public:
     }file_chunk_t;
     FDownloadFile(std::string url, std::string folder);
     FDownloadFile(std::string url, std::string* content);
+    FDownloadFile(std::string url, std::filesystem::path folder);
     ~FDownloadFile();
     file_chunk_t* GetFilechunk();
     bool HasChunk();
@@ -43,6 +45,7 @@ public:
     FDownloadFile& operator=(const FDownloadFile&& other) = delete;
     FDownloadFile(FDownloadFile&&) = delete;
 private:
+
     typedef struct buf_s {
         char* buf;
         uint32_t begin;
@@ -60,15 +63,14 @@ private:
     }buf_t;
     static int CHUNK_SIZE;
     static int CHUNK_NUM;
-    bool intact;
-    FILE* fp;
-    int64_t size;
-    uint32_t dl_size;
-    uint32_t buf_size;
-    std::string path;
+    FILE* fp{ NULL };
+    int64_t size{ -1 };
+    uint32_t dl_size{ 0 };
+    uint32_t buf_size{ 0 };
+    std::filesystem::path path;
     std::string filename;
     std::string url;
-    std::string* content;
+    std::string* content{ nullptr };
     std::mutex mtx;
     typedef std::list<file_chunk_t*> chunk_list;
     typedef std::pair<buf_t*, chunk_list> buf_element;
@@ -84,8 +86,9 @@ private:
 class FDownloader
 {
 public:
-    enum DMcode {
+    enum class DMcode {
         DM_OK,
+        DM_PARAMS_ERROR,
         DM_INTERNAL_ERROR,
         DM_FINISHED,
         DM_COULDNT_CONNECT,
@@ -98,13 +101,14 @@ public:
 
     static FDownloader& Instance();
     ~FDownloader();
-    DMcode AddTask(std::string url, std::string folder);
-    DMcode AddTask(std::string url, std::string* content);
-    DMcode AddTask(std::string url, std::string* content, download_done_cb done_cb, void* userp = nullptr);
+    DMcode AddTask(std::string url, std::string folder,download_done_cb done_cb = nullptr, void* userp = nullptr);
+    DMcode AddTask(std::string url, std::string* content, download_done_cb done_cb = nullptr, void* userp = nullptr);
+    DMcode AddTask(std::string url, std::filesystem::path folder, download_done_cb done_cb = nullptr, void* userp = nullptr);
     DMcode Perform();
     void SetProgressCB(download_progress_cb progress_cb, void* userp = nullptr);
     void SetOvertime(uint32_t seconde);
-
+    void Tick();
+    void ThreadTick();
 
     FDownloader& operator=(const FDownloadFile& other) = delete;
     FDownloader(FDownloadFile&) = delete;
@@ -113,6 +117,7 @@ public:
 
 protected:
 private:
+    DMcode AddTask(FDownloadFile* file, download_done_cb done_cb = nullptr, void* userp = nullptr);
     FDownloader();
     DMcode Init();
     void Clear();
