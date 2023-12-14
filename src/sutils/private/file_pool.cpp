@@ -40,7 +40,7 @@ CRawFilePtr CFilePool::CreateFileHandle(const std::string &strFileName, uint64_t
 
         // New file handle
         CRawFilePtr filePtr(new CRawFile());
-        if (ERR_SUCCESS == filePtr->Open(strFileName.c_str(), uExceptSize, SK_OPEN_ALWAYS))
+        if (ERR_SUCCESS == filePtr->Open(strFileName.c_str(), uExceptSize, UTIL_OPEN_ALWAYS))
         {
             AddFileHandle(filePtr);
         }

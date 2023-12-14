@@ -11,9 +11,11 @@
 #include <Windows.h>
 #include <Strsafe.h>
 #define F_HANDLE HANDLE
-const uint32_t SK_CREATE_ALWAYS = CREATE_ALWAYS;
-const uint32_t SK_OPEN_ALWAYS = OPEN_ALWAYS;
-const uint32_t SK_OPEN_EXISTING = OPEN_EXISTING;
+const uint32_t UTIL_CREATE_ALWAYS = CREATE_ALWAYS;
+const uint32_t UTIL_CREATE_NEW = CREATE_NEW;
+const uint32_t UTIL_OPEN_ALWAYS = OPEN_ALWAYS;
+const uint32_t UTIL_OPEN_EXISTING = OPEN_EXISTING;
+const uint32_t UTIL_TRUNCATE_EXISTING = TRUNCATE_EXISTING;
 #else
 #include <fcntl.h>
 #include <errno.h>
@@ -22,9 +24,9 @@ const uint32_t SK_OPEN_EXISTING = OPEN_EXISTING;
 #include <langinfo.h>
 #include <cstring>
 #define F_HANDLE int
-const uint32_t SK_CREATE_ALWAYS = O_RDWR | O_CREAT | O_TRUNC;
-const uint32_t SK_OPEN_ALWAYS = O_RDWR | O_CREAT;
-const uint32_t SK_OPEN_EXISTING = O_RDWR;
+const uint32_t UTIL_CREATE_ALWAYS = O_RDWR | O_CREAT | O_TRUNC;
+const uint32_t UTIL_OPEN_ALWAYS = O_RDWR | O_CREAT;
+const uint32_t UTIL_OPEN_EXISTING = O_RDWR;
 #endif
 
 #define ERR_SUCCESS			(0)		// success 

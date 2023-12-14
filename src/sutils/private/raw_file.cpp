@@ -31,7 +31,7 @@ CRawFile::~CRawFile()
     }
 }
 
-int32_t CRawFile::Open(const char *file_name, uint64_t expect_size, uint32_t flag)
+int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_size)
 {
     if (file_name == NULL)
     {
@@ -60,7 +60,7 @@ int32_t CRawFile::Open(const char *file_name, uint64_t expect_size, uint32_t fla
     {
         err = GetLastError();
         // Path not found? Create the directory
-        if ((flag == SK_CREATE_ALWAYS || flag == SK_OPEN_ALWAYS) && err == ERROR_PATH_NOT_FOUND)
+        if ((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && err == ERROR_PATH_NOT_FOUND)
         {
             std::filesystem::path base_path = std::filesystem::path((char8_t *)file_name).parent_path();
             std::filesystem::path base_name = std::filesystem::path((char8_t *)file_name).filename();
@@ -109,7 +109,7 @@ int32_t CRawFile::Open(const char *file_name, uint64_t expect_size, uint32_t fla
 
     file_size_ = ((uint64_t)high << 32) | ((uint64_t)low);
 
-    if ((flag == SK_CREATE_ALWAYS || flag == SK_OPEN_ALWAYS) && (file_size_ != expect_size))
+    if ((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && (file_size_ != expect_size))
     {
         // set the physic size
         if (expect_size != 0 && ERR_SUCCESS == Seek(expect_size - 1))
@@ -316,7 +316,7 @@ int32_t MakeDir(const char *lpPath)
     }
 }
 
-int32_t CRawFile::Open(const char *lpFileName, uint64_t uExpectSize, uint32_t uOpenFlag)
+int32_t CRawFile::Open(const char *lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
     if (lpFileName == NULL)
     {
@@ -339,7 +339,7 @@ int32_t CRawFile::Open(const char *lpFileName, uint64_t uExpectSize, uint32_t uO
             return ERR_FILE;
     }
     file_size_ = std::filesystem::file_size(name_);
-    if ((uOpenFlag == SK_CREATE_ALWAYS || uOpenFlag == SK_OPEN_ALWAYS) && (file_size_ != uExpectSize))
+    if ((uOpenFlag == UTIL_CREATE_ALWAYS || uOpenFlag == UTIL_OPEN_ALWAYS) && (file_size_ != uExpectSize))
     {
         // make file as desized size
         if (-1 == truncate(lpFileName, uExpectSize))
