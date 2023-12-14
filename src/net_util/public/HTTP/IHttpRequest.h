@@ -3,11 +3,12 @@
 #include <string>
 #include <functional>
 #include <memory>
+#define InfiniteRange std::numeric_limits<uint64_t>::max()
 typedef std::shared_ptr<class IHttpRequest> HttpRequestPtr;
 typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
 
 typedef std::function<void(HttpRequestPtr, HttpResponsePtr, bool)> HttpRequestCompleteDelegateType;
-typedef std::function<void(HttpRequestPtr, int32_t, int32_t)> HttpRequestProgressDelegateType;
+typedef std::function<void(HttpRequestPtr, int64_t, int64_t, int64_t)> HttpRequestProgressDelegateType;
 
 enum EHttpRequestStatus
 {
@@ -75,7 +76,7 @@ public:
 	 *
 	 * @return the content length (if available)
 	 */
-	virtual int32_t GetContentLength() = 0;
+	virtual int64_t GetContentLength() = 0;
 
 	/**
 	 * Get the content payload of the request or response.
@@ -128,6 +129,7 @@ public:
 	virtual void SetScheme(const std::string& Scheme) = 0;
 	virtual void SetPortNum(uint32_t port) = 0;
 	virtual void SetQuery(const std::string& QueryName, const std::string& QueryValue) = 0;
+	virtual void SetRange(uint64_t begin, uint64_t end= InfiniteRange) = 0;
 	/**
 	 * Sets the content of the request (optional data).
 	 * Usually only set for POST requests.
@@ -142,7 +144,7 @@ public:
 	 * @param ContentString - payload to set.
 	 */
 	virtual void SetContentAsString(const std::string& ContentString) = 0;
-
+	virtual void SetContentBuf(void* ptr, uint64_t len) =0;
 	/**
 	 * Sets optional header info.
 	 * SetHeader for a given HeaderName will overwrite any previous values

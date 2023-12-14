@@ -1,6 +1,7 @@
 #include "HTTP/HttpManager.h"
 #include "HTTP/CurlHttpManager.h"
 #include "HTTP/CurlHttpRequest.h"
+#include <string_buffer.h>
 #include <curl/curl.h>
 #include <logger.h>
 #include <string>
@@ -9,19 +10,26 @@
 FCurlHttpManager::CurlRequestOptions_t FCurlHttpManager::CurlRequestOptions;
 FCurlHttpManager::FCurlHttpManager()
 {
-	curl_global_init(CURL_GLOBAL_ALL);
-	MultiHandle = curl_multi_init();
-	ShareHandle = curl_share_init();
-	if (NULL != ShareHandle)
-	{
-		curl_share_setopt(ShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
-		curl_share_setopt(ShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
-		curl_share_setopt(ShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
+	CURLcode code = curl_global_init(CURL_GLOBAL_ALL);
+	if (code != CURLcode::CURLE_OK) {
+		return;
 	}
-	else
+
+	MultiHandle = curl_multi_init();
+	if (!MultiHandle) {
+		return;
+	}
+	ShareHandle = curl_share_init();
+	if (!ShareHandle)
 	{
 		LOG_ERROR("Could not initialize libcurl share handle!");
+		return;
 	}
+	curl_share_setopt(ShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+	curl_share_setopt(ShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
+	curl_share_setopt(ShareHandle, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
+
+	CurlState = READY;
 }
 
 HttpRequestPtr FCurlHttpManager::NewRequest()
@@ -84,6 +92,23 @@ void FCurlHttpManager::Tick()
 		FinishRequest(it->first);
 		std::erase(Reqs, it->first);
 		ReqsMap.erase(it);
+	}
+
+	std::list<CurlDownloadProgress_t> LocalRunningProgressList;
+	{
+		std::scoped_lock ProgressLock(ProgressMutex);
+		LocalRunningProgressList.swap(RunningProgressList);
+	}
+	for (auto& LocalRunningProgress : LocalRunningProgressList) {
+		auto result = std::find_if(
+			ReqsMap.begin(),
+			ReqsMap.end(),
+			[&LocalRunningProgress](const auto& pair) {return pair.second == LocalRunningProgress.HttpReq; });
+		if (result == ReqsMap.end()) {
+			continue;
+		}
+		auto& localReq = result->first;
+		localReq->OnRequestProgress()(localReq, LocalRunningProgress.OldSize, LocalRunningProgress.NewSize, LocalRunningProgress.HttpReq->Response->GetContentLength());
 	}
 }
 
@@ -234,7 +259,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 	{
 		creq->TimeSinceLastResponse = 0.0f;
 
-		uint32_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
+		int64_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
 
 		LOG_DEBUG("ReceiveResponseBodyCallback {:x}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
 			(int32_t)Response.get(),Response->TotalBytesRead+ SizeToDownload, Response->GetContentLength(),
@@ -244,10 +269,14 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 		// note that we can be passed 0 bytes if file transmitted has 0 length
 		if (SizeToDownload > 0)
 		{
+			auto oldsize = Response->TotalBytesRead;
 			Response->Content.resize(Response->TotalBytesRead+ SizeToDownload);
 			memcpy(Response->Content.data()+ Response->TotalBytesRead, Ptr, SizeToDownload);
 			Response->TotalBytesRead+=SizeToDownload;
-
+			{
+				std::scoped_lock(ProgressMutex);
+				RunningProgressList.emplace_back( creq,oldsize,Response->TotalBytesRead );
+			}
 			return SizeToDownload;
 		}
 	}
@@ -281,6 +310,9 @@ void FCurlHttpManager::HttpThreadAddTask()
 	int32_t oldsize = RunningThreadedRequests.size();
 	{
 		std::scoped_lock lock(ReqMutex);
+		if (!RunningRequests.size()) {
+			return;
+		}
 		RunningThreadedRequests.splice(RunningThreadedRequests.end(), RunningRequests);
 	}
 	auto itr = RunningThreadedRequests.begin();
@@ -306,8 +338,8 @@ void FCurlHttpManager::HttpThreadAddTask()
 bool FCurlHttpManager::SetupLocalRequest(CurlHttpRequestPtr creq)
 {
 	CURLU* urlp{nullptr};
-	CURLUcode rc;
-	char* url;
+	CURLUcode rc{ CURLUcode::CURLUE_OK };
+	char* url{nullptr};
 	// Mark as in-flight to prevent overlapped requests using the same object
 	creq->CompletionStatus = EHttpRequestStatus::Processing;
 
@@ -444,6 +476,8 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
 	else if (creq->Verb == TEXT("HEAD"))
 	{
 		curl_easy_setopt(creq->EasyHandle, CURLOPT_NOBODY, 1L);
+		//CURLOPT_HEADER  header would return by body callback(StaticReceiveResponseBodyCallback)
+		//curl_setopt(creq->EasyHandle, CURLOPT_HEADER, 1);
 	}
 	else if (creq->Verb == TEXT("DELETE"))
 	{
@@ -496,6 +530,23 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
 	{
 		curl_easy_setopt(creq->EasyHandle, CURLOPT_HTTPHEADER, creq->HeaderList);
 	}
+
+	if (creq->Ranges.size()) {
+		CharBuffer buf;
+		for (auto& range : creq->Ranges) {
+			if (range.second == InfiniteRange) {
+				buf.FormatAppend("%d-", range.first);
+			}
+			else {
+				buf.FormatAppend("%d-%d", range.first, range.second);
+			}
+			if (&range != &*creq->Ranges.rbegin()) {
+				buf.FormatAppend(",");
+			}
+		}
+		curl_easy_setopt(creq->EasyHandle, CURLOPT_RANGE, buf.CStr());
+	}
+
 	return true;
 }
 
@@ -528,6 +579,7 @@ bool FCurlHttpManager::InitRequest(CurlHttpRequestPtr creq)
 
 	// allow http redirects to be followed
 	curl_easy_setopt(EasyHandle, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(EasyHandle, CURLOPT_MAXREDIRS, 5);
 
 	// required for all multi-threaded handles
 	curl_easy_setopt(EasyHandle, CURLOPT_NOSIGNAL, 1L);
@@ -571,13 +623,13 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
 
 			// get the information
 			long HttpCode = 0;
-			if (0 == curl_easy_getinfo(creq->EasyHandle, CURLINFO_RESPONSE_CODE, &HttpCode))
+			if (! curl_easy_getinfo(creq->EasyHandle, CURLINFO_RESPONSE_CODE, &HttpCode))
 			{
 				Response->HttpCode = HttpCode;
 			}
 
-			double ContentLengthDownload = 0.0;
-			if (0 == curl_easy_getinfo(creq->EasyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &ContentLengthDownload))
+			curl_off_t ContentLengthDownload;
+			if (! curl_easy_getinfo(creq->EasyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &ContentLengthDownload))
 			{
 				Response->ContentLength = ContentLengthDownload;
 			}

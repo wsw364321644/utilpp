@@ -85,7 +85,7 @@ std::string FCurlHttpRequest::GetContentType()
 }
 
 
-int32_t FCurlHttpRequest::GetContentLength()
+int64_t FCurlHttpRequest::GetContentLength()
 {
     return Content.size();
 }
@@ -150,6 +150,11 @@ void FCurlHttpRequest::SetContentAsString(const std::string& ContentString)
     Content.assign(ContentString.begin(), ContentString.end());
 }
 
+void FCurlHttpRequest::SetContentBuf(void* ptr, uint64_t len)
+{
+    Content.assign((uint8_t*)ptr, (uint8_t*)ptr + len - 1);
+}
+
 void FCurlHttpRequest::SetHeader(const std::string& HeaderName, const std::string& HeaderValue)
 {
     Headers[HeaderName] = HeaderValue;
@@ -170,6 +175,44 @@ void FCurlHttpRequest::AppendToHeader(const std::string& HeaderName, const std::
 void FCurlHttpRequest::SetMimePart(const MimePart_t part)
 {
     MimeParts.push_back(part);
+}
+
+
+void FCurlHttpRequest::SetRange(uint64_t begin, uint64_t end)
+{
+    if (end < begin) {
+        return;
+    }
+    auto itr = Ranges.begin();
+    for (; itr != Ranges.end();) {
+        if (begin <= itr->first) {
+            if (end < itr->first) {
+                Ranges.insert(itr, std::pair(begin, end));
+                break;
+            }
+            else {
+                end = std::max(itr->second, end);
+                itr = Ranges.erase(itr);
+                continue;
+            }
+        }
+        else if (begin > itr->second) {
+            std::advance(itr, 1);
+        }
+        else {
+            if (end <= itr->second) {
+                break;
+            }
+            else {
+                begin = std::min(itr->first, begin);
+                itr = Ranges.erase(itr);
+                continue;
+            }
+        }
+    }
+    if (itr == Ranges.end()) {
+        Ranges.push_back(std::pair(begin,end));
+    }
 }
 
 bool FCurlHttpRequest::ProcessRequest()

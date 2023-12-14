@@ -2,6 +2,8 @@
 #include "IHttpRequest.h"
 #include "curl/curl.h"
 #include <unordered_map>
+#include <list>
+
 class FCurlHttpManager;
 class FCurlHttpResponse;
 
@@ -14,7 +16,7 @@ public:
 	virtual std::string GetHeader(const std::string& HeaderName) override;
 	virtual std::vector<std::string> GetAllHeaders() override;
 	virtual std::string GetContentType() override;
-	virtual int32_t GetContentLength() override;
+	virtual int64_t GetContentLength() override;
 	virtual const std::vector<uint8_t>& GetContent() override;
 	virtual std::vector<MimePart_t> GetAllMime() override;
 
@@ -28,9 +30,11 @@ public:
 	virtual void SetQuery(const std::string& QueryName, const std::string& QueryValue) override;
 	virtual void SetContent(const std::vector<uint8_t>& ContentPayload) override;
 	virtual void SetContentAsString(const std::string& ContentString) override;
+	virtual void SetContentBuf(void* ptr, uint64_t len) override;
 	virtual void SetHeader(const std::string& HeaderName, const std::string& HeaderValue) override;
 	virtual void AppendToHeader(const std::string& HeaderName, const std::string& AdditionalHeaderValue) override;
 	virtual void SetMimePart(const MimePart_t part)override;
+	virtual void SetRange(uint64_t begin, uint64_t end )override;
 	virtual bool ProcessRequest() override;
 	virtual HttpRequestCompleteDelegateType& OnProcessRequestComplete() override;
 	virtual HttpRequestProgressDelegateType& OnRequestProgress() override;
@@ -57,7 +61,7 @@ private:
 	CURLcode CurlCompletionResult;
 	bool bCompleted{false};
 	bool bCanceled{false};
-
+	std::list<std::pair<uint64_t,uint64_t>> Ranges;
 
 	FCurlHttpManager* Manager;
 	std::shared_ptr<FCurlHttpResponse> Response;
@@ -90,7 +94,7 @@ public:
 	virtual std::vector<std::string> GetAllHeaders()override;
 	virtual std::vector<MimePart_t> GetAllMime() override;
 	virtual std::string GetContentType();
-	virtual int32_t GetContentLength() { return ContentLength; };
+	virtual int64_t GetContentLength() { return ContentLength; };
 	virtual const std::vector<uint8_t>& GetContent() { return Content; };
 	FCurlHttpRequest* GetRequest() { return CurlRequest; }
 
@@ -104,8 +108,8 @@ private:
 	bool bSucceeded{ false };
 	bool bIsReady{ false };
 	int32_t HttpCode;
-	int32_t ContentLength;
-	int32_t TotalBytesRead{0};
+	int64_t ContentLength{ -1 };
+	int64_t TotalBytesRead{0};
 	std::unordered_map<std::string, std::string> Headers;
 	std::vector<uint8_t> Content;
 	

@@ -7,12 +7,19 @@
 #include <mutex>
 
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
-
+typedef struct {
+    CurlHttpRequestPtr HttpReq;
+    int64_t OldSize;
+    int64_t NewSize;
+}CurlDownloadProgress_t;
 //typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
 class FCurlHttpManager :public FHttpManager {
 
 public:
-    
+    enum ECurlState {
+        INVALID,
+        READY,
+    };
     FCurlHttpManager();
 
 
@@ -71,16 +78,18 @@ private:
     std::list<CurlHttpRequestPtr> Reqs;
 
 
-    //h:wr m:wr
+    //http:wr main:wr
     std::mutex ReqMutex;
     std::set<CurlHttpRequestPtr> FinishedRequests;
     std::list<CurlHttpRequestPtr> RunningRequests;
-
+    std::mutex ProgressMutex;
+    std::list<CurlDownloadProgress_t> RunningProgressList;
 
     //http thread
     std::list<CurlHttpRequestPtr> RunningThreadedRequests;
-    CURLM* MultiHandle;
-    CURLSH* ShareHandle;
+    CURLM* MultiHandle{nullptr};
+    CURLSH* ShareHandle{ nullptr };
    
     std::unordered_map<void*, CurlHttpRequestPtr> HandlesToRequests;
+    ECurlState CurlState{INVALID};
 };
