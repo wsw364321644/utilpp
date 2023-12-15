@@ -12,6 +12,7 @@ const uint32_t FDownloader::BUF_CHUNK_NUM = 3;
 
 FDownloadFile::FDownloadFile(std::string url, std::string path) : Path(path), URL(url){}
 FDownloadFile::FDownloadFile(std::string url, std::string* content) : Content(content), URL(url) {}
+
 FDownloadFile::FDownloadFile(std::string url, std::filesystem::path folder) : Path(folder), URL(url) {}
 FDownloadFile::FDownloadFile() {}
 FDownloadFile::~FDownloadFile()
@@ -20,7 +21,7 @@ FDownloadFile::~FDownloadFile()
 
 void FDownloadFile::SetFileSize(uint64_t size)
 {
-    Size = size;
+    Size.store(size);
     ChunkNum = Size / FDownloadFile::CHUNK_SIZE + (Size % FDownloadFile::CHUNK_SIZE > 0 ? 1 : 0);
     for (int i = 0; i * CHAR_BIT < ChunkNum; i++) {
         ChunksCompleteFlag.push_back(std::byte{ 0 });
@@ -140,6 +141,14 @@ bool FDownloadFile::CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk)
     assert(file_chunk->File.get() == this );
     ChunksCompleteFlag[file_chunk->ChunkIndex / 8] |= (std::byte(1) << file_chunk->ChunkIndex % 8);
     return true;
+}
+
+uint64_t FDownloadFile::GetChunkSize(uint32_t index)
+{
+    if (Size / FDownloadFile::CHUNK_SIZE > index) {
+        return FDownloadFile::CHUNK_SIZE;
+    }
+    return Size % FDownloadFile::CHUNK_SIZE;
 }
 
 bool FDownloadFile::Open()
@@ -287,10 +296,10 @@ FDownloader* FDownloader::Instance() {
 FDownloader::~FDownloader()
 {
 }
-DownloadTaskHandle FDownloader::AddTask(std::string url, std::string path) {
-    FDownloadFile* df = new FDownloadFile(url, path);
-    return AddTask(df);
-}
+//DownloadTaskHandle FDownloader::AddTask(std::string url, std::string path) {
+//    FDownloadFile* df = new FDownloadFile(url, path);
+//    return AddTask(df);
+//}
 
 DownloadTaskHandle FDownloader::AddTask(std::string url, std::string* content)
 {
@@ -301,6 +310,24 @@ DownloadTaskHandle FDownloader::AddTask(std::string url, std::filesystem::path f
 {
     FDownloadFile* df = new FDownloadFile(url, folder.u8string().c_str());
     return AddTask(df);
+}
+
+std::optional<FDownloader::TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle handle) {
+    auto itr=Files.find(handle);
+    if (itr == Files.end()) {
+        return std::nullopt;
+    }
+    auto& pfile = itr->second;
+    FDownloader::TaskStatus_t status{};
+    status.DownloadSize = pfile->DownloadSize.load();
+    status.Size = pfile->Size.load();
+    status.PreDownloadSize = pfile->PreDownloadSize.load();
+    status.LastTime = pfile->LastTime.load();
+    status.PreTime = pfile->PreTime.load();
+    std::unique_lock lock{ FilesMtx , std::try_to_lock };
+    if (lock.owns_lock()) {
+        status.ChunksCompleteFlag = pfile->ChunksCompleteFlag;
+    }
 }
 
 void FDownloader::Tick()
@@ -368,6 +395,9 @@ void FDownloader::Tick()
 
         case EFileTaskStatus::Download: {
             while (true) {
+                if (pfile->DownloadSize == pfile->Size) {
+                    pfile->Status = EFileTaskStatus::Finished;
+                }
                 if (pfile->IsAllChunkInDownload()) {
                     break;
                 }
@@ -457,5 +487,13 @@ void FDownloader::IOThreadTick()
         for (auto& chunk:CompleteChunk) {
             chunk->File->CompleteChunk(chunk);
         }
+    }
+    for (auto& chunk : CompleteChunk) {
+        auto presize=chunk->File->DownloadSize.fetch_add(chunk->GetChunkSize());
+        chunk->File->PreDownloadSize.store(presize);
+        auto now = std::chrono::steady_clock::now();
+        auto stamp= std::chrono::duration_cast<std::chrono::milliseconds>( now.time_since_epoch()).count();
+        auto prestamp=chunk->File->LastTime.exchange(stamp);
+        chunk->File->PreTime.store(prestamp);
     }
 }

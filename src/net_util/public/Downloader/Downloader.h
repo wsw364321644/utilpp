@@ -34,21 +34,8 @@ typedef std::function< void(int64_t total, int64_t now)>  FDownloadProgressDeleg
 typedef std::function< void(EDownloadCode code, int http_code)> FDownloadFinishedDelegate;
 class FDownloadFile;
 class FDownloadBuf;
-typedef struct file_chunk_s {
-    uint32_t ChunkIndex{ 0 };
-    uint32_t DownloadSize{ 0 };
-    std::shared_ptr<FDownloadFile> File;
-    std::shared_ptr<FDownloadBuf> Buf;
-    char* BufCursor{ nullptr };
-    std::pair<uint64_t, uint64_t> GetRange() {
-        auto begin = FDownloadFile::CHUNK_SIZE * ChunkIndex;
-        auto end = begin + FDownloadFile::CHUNK_SIZE - 1;
-        return std::pair(begin, end + 1 > File->Size ? File->Size : end + 1);
-    }
-    uint64_t GetChunkSize() {
-        return FDownloadFile::CHUNK_SIZE;
-    }
-}file_chunk_t;
+struct file_chunk_t;
+
 
 class  FDownloadBuf : public std::enable_shared_from_this<FDownloadBuf> {
 public:
@@ -79,6 +66,7 @@ enum class EFileTaskStatus {
     Finished,
 };
 
+
 class FDownloadFile : public std::enable_shared_from_this<FDownloadFile> {
 public:
 
@@ -96,7 +84,7 @@ public:
 
     size_t SavaDate(std::shared_ptr<file_chunk_t> file_chunk);
     bool CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk);
-
+    uint64_t GetChunkSize(uint32_t index);
     //FDownloadFile& operator=(const FDownloadFile& other) = delete;
     //FDownloadFile(FDownloadFile&) = delete;
     //FDownloadFile& operator=(const FDownloadFile&& other) = delete;
@@ -107,7 +95,11 @@ public:
     EDownloadCode Code{ EDownloadCode::OK };
     std::string URL;
     EFileTaskStatus Status{ EFileTaskStatus::Idle };
-    uint64_t Size{ 0 };
+    std::atomic_uint64_t Size{ 0 };
+    std::atomic_uint64_t DownloadSize{ 0 };
+    std::atomic_uint64_t PreDownloadSize{ 0 };
+    std::atomic_uint64_t LastTime;
+    std::atomic_uint64_t PreTime;
     std::filesystem::path Path;
     std::string* Content{ nullptr };
     std::vector<std::byte> ChunksCompleteFlag;
@@ -123,24 +115,48 @@ private:
     FDownloadFile();
 };
 
-class FDownloadFileNet :public FDownloadFile {
-    FDownloadFileNet(FDownloadFile& right) :FDownloadFile(right) {}
-};
-class FDownloadFileLocal :public FDownloadFile {
-    FDownloadFileLocal(FDownloadFile& right) :FDownloadFile(right) {}
-public:
-    uint64_t DownloadSize;
-    std::shared_ptr<FDownloadFileNet> NetFileTask;
-};
+typedef struct file_chunk_s {
+    uint32_t ChunkIndex{ 0 };
+    uint32_t DownloadSize{ 0 };
+    std::shared_ptr<FDownloadFile> File;
+    std::shared_ptr<FDownloadBuf> Buf;
+    char* BufCursor{ nullptr };
+    std::pair<uint64_t, uint64_t> GetRange() {
+        auto begin = FDownloadFile::CHUNK_SIZE * ChunkIndex;
+        auto end = begin + FDownloadFile::CHUNK_SIZE - 1;
+        auto filesize = File->Size.load();
+        return std::pair(begin, end + 1 > filesize ? filesize : end + 1);
+    }
+    uint64_t GetChunkSize() {
+        return FDownloadFile::CHUNK_SIZE;
+    }
+}file_chunk_t;
+//class FDownloadFileNet :public FDownloadFile {
+//    FDownloadFileNet(FDownloadFile& right) :FDownloadFile(right) {}
+//};
+//class FDownloadFileLocal :public FDownloadFile {
+//    FDownloadFileLocal(FDownloadFile& right) :FDownloadFile(right) {}
+//public:
+//    //std::shared_ptr<FDownloadFileNet> NetFileTask;
+//};
 class FDownloader
 {
 public:
     static FDownloader* Instance();
     ~FDownloader();
-    DownloadTaskHandle AddTask(std::string url, std::string folder);
+    //DownloadTaskHandle AddTask(std::string url, std::string folder);
     DownloadTaskHandle AddTask(std::string url, std::string* content);
     DownloadTaskHandle AddTask(std::string url, std::filesystem::path folder);
 
+    typedef struct {
+        uint64_t Size{ 0 };
+        uint64_t DownloadSize{ 0 };
+        uint64_t PreDownloadSize{ 0 };
+        uint64_t LastTime;
+        uint64_t PreTime;
+        std::vector<std::byte> ChunksCompleteFlag;
+    }TaskStatus_t;
+    std::optional<TaskStatus_t> GetTaskStatus(DownloadTaskHandle handle);
     void Tick();
     void NetThreadTick();
     void IOThreadTick();
@@ -168,7 +184,7 @@ private:
     std::mutex BufIOCompleteMtx;
     std::mutex BufPoolMtx;
 
-    std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFileLocal>> Files;
+    std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFile>> Files;
     FCurlHttpManager HttpManager;
 
     //std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFileNet>> FilesInProgress;
