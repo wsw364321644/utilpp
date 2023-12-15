@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <atomic>
 #include <functional>
-#include "hash.h"
+
 
 typedef struct CommonHandle
 {
