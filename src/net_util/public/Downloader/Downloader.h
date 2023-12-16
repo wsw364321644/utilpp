@@ -34,7 +34,7 @@ typedef std::function< void(int64_t total, int64_t now)>  FDownloadProgressDeleg
 typedef std::function< void(EDownloadCode code, int http_code)> FDownloadFinishedDelegate;
 class FDownloadFile;
 class FDownloadBuf;
-struct file_chunk_t;
+typedef struct file_chunk_s file_chunk_t;
 
 
 class  FDownloadBuf : public std::enable_shared_from_this<FDownloadBuf> {
@@ -104,7 +104,7 @@ public:
     std::string* Content{ nullptr };
     std::vector<std::byte> ChunksCompleteFlag;
     std::vector<std::byte> ChunksDownloadFlag;
-    uint32_t ChunkNum;
+    uint32_t ChunkNum{ 0 };
     std::set<HttpRequestPtr> RequestPool;
     std::unordered_map<HttpRequestPtr, file_chunk_t> Requests;
     bool Open();
@@ -125,10 +125,10 @@ typedef struct file_chunk_s {
         auto begin = FDownloadFile::CHUNK_SIZE * ChunkIndex;
         auto end = begin + FDownloadFile::CHUNK_SIZE - 1;
         auto filesize = File->Size.load();
-        return std::pair(begin, end + 1 > filesize ? filesize : end + 1);
+        return std::pair(begin, end  > filesize-1 ? filesize-1 : end + 1);
     }
     uint64_t GetChunkSize() {
-        return FDownloadFile::CHUNK_SIZE;
+        return GetRange().second- GetRange().first+1;
     }
 }file_chunk_t;
 //class FDownloadFileNet :public FDownloadFile {
@@ -148,12 +148,13 @@ public:
     DownloadTaskHandle AddTask(std::string url, std::string* content);
     DownloadTaskHandle AddTask(std::string url, std::filesystem::path folder);
 
-    typedef struct {
+    typedef struct TaskStatus_s {
         uint64_t Size{ 0 };
         uint64_t DownloadSize{ 0 };
         uint64_t PreDownloadSize{ 0 };
-        uint64_t LastTime;
-        uint64_t PreTime;
+        uint64_t LastTime{ 0 };
+        uint64_t PreTime{ 0 };
+        bool IsCompelete{ false };
         std::vector<std::byte> ChunksCompleteFlag;
     }TaskStatus_t;
     std::optional<TaskStatus_t> GetTaskStatus(DownloadTaskHandle handle);
@@ -187,7 +188,6 @@ private:
     std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFile>> Files;
     FCurlHttpManager HttpManager;
 
-    //std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFileNet>> FilesInProgress;
     BufList BufPool;
     BufList  BufInIO;
     BufList  BufIOComplete;

@@ -8,7 +8,7 @@
 
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
 typedef struct {
-    CurlHttpRequestPtr HttpReq;
+    FCurlHttpRequest* HttpReq;
     int64_t OldSize;
     int64_t NewSize;
 }CurlDownloadProgress_t;

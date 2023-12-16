@@ -35,7 +35,9 @@ FCurlHttpManager::FCurlHttpManager()
 HttpRequestPtr FCurlHttpManager::NewRequest()
 {
     //return std::make_shared<CurlHttpRequest>(this);
-    return std::shared_ptr<FCurlHttpRequest>(new FCurlHttpRequest(this));
+    auto req= std::shared_ptr<FCurlHttpRequest>(new FCurlHttpRequest(this));
+	req->Response = std::make_shared<FCurlHttpResponse>(req.get());
+	return req;
 }
 
 bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
@@ -47,7 +49,8 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 	}
 	SetupLocalRequest(creq);
 
-	auto ThreadedRequest = std::make_shared<FCurlHttpRequest>(*creq);
+	//auto ThreadedRequest = std::make_shared<FCurlHttpRequest>(*creq);
+	auto ThreadedRequest = creq;
 	if (!SetupRequest(ThreadedRequest))
 	{
 		LOG_WARNING("Could not set libcurl options for easy handle, processing HTTP request failed. Increase verbosity for additional information.");
@@ -64,7 +67,6 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 	Reqs.push_back(creq);
 	ReqsMap[creq]= ThreadedRequest;
 	LOG_DEBUG("{:x}: threaded {:x}", (int32_t)creq.get(), (int32_t)ThreadedRequest.get());
-	ThreadedRequest->Response = std::make_shared<FCurlHttpResponse>(ThreadedRequest.get());
 	{
 		std::scoped_lock(ReqMutex);
 		RunningRequests.push_back(ThreadedRequest);
@@ -103,7 +105,7 @@ void FCurlHttpManager::Tick()
 		auto result = std::find_if(
 			ReqsMap.begin(),
 			ReqsMap.end(),
-			[&LocalRunningProgress](const auto& pair) {return pair.second == LocalRunningProgress.HttpReq; });
+			[&LocalRunningProgress](const auto& pair) {return pair.second.get() == LocalRunningProgress.HttpReq; });
 		if (result == ReqsMap.end()) {
 			continue;
 		}
@@ -217,10 +219,11 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
 
 			LOG_DEBUG("ReceiveResponseHeaderCallback {:x}: Received response header '{}'.", (int32_t)cresp.get(), Header);
 			std::string HeaderKey, HeaderValue;
-			if (Header.find(":" )>=0)
+			auto i = Header.find(":");
+			if (i != std::string::npos)
 			{
-				HeaderKey = Header.substr(0, Header.find(":")-1);
-				HeaderValue = Header.substr(Header.find(":")+1, Header.size());
+				HeaderKey = Header.substr(0, i);
+				HeaderValue = Header.substr(i+1, Header.size());
 				auto itr=cresp->Headers.find(HeaderKey);
 				if (itr != cresp->Headers.end()) {
 					cresp->Headers[HeaderKey].append(", ");
@@ -235,6 +238,9 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
 				{
 					cresp->ContentLength = std::atoi(HeaderValue.c_str());
 				}
+			}
+			else {
+				cresp->Headers[HeaderKey] = "";
 			}
 			return HeaderSize;
 		}
@@ -270,7 +276,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 		if (SizeToDownload > 0)
 		{
 			auto oldsize = Response->TotalBytesRead;
-			Response->Content.resize(Response->TotalBytesRead+ SizeToDownload);
+			Response->Content.reserve(Response->TotalBytesRead+ SizeToDownload);
 			memcpy(Response->Content.data()+ Response->TotalBytesRead, Ptr, SizeToDownload);
 			Response->TotalBytesRead+=SizeToDownload;
 			{
@@ -317,8 +323,6 @@ void FCurlHttpManager::HttpThreadAddTask()
 	}
 	auto itr = RunningThreadedRequests.begin();
 	for (std::advance(itr, oldsize); itr != RunningThreadedRequests.end(); ) {
-		
-
 		CURLMcode AddResult = curl_multi_add_handle(MultiHandle, (*itr)->EasyHandle);
 		(*itr)->CurlAddToMultiResult=AddResult;
 

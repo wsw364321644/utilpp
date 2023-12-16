@@ -30,7 +30,7 @@ public:
 	virtual void SetQuery(const std::string& QueryName, const std::string& QueryValue) override;
 	virtual void SetContent(const std::vector<uint8_t>& ContentPayload) override;
 	virtual void SetContentAsString(const std::string& ContentString) override;
-	virtual void SetContentBuf(void* ptr, uint64_t len) override;
+
 	virtual void SetHeader(const std::string& HeaderName, const std::string& HeaderValue) override;
 	virtual void AppendToHeader(const std::string& HeaderName, const std::string& AdditionalHeaderValue) override;
 	virtual void SetMimePart(const MimePart_t part)override;
@@ -97,7 +97,7 @@ public:
 	virtual int64_t GetContentLength() { return ContentLength; };
 	virtual const std::vector<uint8_t>& GetContent() { return Content; };
 	FCurlHttpRequest* GetRequest() { return CurlRequest; }
-
+	virtual void SetContentBuf(void* ptr, uint64_t len) override;
 
 	virtual int32_t GetResponseCode() { return HttpCode; };
 	virtual std::string GetContentAsString();
@@ -107,7 +107,7 @@ private:
 	FCurlHttpRequest* CurlRequest;
 	bool bSucceeded{ false };
 	bool bIsReady{ false };
-	int32_t HttpCode;
+	int32_t HttpCode{ 0 };
 	int64_t ContentLength{ -1 };
 	int64_t TotalBytesRead{0};
 	std::unordered_map<std::string, std::string> Headers;

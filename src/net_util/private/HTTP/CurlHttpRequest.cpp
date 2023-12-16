@@ -150,10 +150,6 @@ void FCurlHttpRequest::SetContentAsString(const std::string& ContentString)
     Content.assign(ContentString.begin(), ContentString.end());
 }
 
-void FCurlHttpRequest::SetContentBuf(void* ptr, uint64_t len)
-{
-    Content.assign((uint8_t*)ptr, (uint8_t*)ptr + len - 1);
-}
 
 void FCurlHttpRequest::SetHeader(const std::string& HeaderName, const std::string& HeaderValue)
 {
@@ -341,4 +337,9 @@ std::string FCurlHttpResponse::GetContentType()
 std::string FCurlHttpResponse::GetContentAsString()
 {
     return std::string((char*)Content.data());
+}
+
+void FCurlHttpResponse::SetContentBuf(void* ptr, uint64_t len)
+{
+    Content.assign((uint8_t*)ptr, (uint8_t*)ptr + len);
 }

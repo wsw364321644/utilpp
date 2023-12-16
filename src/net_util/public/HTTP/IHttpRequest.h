@@ -144,7 +144,7 @@ public:
 	 * @param ContentString - payload to set.
 	 */
 	virtual void SetContentAsString(const std::string& ContentString) = 0;
-	virtual void SetContentBuf(void* ptr, uint64_t len) =0;
+
 	/**
 	 * Sets optional header info.
 	 * SetHeader for a given HeaderName will overwrite any previous values
@@ -250,7 +250,7 @@ public:
 	 * @return the payload as a string.
 	 */
 	virtual std::string GetContentAsString() = 0;
-
+	virtual void SetContentBuf(void* ptr, uint64_t len) = 0;
 	/**
 	 * Destructor for overrides
 	 */
