@@ -13,6 +13,8 @@ set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 AddTargetInclude(${TARGET_NAME})
 
+target_link_libraries (${TARGET_NAME} PRIVATE fmt-header-only)
+
 if(UTILPP_ENABLE_LOG)
     target_compile_definitions(${TARGET_NAME} PRIVATE UTILPP_ENABLE_LOG)
     target_link_libraries (${TARGET_NAME} PRIVATE simple_logger)
