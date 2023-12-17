@@ -244,7 +244,7 @@ void FDownloader::TransferBuf()
             }
             if (itr == pbuf->ChunkList.end()&& pbuf->ChunkList.size()>0) {
                 DownloadCompleteBuf.push_back(pbuf);
-                BufPool.erase(pool_itr);
+                pool_itr=BufPool.erase(pool_itr);
             }
             else {
                 std::advance(pool_itr, 1);
@@ -453,14 +453,14 @@ void FDownloader::Tick()
                         pchunk->Buf->RemoveChunk(pchunk);
                         return;
                     }
-                    if (resp->GetContent().size() != pchunk->GetChunkSize()) {
+                    if (resp->GetContentBytesRead() != pchunk->GetChunkSize()) {
                         pchunk->File->RevertDownloadFilechunk(pchunk->ChunkIndex);
                         pchunk->Buf->RemoveChunk(pchunk);
                         LOG_ERROR("Downloaded size not equal range");
                         return;
                     }
                     req->OnRequestProgress() = nullptr;
-                    pchunk->DownloadSize = resp->GetContent().size();
+                    pchunk->DownloadSize = resp->GetContentBytesRead();
                     };
                 HttpManager.ProcessRequest(req);
                 
@@ -486,11 +486,14 @@ void FDownloader::IOThreadTick()
         IOLocalBufList.swap(BufInIO);
     }
     for(auto& buf: IOLocalBufList) {
-        for (auto itr = buf->ChunkList.begin(); itr != buf->ChunkList.end();std::advance(itr,1)) {
+        for (auto itr = buf->ChunkList.begin(); itr != buf->ChunkList.end();) {
             auto const& chunk = *itr;
             if (chunk->File->SavaDate(chunk) == chunk->GetChunkSize()) {
-                buf->ChunkList.erase(itr);
                 CompleteChunk.push_back(chunk);
+                itr=buf->ChunkList.erase(itr);
+            }
+            else {
+                std::advance(itr, 1);
             }
         }
     }
