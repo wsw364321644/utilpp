@@ -123,7 +123,7 @@ int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_siz
                 handle_ = INVALID_HANDLE_VALUE;
                 return ERR_FILE;
             }
-
+            file_size_ = expect_size;
             SetEndOfFile(handle_);
         }
     }
