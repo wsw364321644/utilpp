@@ -121,9 +121,13 @@ bool CharBuffer::FormatAppend(const char* format, ...)
                 else if (ch1 == 'l') {
                     char ch2 = format[j++];
                     // for long int 
-                    if (ch2 == 'u' || ch2 == 'd'
+                    if (ch2 == 'u') {
+                        auto num = va_arg(ptr, uint64_t);
+                        Append(std::to_string(num).c_str());
+                    }
+                    else if (ch2 == 'd'
                         || ch2 == 'i') {
-                        auto num = va_arg(ptr, long);
+                        auto num = va_arg(ptr, int64_t);
                         Append(std::to_string(num).c_str());
                     }
                     // for double 
