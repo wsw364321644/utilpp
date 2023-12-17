@@ -276,9 +276,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 		if (SizeToDownload > 0)
 		{
 			auto oldsize = Response->TotalBytesRead;
-			Response->Content.reserve(Response->TotalBytesRead+ SizeToDownload);
-			memcpy(Response->Content.data()+ Response->TotalBytesRead, Ptr, SizeToDownload);
-			Response->TotalBytesRead+=SizeToDownload;
+			Response->ContentAppend((char*)Ptr, SizeToDownload);
 			{
 				std::scoped_lock(ProgressMutex);
 				RunningProgressList.emplace_back( creq,oldsize,Response->TotalBytesRead );
@@ -539,10 +537,10 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
 		CharBuffer buf;
 		for (auto& range : creq->Ranges) {
 			if (range.second == InfiniteRange) {
-				buf.FormatAppend("%d-", range.first);
+				buf.FormatAppend("%lu-", range.first);
 			}
 			else {
-				buf.FormatAppend("%d-%d", range.first, range.second);
+				buf.FormatAppend("%lu-%lu", range.first, range.second);
 			}
 			if (&range != &*creq->Ranges.rbegin()) {
 				buf.FormatAppend(",");

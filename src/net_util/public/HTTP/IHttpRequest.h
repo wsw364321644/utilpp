@@ -250,7 +250,8 @@ public:
 	 * @return the payload as a string.
 	 */
 	virtual std::string GetContentAsString() = 0;
-	virtual void SetContentBuf(void* ptr, uint64_t len) = 0;
+	virtual int64_t GetContentBytesRead() = 0;
+	virtual void SetContentBuf(void* ptr, int64_t len) = 0;
 	/**
 	 * Destructor for overrides
 	 */

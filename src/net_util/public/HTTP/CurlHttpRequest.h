@@ -95,13 +95,14 @@ public:
 	virtual std::vector<MimePart_t> GetAllMime() override;
 	virtual std::string GetContentType();
 	virtual int64_t GetContentLength() { return ContentLength; };
-	virtual const std::vector<uint8_t>& GetContent() { return Content; };
+	virtual const std::vector<uint8_t>& GetContent();
 	FCurlHttpRequest* GetRequest() { return CurlRequest; }
-	virtual void SetContentBuf(void* ptr, uint64_t len) override;
-
+	virtual void SetContentBuf(void* Ptr, int64_t Len) override;
 	virtual int32_t GetResponseCode() { return HttpCode; };
+	virtual int64_t GetContentBytesRead() { return TotalBytesRead; };
 	virtual std::string GetContentAsString();
 
+	void ContentAppend(char* Data, size_t Len);
 	friend class FCurlHttpManager;
 private:
 	FCurlHttpRequest* CurlRequest;
@@ -112,6 +113,6 @@ private:
 	int64_t TotalBytesRead{0};
 	std::unordered_map<std::string, std::string> Headers;
 	std::vector<uint8_t> Content;
-	
-
+	char* UserBuf{ 0 };
+	int64_t UserBufLen{ 0 };
 };

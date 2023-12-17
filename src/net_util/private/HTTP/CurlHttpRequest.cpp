@@ -334,12 +334,33 @@ std::string FCurlHttpResponse::GetContentType()
     return GetHeader("Content-Type");
 }
 
-std::string FCurlHttpResponse::GetContentAsString()
+const std::vector<uint8_t>& FCurlHttpResponse::GetContent()
 {
-    return std::string((char*)Content.data());
+   return Content; 
 }
 
-void FCurlHttpResponse::SetContentBuf(void* ptr, uint64_t len)
+std::string FCurlHttpResponse::GetContentAsString()
 {
-    Content.assign((uint8_t*)ptr, (uint8_t*)ptr + len);
+    return std::string((char*)Content.data(), Content.size());
+}
+
+void FCurlHttpResponse::SetContentBuf(void* Ptr, int64_t Len)
+{
+    UserBuf = (char*)Ptr;
+    UserBufLen = Len;
+}
+
+void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
+{
+    if (UserBuf) {
+        auto writelen = UserBufLen >= TotalBytesRead + Len ? Len : UserBufLen - TotalBytesRead;
+        if (writelen > 0) {
+            memcpy(UserBuf + TotalBytesRead, Data, writelen);
+        }
+    }
+    else {
+        Content.reserve(TotalBytesRead + Len);
+        memcpy(Content.data() + TotalBytesRead, Data, Len); 
+    }
+    TotalBytesRead += Len;
 }
