@@ -171,6 +171,9 @@ public:
 	*/
 	virtual void AppendToHeader(const std::string& HeaderName, const std::string& AdditionalHeaderValue) = 0;
 
+	/**
+	* Set Mime Data(ie form-data)
+	*/
 	virtual void SetMimePart(const MimePart_t part) = 0;
 	/**
 	 * Called to begin processing the request.
@@ -250,7 +253,17 @@ public:
 	 * @return the payload as a string.
 	 */
 	virtual std::string GetContentAsString() = 0;
+
+	/**
+	* Get payload length not the content-length header.
+	*/
 	virtual int64_t GetContentBytesRead() = 0;
+
+	/**
+	* Use user buf in response.
+	* After set GetContentAsString and GetContent will return empty vector.
+	* If payload larger than buf. the extra data will be discard.
+	*/
 	virtual void SetContentBuf(void* ptr, int64_t len) = 0;
 	/**
 	 * Destructor for overrides
