@@ -72,7 +72,7 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
         std::scoped_lock(ReqMutex);
         RunningRequests.push_back(ThreadedRequest);
     }
-    LOG_DEBUG("{:x}: request(easy handle : {:x}) has been added to threaded queue for processing", (int32_t)ThreadedRequest.get(), (int32_t)ThreadedRequest->EasyHandle);
+    LOG_DEBUG("{}: request(easy handle : {:x}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (int32_t)ThreadedRequest->EasyHandle);
     return true;
 }
 
@@ -84,14 +84,14 @@ void FCurlHttpManager::Tick()
         LocalFinishedRequests.swap(FinishedRequests);
     }
     for (auto& FinishedRequest : LocalFinishedRequests) {
-        auto res_itr = std::find(std::cbegin(Reqs), std::cend(Reqs), FinishedRequest);
+        auto res_itr = std::find(std::begin(Reqs), std::end(Reqs), FinishedRequest);
 
-        if (res_itr == std::cend(Reqs)) {
+        if (res_itr == std::end(Reqs)) {
             LOG_ERROR("finished threaded request cant found {}", (int32_t)FinishedRequest.get());
             continue;
         }
-        FinishRequest(*res_itr);
-        std::erase(Reqs, res_itr);
+        FinishRequest(*res_itr); 
+        Reqs.erase(res_itr);
     }
 
     std::list<CurlDownloadProgress_t> LocalRunningProgressList;
@@ -100,7 +100,9 @@ void FCurlHttpManager::Tick()
         LocalRunningProgressList.swap(RunningProgressList);
     }
     for (auto& LocalRunningProgress : LocalRunningProgressList) {
-        auto res_itr = std::find(std::cbegin(Reqs), std::cend(Reqs), LocalRunningProgress.HttpReq);
+        auto res_itr = std::find_if(std::cbegin(Reqs), std::cend(Reqs), [&LocalRunningProgress](const CurlHttpRequestPtr& ptr)->bool {
+            return ptr.get() == LocalRunningProgress.HttpReq;
+            });
         if (res_itr == std::cend(Reqs)) {
             continue;
         }
@@ -266,13 +268,13 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 
         LOG_DEBUG("ReceiveResponseBodyCallback {:x}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
             (int32_t)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
-            SizeInBlocks, BlockSizeInBytes, Response->TotalBytesRead, Response->GetContentLength(), SizeToDownload
+            SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
         );
 
         // note that we can be passed 0 bytes if file transmitted has 0 length
         if (SizeToDownload > 0)
         {
-            auto oldsize = Response->TotalBytesRead.load();
+            auto oldsize = Response->GetContentBytesRead();
             Response->ContentAppend((char*)Ptr, SizeToDownload);
             {
                 std::scoped_lock(ProgressMutex);
