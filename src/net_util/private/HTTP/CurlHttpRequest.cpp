@@ -9,7 +9,7 @@
 
 
 template <typename Out>
-void split(const std::string& str,const char* delimstr, Out result) {
+void split(const std::string& str, const char* delimstr, Out result) {
     //using std::operator""sv;
     //constexpr auto delim{ "&"sv};
     //auto delim = std::string_view{ delimstr, strlen(delimstr) };
@@ -19,7 +19,7 @@ void split(const std::string& str,const char* delimstr, Out result) {
     //}
 
 
-    size_t pos = 0,cursor=0;
+    size_t pos = 0, cursor = 0;
     std::string token;
     while ((pos = str.find(delimstr, cursor)) != std::string::npos) {
         token = str.substr(cursor, pos);
@@ -32,7 +32,7 @@ void split(const std::string& str,const char* delimstr, Out result) {
 
 FCurlHttpRequest::FCurlHttpRequest(FCurlHttpManager* inManager) : Manager(inManager)
 {
-    
+
 }
 
 FCurlHttpRequest::~FCurlHttpRequest()
@@ -48,7 +48,7 @@ std::string FCurlHttpRequest::GetURL()
 std::string FCurlHttpRequest::GetURLParameter(const std::string& ParameterName)
 {
     ParsedURL_t res;
-    ParseUrl(URL,&res);
+    ParseUrl(URL, &res);
     if (res.outQuery) {
         std::vector<std::string> pairs;
         split(*res.outQuery, "&", std::back_inserter(pairs));
@@ -65,7 +65,7 @@ std::string FCurlHttpRequest::GetURLParameter(const std::string& ParameterName)
 
 std::string FCurlHttpRequest::GetHeader(const std::string& HeaderName)
 {
-    auto itr=Headers.find(HeaderName);
+    auto itr = Headers.find(HeaderName);
     if (itr != Headers.end()) {
         return itr->second;
     }
@@ -75,7 +75,7 @@ std::string FCurlHttpRequest::GetHeader(const std::string& HeaderName)
 std::vector<std::string> FCurlHttpRequest::GetAllHeaders()
 {
     std::vector<std::string> out;
-    std::transform(Headers.begin(), Headers.end(), std::back_inserter(out), [](auto& kv) { return kv.first+":"+ kv.second; });
+    std::transform(Headers.begin(), Headers.end(), std::back_inserter(out), [](auto& kv) { return kv.first + ":" + kv.second; });
     return out;
 }
 
@@ -207,7 +207,7 @@ void FCurlHttpRequest::SetRange(uint64_t begin, uint64_t end)
         }
     }
     if (itr == Ranges.end()) {
-        Ranges.push_back(std::pair(begin,end));
+        Ranges.push_back(std::pair(begin, end));
     }
 }
 
@@ -304,7 +304,7 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
 size_t FCurlHttpRequest::StaticDebugCallback(CURL* Handle, curl_infotype DebugInfoType, char* DebugInfo, size_t DebugInfoSize, void* UserData)
 {
     auto creq = (FCurlHttpRequest*)UserData;
-    return creq->DebugCallback(Handle, DebugInfoType, DebugInfo, DebugInfoSize,UserData);
+    return creq->DebugCallback(Handle, DebugInfoType, DebugInfo, DebugInfoSize, UserData);
 }
 
 
@@ -336,7 +336,7 @@ std::string FCurlHttpResponse::GetContentType()
 
 const std::vector<uint8_t>& FCurlHttpResponse::GetContent()
 {
-   return Content; 
+    return Content;
 }
 
 std::string FCurlHttpResponse::GetContentAsString()
@@ -360,7 +360,7 @@ void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
     }
     else {
         Content.reserve(TotalBytesRead + Len);
-        memcpy(Content.data() + TotalBytesRead, Data, Len); 
+        memcpy(Content.data() + TotalBytesRead, Data, Len);
     }
     TotalBytesRead += Len;
 }

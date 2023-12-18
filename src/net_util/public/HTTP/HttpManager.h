@@ -13,7 +13,7 @@ public:
     void RigisterRequsetClass() {
         FnCreate = []() -> HttpRequestPtr {
             return std::make_shared<T>();
-        };
+            };
     };
 
     virtual HttpRequestPtr NewRequest();

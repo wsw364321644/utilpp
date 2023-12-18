@@ -25,7 +25,7 @@ public:
 
     virtual HttpRequestPtr NewRequest() override;
     virtual bool ProcessRequest(HttpRequestPtr);
-    virtual void Tick() ;
+    virtual void Tick();
 
     void HttpThreadTick();
 
@@ -63,7 +63,7 @@ private:
 
 
 
-    size_t UploadCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes,FCurlHttpRequest* creq);
+    size_t UploadCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, FCurlHttpRequest* creq);
     size_t ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, FCurlHttpRequest* creq);
     size_t ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, FCurlHttpRequest* creq);
     static size_t StaticUploadCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, void* UserData);
@@ -89,7 +89,7 @@ private:
 
     //http thread
     std::list<CurlHttpRequestPtr> RunningThreadedRequests;
-    CURLM* MultiHandle{nullptr};
+    CURLM* MultiHandle{ nullptr };
     CURLSH* ShareHandle{ nullptr };
 
 };

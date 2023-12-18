@@ -4,4 +4,3 @@ HttpRequestPtr FHttpManager::NewRequest()
 {
     return FnCreate();
 }
-
