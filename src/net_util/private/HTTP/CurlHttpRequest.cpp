@@ -255,45 +255,45 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
     {
     case CURLINFO_TEXT:
     {
-        LOG_DEBUG("{:x}:{}", (int32_t)this, std::string(DebugInfo, DebugInfoSize));
+        LOG_DEBUG("{}:{}", (void*)this, std::string(DebugInfo, DebugInfoSize));
     }
     break;
 
     case CURLINFO_HEADER_IN:
     {
-        LOG_DEBUG("{:x}: Received header ({} bytes)", (int32_t)this, DebugInfoSize);
+        LOG_DEBUG("{}: Received header ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     case CURLINFO_HEADER_OUT:
     {
-        LOG_DEBUG("{:x}: Sent header ({} bytes) - {}", (int32_t)this, DebugInfoSize, std::string(DebugInfo, DebugInfoSize));
+        LOG_DEBUG("{}: Sent header ({} bytes) - {}", (void*)this, DebugInfoSize, std::string(DebugInfo, DebugInfoSize));
     }
     break;
 
     case CURLINFO_DATA_IN:
     {
-        LOG_DEBUG("{:x}: Received data ({} bytes)", (int32_t)this, DebugInfoSize);
+        LOG_DEBUG("{}: Received data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     case CURLINFO_DATA_OUT:
     {
-        LOG_DEBUG("{:x}: Sent data ({} bytes)", (int32_t)this, DebugInfoSize);
+        LOG_DEBUG("{}: Sent data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
 
     case CURLINFO_SSL_DATA_IN:
     {
-        LOG_DEBUG("{:x}: Received SSL data ({} bytes)", (int32_t)this, DebugInfoSize);
+        LOG_DEBUG("{}: Received SSL data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     case CURLINFO_SSL_DATA_OUT:
     {
-        LOG_DEBUG("{:x}: Sent SSL data ({} bytes)", (int32_t)this, DebugInfoSize);
+        LOG_DEBUG("{}: Sent SSL data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     default:
     {
-        LOG_DEBUG("{:x}: DebugCallback: Unknown DebugInfoType={} (DebugInfoSize: {} bytes)", (int32_t)this, (int32_t)DebugInfoType, DebugInfoSize);
+        LOG_DEBUG("{}: DebugCallback: Unknown DebugInfoType={} (DebugInfoSize: {} bytes)", (void*)this, (int32_t)DebugInfoType, DebugInfoSize);
     }
     break;
     }
