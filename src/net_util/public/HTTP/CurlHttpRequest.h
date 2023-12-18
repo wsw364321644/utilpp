@@ -109,8 +109,8 @@ private:
 	bool bSucceeded{ false };
 	bool bIsReady{ false };
 	int32_t HttpCode{ 0 };
-	int64_t ContentLength{ -1 };
-	int64_t TotalBytesRead{0};
+	std::atomic_int64_t ContentLength{ -1 };
+	std::atomic_int64_t TotalBytesRead{ 0 };
 	std::unordered_map<std::string, std::string> Headers;
 	std::vector<uint8_t> Content;
 	char* UserBuf{ 0 };

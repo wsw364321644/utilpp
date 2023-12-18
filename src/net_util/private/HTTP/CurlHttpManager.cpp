@@ -44,7 +44,9 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 {
 
 	auto creq = std::dynamic_pointer_cast<FCurlHttpRequest>(req);
-	if (ReqsMap.find(creq)!= ReqsMap.end()) {
+	
+	auto resitr=std::find(Reqs.cbegin(),Reqs.cend(), creq);
+	if (resitr!= Reqs.cend()) {
 		return false;
 	}
 	SetupLocalRequest(creq);
@@ -65,7 +67,6 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 	
 	// Response object to handle data that comes back after starting this request
 	Reqs.push_back(creq);
-	ReqsMap[creq]= ThreadedRequest;
 	LOG_DEBUG("{:x}: threaded {:x}", (int32_t)creq.get(), (int32_t)ThreadedRequest.get());
 	{
 		std::scoped_lock(ReqMutex);
@@ -83,17 +84,14 @@ void FCurlHttpManager::Tick()
 		LocalFinishedRequests.swap(FinishedRequests);		
 	}
 	for (auto& FinishedRequest : LocalFinishedRequests) {
-		auto it = std::find_if(std::begin(ReqsMap), std::end(ReqsMap),
-			[&](auto&& p) { return p.second == FinishedRequest; });
+		auto res_itr = std::find(std::cbegin(Reqs), std::cend(Reqs), FinishedRequest);
 
-		if (it == std::end(ReqsMap)) {
+		if (res_itr == std::cend(Reqs)) {
 			LOG_ERROR("finished threaded request cant found {}", (int32_t)FinishedRequest.get());
 			continue;
 		}
-		*it->first = *it->second;
-		FinishRequest(it->first);
-		std::erase(Reqs, it->first);
-		ReqsMap.erase(it);
+		FinishRequest(*res_itr);
+		std::erase(Reqs, res_itr);
 	}
 
 	std::list<CurlDownloadProgress_t> LocalRunningProgressList;
@@ -102,14 +100,11 @@ void FCurlHttpManager::Tick()
 		LocalRunningProgressList.swap(RunningProgressList);
 	}
 	for (auto& LocalRunningProgress : LocalRunningProgressList) {
-		auto result = std::find_if(
-			ReqsMap.begin(),
-			ReqsMap.end(),
-			[&LocalRunningProgress](const auto& pair) {return pair.second.get() == LocalRunningProgress.HttpReq; });
-		if (result == ReqsMap.end()) {
+		auto res_itr = std::find(std::cbegin(Reqs), std::cend(Reqs), LocalRunningProgress.HttpReq);
+		if (res_itr == std::cend(Reqs)) {
 			continue;
 		}
-		auto& localReq = result->first;
+		auto& localReq = *res_itr;
 		localReq->OnRequestProgress()(localReq, LocalRunningProgress.OldSize, LocalRunningProgress.NewSize, LocalRunningProgress.HttpReq->Response->GetContentLength());
 	}
 }
@@ -151,10 +146,12 @@ void FCurlHttpManager::HttpThreadTick()
 						CurlHttpRequestPtr CurlRequest = multiHandleItr->second;
 						auto itr = std::find(RunningThreadedRequests.begin(), RunningThreadedRequests.end(), CurlRequest);
 						if(itr != RunningThreadedRequests.end()){
-							std::scoped_lock lock(ReqMutex);
 							(*itr)->bCompleted = true;
 							(*itr)->CurlCompletionResult = Message->data.result;
-							FinishedRequests.insert(*itr);
+							{
+								std::scoped_lock lock(ReqMutex);
+								FinishedRequests.insert(*itr);
+							}
 							LOG_INFO("Request {:x} (easy handle:{:x}) has completed (code:{}) and has been marked as such", (int32_t)CurlRequest.get(), (int32_t)CompletedHandle, CurlRequest->GetResponse()->GetResponseCode());
 						}
 						else {
@@ -275,7 +272,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 		// note that we can be passed 0 bytes if file transmitted has 0 length
 		if (SizeToDownload > 0)
 		{
-			auto oldsize = Response->TotalBytesRead;
+			auto oldsize = Response->TotalBytesRead.load();
 			Response->ContentAppend((char*)Ptr, SizeToDownload);
 			{
 				std::scoped_lock(ProgressMutex);

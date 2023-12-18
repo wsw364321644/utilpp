@@ -74,9 +74,11 @@ private:
     bool InitRequest(CurlHttpRequestPtr);
     bool SetupRequest(CurlHttpRequestPtr);
     void FinishRequest(CurlHttpRequestPtr creq);
-    std::unordered_map<CurlHttpRequestPtr, CurlHttpRequestPtr> ReqsMap;
-    std::list<CurlHttpRequestPtr> Reqs;
 
+    //std::unordered_map<CurlHttpRequestPtr, CurlHttpRequestPtr> ReqsMap;
+    std::list<CurlHttpRequestPtr> Reqs;
+    std::unordered_map<void*, CurlHttpRequestPtr> HandlesToRequests;
+    ECurlState CurlState{ INVALID };
 
     //http:wr main:wr
     std::mutex ReqMutex;
@@ -89,7 +91,5 @@ private:
     std::list<CurlHttpRequestPtr> RunningThreadedRequests;
     CURLM* MultiHandle{nullptr};
     CURLSH* ShareHandle{ nullptr };
-   
-    std::unordered_map<void*, CurlHttpRequestPtr> HandlesToRequests;
-    ECurlState CurlState{INVALID};
+
 };
