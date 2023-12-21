@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-
+#include <variant>
 template <class T>
 inline void hash_combine(std::size_t &seed, const T &v)
 {
@@ -39,3 +39,15 @@ struct EnumClassHash
         return static_cast<std::size_t>(t);
     }
 };
+
+#ifdef _MSVC_LANG
+#if _MSVC_LANG <= 202002L and _MSVC_LANG >= 201112L
+#include <type_traits>
+namespace std {
+    template <class _Ty>
+    constexpr underlying_type_t<_Ty> to_underlying(_Ty _Value) noexcept {
+        return static_cast<underlying_type_t<_Ty>>(_Value);
+    }
+}
+#endif
+#endif // _MSVC_LANG
