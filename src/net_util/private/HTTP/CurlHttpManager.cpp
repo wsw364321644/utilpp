@@ -107,7 +107,9 @@ void FCurlHttpManager::Tick()
             continue;
         }
         auto& localReq = *res_itr;
-        localReq->OnRequestProgress()(localReq, LocalRunningProgress.OldSize, LocalRunningProgress.NewSize, LocalRunningProgress.HttpReq->Response->GetContentLength());
+        if (localReq->OnRequestProgress()) {
+            localReq->OnRequestProgress()(localReq, LocalRunningProgress.OldSize, LocalRunningProgress.NewSize, LocalRunningProgress.HttpReq->Response->GetContentLength());
+        }
     }
 }
 
