@@ -1,5 +1,4 @@
 #pragma once
-#include "Downloader/DownloaderDef.h"
 #include <string>
 #include <set>
 #include <unordered_map>
@@ -8,6 +7,7 @@
 #include <optional>
 #include <raw_file.h>
 #include <HTTP/CurlHttpManager.h>
+#include "Downloader/DownloaderDef.h"
 
 class FDownloadFile;
 class FDownloadBuf;

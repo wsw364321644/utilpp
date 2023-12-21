@@ -1,8 +1,9 @@
 #pragma once
 #include "IHttpRequest.h"
-#include "curl/curl.h"
+#include <curl/curl.h>
 #include <unordered_map>
 #include <list>
+
 
 class FCurlHttpManager;
 class FCurlHttpResponse;
