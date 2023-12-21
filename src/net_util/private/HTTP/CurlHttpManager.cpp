@@ -67,12 +67,12 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 
     // Response object to handle data that comes back after starting this request
     Reqs.push_back(creq);
-    LOG_DEBUG("{:x}: threaded {:x}", (int32_t)creq.get(), (int32_t)ThreadedRequest.get());
+    LOG_DEBUG("{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
     {
         std::scoped_lock(ReqMutex);
         RunningRequests.push_back(ThreadedRequest);
     }
-    LOG_DEBUG("{}: request(easy handle : {:x}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (int32_t)ThreadedRequest->EasyHandle);
+    LOG_DEBUG("{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
     return true;
 }
 
@@ -87,7 +87,7 @@ void FCurlHttpManager::Tick()
         auto res_itr = std::find(std::begin(Reqs), std::end(Reqs), FinishedRequest);
 
         if (res_itr == std::end(Reqs)) {
-            LOG_ERROR("finished threaded request cant found {}", (int32_t)FinishedRequest.get());
+            LOG_ERROR("finished threaded request cant found {}", (void*)FinishedRequest.get());
             continue;
         }
         FinishRequest(*res_itr); 
@@ -154,17 +154,17 @@ void FCurlHttpManager::HttpThreadTick()
                                 std::scoped_lock lock(ReqMutex);
                                 FinishedRequests.insert(*itr);
                             }
-                            LOG_INFO("Request {:x} (easy handle:{:x}) has completed (code:{}) and has been marked as such", (int32_t)CurlRequest.get(), (int32_t)CompletedHandle, CurlRequest->GetResponse()->GetResponseCode());
+                            LOG_INFO("Request {} (easy handle:{}) has completed (code:{}) and has been marked as such", (void*)CurlRequest.get(), (void*)CompletedHandle, CurlRequest->GetResponse()->GetResponseCode());
                         }
                         else {
-                            LOG_WARNING("Could not find RunningThreadedRequests for completed request (easy handle: {})", (int32_t)CompletedHandle);
+                            LOG_WARNING("Could not find RunningThreadedRequests for completed request (easy handle: {})", (void*)CompletedHandle);
                         }
                         RunningThreadedRequests.erase(itr);
                         HandlesToRequests.erase(multiHandleItr);
                     }
                     else
                     {
-                        LOG_WARNING("Could not find mapping for completed request (easy handle: {})", (int32_t)CompletedHandle);
+                        LOG_WARNING("Could not find mapping for completed request (easy handle: {})", (void*)CompletedHandle);
                     }
                 }
             }
@@ -190,8 +190,8 @@ size_t FCurlHttpManager::UploadCallback(void* Ptr, size_t SizeInBlocks, size_t B
             creq->BytesSent += SizeToSendThisTime;
         }
     }
-    LOG_DEBUG("{:x}: UploadCallback: {} bytes out of {} sent. (SizeInBlocks={}, BlockSizeInBytes={}, SizeToSend={}, SizeToSendThisTime={} (<-this will get returned from the callback))",
-        (int32_t)creq, creq->BytesSent, creq->Content.size(), SizeInBlocks, BlockSizeInBytes, SizeToSend, SizeToSendThisTime
+    LOG_DEBUG("{}: UploadCallback: {} bytes out of {} sent. (SizeInBlocks={}, BlockSizeInBytes={}, SizeToSend={}, SizeToSendThisTime={} (<-this will get returned from the callback))",
+        (void*)creq, creq->BytesSent, creq->Content.size(), SizeInBlocks, BlockSizeInBytes, SizeToSend, SizeToSendThisTime
     );
     return SizeToSendThisTime;
 }
@@ -216,7 +216,7 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
             Header = std::regex_replace(Header, std::regex(R"(\n)"), "");
             Header = std::regex_replace(Header, std::regex(R"(\r)"), "");
 
-            LOG_DEBUG("ReceiveResponseHeaderCallback {:x}: Received response header '{}'.", (int32_t)cresp.get(), Header);
+            LOG_DEBUG("ReceiveResponseHeaderCallback {}: Received response header '{}'.", (void*)cresp.get(), Header);
             std::string HeaderKey, HeaderValue;
             auto i = Header.find(":");
             if (i != std::string::npos)
@@ -245,12 +245,12 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
         }
         else
         {
-            LOG_WARNING("{:x}: Could not process response header for request - header size ({}) is invalid.", (int32_t)cresp.get(), HeaderSize);
+            LOG_WARNING("{}: Could not process response header for request - header size ({}) is invalid.", (void*)cresp.get(), HeaderSize);
         }
     }
     else
     {
-        LOG_WARNING("{:x}:  Could not download response header for request - response not valid.", (int32_t)cresp.get());
+        LOG_WARNING("{}:  Could not download response header for request - response not valid.", (void*)cresp.get());
     }
 
     return 0;
@@ -266,8 +266,8 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 
         int64_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
 
-        LOG_DEBUG("ReceiveResponseBodyCallback {:x}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
-            (int32_t)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
+        LOG_DEBUG("ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
+            (void*)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
             SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
         );
 
@@ -285,7 +285,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
     }
     else
     {
-        LOG_WARNING("{:x}: Could not download response data for request - response not valid.", (int32_t)Response.get());
+        LOG_WARNING("{}: Could not download response data for request - response not valid.", (void*)Response.get());
     }
     return 0;	// request will fail with write error if we had non-zero bytes to download
 }
@@ -416,14 +416,14 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         creq->Verb = "GET";
     }
 
-    LOG_DEBUG("{:x}: URL='{}'", (int32_t)creq.get(), creq->GetURL());
-    LOG_DEBUG("{:x}: Verb='{}'", (int32_t)creq.get(), creq->GetVerb());
-    LOG_DEBUG("{:x}: Payload size= {}", (int32_t)creq.get(), creq->GetContentLength());
+    LOG_DEBUG("{}: URL='{}'", (void*)creq.get(), creq->GetURL());
+    LOG_DEBUG("{}: Verb='{}'", (void*)creq.get(), creq->GetVerb());
+    LOG_DEBUG("{}: Payload size= {}", (void*)creq.get(), creq->GetContentLength());
 
 
     if (creq->URL.empty())
     {
-        LOG_INFO("{:x}: Cannot process HTTP request: URL is empty", (int32_t)creq.get());
+        LOG_INFO("{}: Cannot process HTTP request: URL is empty", (void*)creq.get());
         return false;
     }
 
@@ -438,7 +438,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
             for (int32_t Idx = 0; Idx < NumAllMime; ++Idx)
             {
                 curl_mimepart* part;
-                LOG_DEBUG("{:x}: MineName='{}'", (int32_t)creq.get(), AllMime[Idx].Name);
+                LOG_DEBUG("{}: MineName='{}'", (void*)creq.get(), AllMime[Idx].Name);
 
                 part = curl_mime_addpart(creq->Mime);
                 curl_mime_name(part, AllMime[Idx].Name.c_str());
@@ -522,7 +522,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     const int32_t NumAllHeaders = AllHeaders.size();
     for (int32_t Idx = 0; Idx < NumAllHeaders; ++Idx)
     {
-        LOG_DEBUG("{:x}: Header='{}'", (int32_t)creq.get(), AllHeaders[Idx]);
+        LOG_DEBUG("{}: Header='{}'", (void*)creq.get(), AllHeaders[Idx]);
 
         creq->HeaderList = curl_slist_append(creq->HeaderList, AllHeaders[Idx].c_str());
     }
@@ -693,11 +693,11 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
     {
         if (creq->CurlAddToMultiResult != CURLM_OK)
         {
-            LOG_WARNING("{}: request failed, libcurl multi error: {} ({})", (int32_t)creq.get(), (int32_t)creq->CurlAddToMultiResult, curl_multi_strerror(creq->CurlAddToMultiResult));
+            LOG_WARNING("{}: request failed, libcurl multi error: {} ({})", (void*)creq.get(), (void*)creq->CurlAddToMultiResult, curl_multi_strerror(creq->CurlAddToMultiResult));
         }
         else
         {
-            LOG_WARNING("{}: request failed, libcurl error: {} ({})", (int32_t)creq.get(), (int32_t)creq->CurlCompletionResult, curl_easy_strerror(creq->CurlCompletionResult));
+            LOG_WARNING("{}: request failed, libcurl error: {} ({})", (void*)creq.get(), (void*)creq->CurlCompletionResult, curl_easy_strerror(creq->CurlCompletionResult));
         }
 
 
