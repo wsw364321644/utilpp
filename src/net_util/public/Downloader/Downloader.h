@@ -29,9 +29,25 @@ enum class EDownloadCode {
     SERVER_ERROR
 };
 
+typedef struct DownloadFileInfo
+{
+    std::filesystem::path FilePath;
+    int64_t FileSize{ 0 };
+    uint32_t ChunkNum{ 0 };
+}DownloadFileInfo_t;
 
-typedef std::function< void(int64_t total, int64_t now)>  FDownloadProgressDelegate;
-typedef std::function< void(EDownloadCode code, int http_code)> FDownloadFinishedDelegate;
+typedef struct TaskStatus_s {
+    uint64_t DownloadSize{ 0 };
+    uint64_t PreDownloadSize{ 0 };
+    uint64_t LastTime{ 0 };
+    uint64_t PreTime{ 0 };
+    bool IsCompelete{ false };
+    std::vector<std::byte> ChunksCompleteFlag;
+}TaskStatus_t;
+
+typedef std::function< void(DownloadTaskHandle, std::shared_ptr<DownloadFileInfo_t>)> FGetFileInfoDelegate;
+typedef std::function< void(DownloadTaskHandle, std::shared_ptr <TaskStatus_t>)>  FDownloadProgressDelegate;
+typedef std::function< void(DownloadTaskHandle, EDownloadCode)> FDownloadFinishedDelegate;
 class FDownloadFile;
 class FDownloadBuf;
 typedef struct file_chunk_s file_chunk_t;
@@ -85,17 +101,28 @@ public:
     size_t SavaDate(std::shared_ptr<file_chunk_t> file_chunk);
     bool CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk);
     uint64_t GetChunkSize(uint32_t index);
+
+    void Finish(EDownloadCode err, std::string&& msg) {
+        Finish(err);
+        ErrorMsg = std::forward<std::string>(msg);
+    }
+    void Finish(EDownloadCode err) {
+        Status = EFileTaskStatus::Finished;
+        Code = err;
+        ErrorMsg.clear();
+    }
+
     //FDownloadFile& operator=(const FDownloadFile& other) = delete;
     //FDownloadFile(FDownloadFile&) = delete;
     //FDownloadFile& operator=(const FDownloadFile&& other) = delete;
     //FDownloadFile(FDownloadFile&&) = delete;
 
     static const uint32_t CHUNK_SIZE;
-
-    EDownloadCode Code{ EDownloadCode::OK };
-    std::string URL;
     EFileTaskStatus Status{ EFileTaskStatus::Idle };
-    std::atomic_uint64_t Size{ 0 };
+    EDownloadCode Code{ EDownloadCode::OK };
+    std::string ErrorMsg;
+    std::string URL;
+    std::atomic_int64_t Size{ 0 };
     std::atomic_uint64_t DownloadSize{ 0 };
     std::atomic_uint64_t PreDownloadSize{ 0 };
     std::atomic_uint64_t LastTime;
@@ -107,11 +134,13 @@ public:
     uint32_t ChunkNum{ 0 };
     std::set<HttpRequestPtr> RequestPool;
     std::unordered_map<HttpRequestPtr, file_chunk_t> Requests;
-    bool Open();
 
-
-    CRawFile FileStream;
+    FDownloadProgressDelegate DownloadProgressDelegate;
+    FDownloadFinishedDelegate DownloadFinishedDelegate;
+    FGetFileInfoDelegate GetFileInfoDelegate;
 private:
+    bool Open();
+    CRawFile FileStream;
     FDownloadFile();
 };
 
@@ -125,10 +154,10 @@ typedef struct file_chunk_s {
         auto begin = FDownloadFile::CHUNK_SIZE * ChunkIndex;
         auto end = begin + FDownloadFile::CHUNK_SIZE - 1;
         auto filesize = File->Size.load();
-        return std::pair(begin, end  > filesize-1 ? filesize-1 : end + 1);
+        return std::pair(begin, end > filesize - 1 ? filesize - 1 : end + 1);
     }
     uint64_t GetChunkSize() {
-        return GetRange().second- GetRange().first+1;
+        return GetRange().second - GetRange().first + 1;
     }
 }file_chunk_t;
 //class FDownloadFileNet :public FDownloadFile {
@@ -147,16 +176,10 @@ public:
     //DownloadTaskHandle AddTask(std::string url, std::string folder);
     DownloadTaskHandle AddTask(std::string url, std::string* content);
     DownloadTaskHandle AddTask(std::string url, std::filesystem::path folder);
-
-    typedef struct TaskStatus_s {
-        uint64_t Size{ 0 };
-        uint64_t DownloadSize{ 0 };
-        uint64_t PreDownloadSize{ 0 };
-        uint64_t LastTime{ 0 };
-        uint64_t PreTime{ 0 };
-        bool IsCompelete{ false };
-        std::vector<std::byte> ChunksCompleteFlag;
-    }TaskStatus_t;
+    void RemoveTask(DownloadTaskHandle);
+    bool RegisterDownloadProgressDelegate(DownloadTaskHandle, FDownloadProgressDelegate);
+    bool RegisterDownloadFinishedDelegate(DownloadTaskHandle, FDownloadFinishedDelegate);
+    bool RegisterGetFileInfoDelegate(DownloadTaskHandle, FGetFileInfoDelegate);
     std::optional<TaskStatus_t> GetTaskStatus(DownloadTaskHandle handle);
     void Tick();
     void NetThreadTick();
@@ -179,16 +202,16 @@ private:
 
     static const uint32_t BUF_NUM;
     static const uint32_t BUF_CHUNK_NUM;
-    std::mutex FilesMtx;
-    //std::mutex FilesInProgressMtx;
+
     std::mutex BufInIOMtx;
     std::mutex BufIOCompleteMtx;
-    std::mutex BufPoolMtx;
 
-    std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFile>> Files;
+    typedef std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFile>> TaskContainer;
+    TaskContainer Files;
     FCurlHttpManager HttpManager;
-
     BufList BufPool;
+
+    //trans data between io and main
     BufList  BufInIO;
     BufList  BufIOComplete;
 };

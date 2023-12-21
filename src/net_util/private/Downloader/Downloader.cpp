@@ -218,9 +218,7 @@ FDownloader::FDownloader(){
 
 DownloadTaskHandle FDownloader::AddTask(FDownloadFile* file)
 {
-    auto lock=std::unique_lock(FilesMtx);
     auto respair=Files.emplace(DownloadTaskHandle::task_count, file);
-    lock.unlock();
     if (respair.second) {
         return respair.first->first;
     }
@@ -230,33 +228,32 @@ DownloadTaskHandle FDownloader::AddTask(FDownloadFile* file)
 void FDownloader::TransferBuf()
 {
     BufList DownloadCompleteBuf;
-    {
-        std::scoped_lock lock(BufPoolMtx);
-        for (auto pool_itr = BufPool.begin(); pool_itr != BufPool.end();) {
-            auto& pbuf = *pool_itr;
-            auto itr = pbuf->ChunkList.begin();
-            for (; itr != pbuf->ChunkList.end(); std::advance(itr, 1)) {
-                auto& pchunk = *itr;
-                auto range=pchunk->GetRange();
-                if (pchunk->DownloadSize != range.second-range.first+1) {
-                    break;
-                }
-            }
-            if (itr == pbuf->ChunkList.end()&& pbuf->ChunkList.size()>0) {
-                DownloadCompleteBuf.push_back(pbuf);
-                pool_itr=BufPool.erase(pool_itr);
-            }
-            else {
-                std::advance(pool_itr, 1);
+
+    for (auto pool_itr = BufPool.begin(); pool_itr != BufPool.end();) {
+        auto& pbuf = *pool_itr;
+        auto itr = pbuf->ChunkList.begin();
+        for (; itr != pbuf->ChunkList.end(); std::advance(itr, 1)) {
+            auto& pchunk = *itr;
+            auto range=pchunk->GetRange();
+            if (pchunk->DownloadSize != range.second-range.first+1) {
+                break;
             }
         }
+        if (itr == pbuf->ChunkList.end()&& pbuf->ChunkList.size()>0) {
+            DownloadCompleteBuf.push_back(pbuf);
+            pool_itr=BufPool.erase(pool_itr);
+        }
+        else {
+            std::advance(pool_itr, 1);
+        }
     }
+
     {
         std::scoped_lock lock(BufInIOMtx);
         BufInIO.merge(DownloadCompleteBuf);
     }
     {
-        std::scoped_lock lock(BufIOCompleteMtx, BufPoolMtx);
+        std::scoped_lock lock(BufIOCompleteMtx);
         for (auto& buf:BufIOComplete) {
             buf->ChunkList.clear();
             BufPool.push_back(buf);
@@ -267,7 +264,6 @@ void FDownloader::TransferBuf()
 
 std::shared_ptr<FDownloadBuf> FDownloader::InsertInBuf(std::shared_ptr < file_chunk_t> chunk)
 {
-    std::scoped_lock lock(BufPoolMtx);
     for (auto& pbuf : BufPool) {
         auto res=pbuf->InsertInBuf(chunk);
         if (res) {
@@ -320,23 +316,61 @@ DownloadTaskHandle FDownloader::AddTask(std::string url, std::filesystem::path f
     return AddTask(df);
 }
 
-std::optional<FDownloader::TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle handle) {
-    auto itr=Files.find(handle);
+void FDownloader::RemoveTask(DownloadTaskHandle handle)
+{
+    auto itr = Files.find(handle);
+    if (itr == Files.end()) {
+        return;
+    }
+    Files.erase(itr);
+    
+}
+
+bool FDownloader::RegisterDownloadProgressDelegate(DownloadTaskHandle handle, FDownloadProgressDelegate Delegate)
+{
+    auto itr = Files.find(handle);
+    if (itr == Files.end()) {
+        return false;
+    }
+    itr->second->DownloadProgressDelegate = Delegate;
+    return true;
+}
+
+bool FDownloader::RegisterDownloadFinishedDelegate(DownloadTaskHandle handle, FDownloadFinishedDelegate Delegate)
+{
+    auto itr = Files.find(handle);
+    if (itr == Files.end()) {
+        return false;
+    }
+    itr->second->DownloadFinishedDelegate = Delegate;
+    return true;
+}
+
+bool FDownloader::RegisterGetFileInfoDelegate(DownloadTaskHandle handle, FGetFileInfoDelegate Delegate)
+{
+    auto itr = Files.find(handle);
+    if (itr == Files.end()) {
+        return false;
+    }
+    itr->second->GetFileInfoDelegate = Delegate;
+    return true;
+}
+
+std::optional<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle handle) {
+    auto itr = Files.find(handle);
     if (itr == Files.end()) {
         return std::nullopt;
     }
+  
     auto& pfile = itr->second;
-    FDownloader::TaskStatus_t status{};
+    TaskStatus_t status{};
     status.DownloadSize = pfile->DownloadSize.load();
-    status.Size = pfile->Size.load();
     status.PreDownloadSize = pfile->PreDownloadSize.load();
     status.LastTime = pfile->LastTime.load();
     status.PreTime = pfile->PreTime.load();
     status.IsCompelete= pfile->Status == EFileTaskStatus::Finished;
-    std::unique_lock lock{ FilesMtx , std::try_to_lock };
-    if (lock.owns_lock()) {
-        status.ChunksCompleteFlag = pfile->ChunksCompleteFlag;
-    }
+    status.ChunksCompleteFlag = pfile->ChunksCompleteFlag;
+    
     return status;
 }
 
@@ -344,13 +378,14 @@ void FDownloader::Tick()
 {
     HttpManager.Tick();
     TransferBuf();
-    std::scoped_lock fileslock(FilesMtx);
+
     for (auto& pair : Files) {
         auto pfile = pair.second;
+        auto handle = pair.first;
         switch (pfile->Status) {
         case EFileTaskStatus::Idle: {
 
-            for (int i = 0; i < ParallelChunkPerFile;i++) {
+            for (int i = 0; i < ParallelChunkPerFile; i++) {
                 auto preq = HttpManager.NewRequest();
                 preq->SetURL(pfile->URL);
                 preq->SetVerb("Get");
@@ -358,10 +393,9 @@ void FDownloader::Tick()
             }
             auto preq = *pfile->RequestPool.begin();
             preq->SetVerb("HEAD");
-            preq->OnProcessRequestComplete() = [=](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
+            preq->OnProcessRequestComplete() = [pfile, handle](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
                 {
-                    if (!res|| rep->GetContentLength() <= 0) {
-                        std::scoped_lock fileslock(FilesMtx);
+                    if (!res || rep->GetContentLength() <= 0) {
                         pfile->Status = EFileTaskStatus::Finished;
                         pfile->Code = EDownloadCode::SERVER_ERROR;
                         return;
@@ -373,7 +407,6 @@ void FDownloader::Tick()
                         auto str = rep->GetHeader("Content-Disposition");
                         if (str.empty()) {
                             LOG_ERROR("FDownloader cant get file name");
-                            std::scoped_lock fileslock(FilesMtx);
                             pfile->Status = EFileTaskStatus::Finished;
                             pfile->Code = EDownloadCode::SERVER_ERROR;
                             return;
@@ -387,28 +420,37 @@ void FDownloader::Tick()
                             /*url.assign( R"###(localhost.com/path\?hue\=br\#cool)###");*/
                             if (!std::regex_match(str, match_result, filename_reg)) {
                                 LOG_ERROR("FDownloader cant get file name");
-                                std::scoped_lock fileslock(FilesMtx);
-                                pfile->Status = EFileTaskStatus::Finished;
-                                pfile->Code = EDownloadCode::SERVER_ERROR;
+                                pfile->Finish(EDownloadCode::SERVER_ERROR, "FDownloader cant get file name");
                                 return;
                             }
-                            std::scoped_lock fileslock(FilesMtx);
                             pfile->Path /= match_result[1].str();
-                            pfile->Status = EFileTaskStatus::Download;
                         }
                         catch (std::exception& ex) {
                             LOG_ERROR("{}", ex.what());
+                            pfile->Finish(EDownloadCode::SERVER_ERROR, "regex exception");
+                            return;
                         }
 
                     }
+                    if (pfile->GetFileInfoDelegate) {
+                        auto fileInfo = std::make_shared<DownloadFileInfo_t>();
+                        fileInfo->FilePath = pfile->Path;
+                        fileInfo->ChunkNum = pfile->ChunkNum;
+                        fileInfo->FileSize = pfile->Size;
+                        pfile->GetFileInfoDelegate(DownloadTaskHandle(handle), fileInfo);
+                    }
+                    if (std::filesystem::exists(pfile->Path)) {
+                        pfile->Finish(EDownloadCode::OK, "file exist");
+                        return;
+                    }
+                    pfile->Status = EFileTaskStatus::Download;
                     req->SetVerb("GET");
                 }
-            };
+                };
             HttpManager.ProcessRequest(preq);
             pfile->Status = EFileTaskStatus::Init;
             break;
-        }
-
+        }                 
         case EFileTaskStatus::Download: {
             while (true) {
                 if (pfile->DownloadSize == pfile->Size) {
@@ -434,7 +476,7 @@ void FDownloader::Tick()
                 if (tempSet.size() == 0) {
                     break;
                 }
-                auto& req =  *tempSet.begin();
+                auto& req = *tempSet.begin();
 
                 std::shared_ptr<FDownloadBuf> buf;
                 buf = InsertInBuf(pchunk);
@@ -444,7 +486,7 @@ void FDownloader::Tick()
                 auto range = pchunk->GetRange();
                 req->SetRange(range.first, range.second);
                 req->GetResponse()->SetContentBuf(pchunk->BufCursor, pchunk->GetChunkSize());
-                req->OnRequestProgress() = [&, pchunk](HttpRequestPtr req, int64_t oldSize, int64_t newSize,  int64_t totalSize) {
+                req->OnRequestProgress() = [&, pchunk](HttpRequestPtr req, int64_t oldSize, int64_t newSize, int64_t totalSize) {
                     pchunk->DownloadSize = newSize;
                     };
                 req->OnProcessRequestComplete() = [&, pchunk, range](HttpRequestPtr req, HttpResponsePtr resp, bool res) {
@@ -463,9 +505,16 @@ void FDownloader::Tick()
                     pchunk->DownloadSize = resp->GetContentBytesRead();
                     };
                 HttpManager.ProcessRequest(req);
-                
+
             }
-            
+            break;
+       
+        }
+        case EFileTaskStatus::Finished: {
+            if (pfile->DownloadFinishedDelegate) {
+                pfile->DownloadFinishedDelegate(DownloadTaskHandle(pair.first), pfile->Code);
+                pfile->DownloadFinishedDelegate = nullptr;
+            }
             break;
         }
         }
@@ -502,7 +551,6 @@ void FDownloader::IOThreadTick()
         BufIOComplete.swap(IOLocalBufList);
     }
     {
-        std::scoped_lock lock(FilesMtx);
         for (auto& chunk:CompleteChunk) {
             chunk->File->CompleteChunk(chunk);
         }
