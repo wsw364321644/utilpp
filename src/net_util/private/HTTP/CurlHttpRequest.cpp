@@ -352,15 +352,18 @@ void FCurlHttpResponse::SetContentBuf(void* Ptr, int64_t Len)
 
 void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
 {
+    auto iTotalBytesRead = TotalBytesRead.load();
     if (UserBuf) {
-        auto writelen = UserBufLen >= TotalBytesRead + Len ? Len : UserBufLen - TotalBytesRead;
+        auto writelen = UserBufLen >= iTotalBytesRead + Len ? Len : UserBufLen - iTotalBytesRead;
         if (writelen > 0) {
-            memcpy(UserBuf + TotalBytesRead, Data, writelen);
+            memcpy(UserBuf + iTotalBytesRead, Data, writelen);
         }
     }
     else {
-        Content.reserve(TotalBytesRead + Len);
-        memcpy(Content.data() + TotalBytesRead, Data, Len);
+        Content.reserve(iTotalBytesRead + Len);
+        auto itr = Content.begin();
+        itr += iTotalBytesRead;
+        Content.insert(itr, Data, Data + Len + 1);
     }
     TotalBytesRead += Len;
 }
