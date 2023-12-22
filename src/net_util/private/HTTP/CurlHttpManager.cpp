@@ -69,7 +69,7 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
     Reqs.push_back(creq);
     LOG_DEBUG("{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
     {
-        std::scoped_lock(ReqMutex);
+        std::scoped_lock lock(ReqMutex);
         RunningRequests.push_back(ThreadedRequest);
     }
     LOG_DEBUG("{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
@@ -279,7 +279,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
             auto oldsize = Response->GetContentBytesRead();
             Response->ContentAppend((char*)Ptr, SizeToDownload);
             {
-                std::scoped_lock(ProgressMutex);
+                std::scoped_lock lock(ProgressMutex);
                 RunningProgressList.emplace_back(creq, oldsize, Response->TotalBytesRead);
             }
             return SizeToDownload;
