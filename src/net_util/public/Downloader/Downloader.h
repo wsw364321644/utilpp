@@ -161,6 +161,7 @@ private:
 
     typedef std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFile>> TaskContainer;
     TaskContainer Files;
+    std::set<CommonHandle_t> RequireRemoveFiles;
     FCurlHttpManager HttpManager;
     BufList BufPool;
 

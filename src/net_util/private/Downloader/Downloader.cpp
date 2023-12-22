@@ -322,8 +322,7 @@ void FDownloader::RemoveTask(DownloadTaskHandle handle)
     if (itr == Files.end()) {
         return;
     }
-    Files.erase(itr);
-    
+    RequireRemoveFiles.insert(itr->first);
 }
 
 bool FDownloader::RegisterDownloadProgressDelegate(DownloadTaskHandle handle, FDownloadProgressDelegate Delegate)
@@ -378,7 +377,10 @@ void FDownloader::Tick()
 {
     HttpManager.Tick();
     TransferBuf();
-
+    for (auto itr = RequireRemoveFiles.begin(); itr != RequireRemoveFiles.end(); std::advance(itr,1)) {
+        Files.erase(*itr);
+    }
+    RequireRemoveFiles.clear();
     for (auto& pair : Files) {
         auto pfile = pair.second;
         auto handle = pair.first;
