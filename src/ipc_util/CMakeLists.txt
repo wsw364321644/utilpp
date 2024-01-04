@@ -14,11 +14,26 @@ function(add_ipc_util TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PUBLIC sutils)
     target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
+
     if(UTILPP_WITH_STATIC_LIBUV)
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv_a)
     else()
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv)
     endif()
+
+    install(TARGETS ${TARGET_NAME}
+        EXPORT ${TARGET_NAME}Targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        PUBLIC_HEADER DESTINATION include
+    )
+
+    install(EXPORT ${TARGET_NAME}Targets
+        FILE ${TARGET_NAME}Targets.cmake
+        NAMESPACE UTILPP::
+        DESTINATION lib/cmake/${TARGET_NAME}
+    )
 endfunction()
 
 add_library(${TARGET_NAME} SHARED ${SourceFiles})

@@ -13,3 +13,18 @@ AddTargetInclude(${TARGET_NAME})
 
 target_link_libraries (${TARGET_NAME} PUBLIC spdlog::spdlog)
 target_link_libraries (${TARGET_NAME} PRIVATE sutils)
+
+
+install(TARGETS ${TARGET_NAME}
+    EXPORT ${TARGET_NAME}Targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    PUBLIC_HEADER DESTINATION include
+)
+
+install(EXPORT ${TARGET_NAME}Targets
+    FILE ${TARGET_NAME}Targets.cmake
+    NAMESPACE UTILPP::
+    DESTINATION lib/cmake/${TARGET_NAME}
+)
