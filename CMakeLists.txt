@@ -31,6 +31,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(deps/fmt)
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "" FORCE)
+set(SPDLOG_INSTALL ON CACHE BOOL "" FORCE)
 add_subdirectory(deps/spdlog)
 
 add_subdirectory(src/sutils)
