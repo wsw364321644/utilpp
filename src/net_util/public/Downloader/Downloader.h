@@ -54,7 +54,7 @@ public:
     size_t SavaDate(std::shared_ptr<file_chunk_t> file_chunk);
     bool CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk);
     uint64_t GetChunkSize(uint32_t index);
-
+    void CloseFileStream();
     void Finish(EDownloadCode err, std::string&& msg) {
         Finish(err);
         ErrorMsg = std::forward<std::string>(msg);
@@ -129,6 +129,7 @@ public:
     //DownloadTaskHandle AddTask(std::string url, std::string folder);
     DownloadTaskHandle AddTask(std::string url, std::string* content);
     DownloadTaskHandle AddTask(std::string url, std::filesystem::path folder);
+   
     void RemoveTask(DownloadTaskHandle);
     bool RegisterDownloadProgressDelegate(DownloadTaskHandle, FDownloadProgressDelegate);
     bool RegisterDownloadFinishedDelegate(DownloadTaskHandle, FDownloadFinishedDelegate);

@@ -17,6 +17,9 @@ FDownloadFile::FDownloadFile(std::string url, std::filesystem::path folder) : Pa
 FDownloadFile::FDownloadFile() {}
 FDownloadFile::~FDownloadFile()
 {
+    if (FileStream.IsOpen()) {
+        FileStream.Close();
+    }
 }
 
 void FDownloadFile::SetFileSize(uint64_t size)
@@ -149,6 +152,13 @@ uint64_t FDownloadFile::GetChunkSize(uint32_t index)
         return FDownloadFile::CHUNK_SIZE;
     }
     return Size % FDownloadFile::CHUNK_SIZE;
+}
+
+void FDownloadFile::CloseFileStream()
+{
+    if (FileStream.IsOpen()) {
+        FileStream.Close();
+    }
 }
 
 bool FDownloadFile::Open()
@@ -395,8 +405,13 @@ void FDownloader::Tick()
             }
             auto preq = *pfile->RequestPool.begin();
             preq->SetVerb("HEAD");
-            preq->OnProcessRequestComplete() = [pfile, handle](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
+            auto pweakFile = pfile->weak_from_this();
+            preq->OnProcessRequestComplete() = [pweakFile, handle](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
                 {
+                    auto pfile = pweakFile.lock();
+                    if (!pfile) {
+                        return;
+                    }
                     if (!res || rep->GetContentLength() <= 0) {
                         pfile->Status = EFileTaskStatus::Finished;
                         pfile->Code = EDownloadCode::SERVER_ERROR;
@@ -456,6 +471,7 @@ void FDownloader::Tick()
         case EFileTaskStatus::Download: {
             while (true) {
                 if (pfile->DownloadSize == pfile->Size) {
+                    pfile->CloseFileStream();
                     pfile->Status = EFileTaskStatus::Finished;
                 }
                 if (pfile->IsAllChunkInDownload()) {
@@ -488,10 +504,19 @@ void FDownloader::Tick()
                 auto range = pchunk->GetRange();
                 req->SetRange(range.first, range.second);
                 req->GetResponse()->SetContentBuf(pchunk->BufCursor, pchunk->GetChunkSize());
-                req->OnRequestProgress() = [&, pchunk](HttpRequestPtr req, int64_t oldSize, int64_t newSize, int64_t totalSize) {
+                std::weak_ptr<file_chunk_t> pweakChunk = pchunk;
+                req->OnRequestProgress() = [pweakChunk](HttpRequestPtr req, int64_t oldSize, int64_t newSize, int64_t totalSize) {
+                    auto pchunk = pweakChunk.lock();
+                    if (!pchunk) {
+                        return;
+                    }
                     pchunk->DownloadSize = newSize;
                     };
-                req->OnProcessRequestComplete() = [&, pchunk, range](HttpRequestPtr req, HttpResponsePtr resp, bool res) {
+                req->OnProcessRequestComplete() = [pweakChunk, range](HttpRequestPtr req, HttpResponsePtr resp, bool res) {
+                    auto pchunk = pweakChunk.lock();
+                    if (!pchunk) {
+                        return;
+                    }
                     if (!res) {
                         pchunk->File->RevertDownloadFilechunk(pchunk->ChunkIndex);
                         pchunk->Buf->RemoveChunk(pchunk);
