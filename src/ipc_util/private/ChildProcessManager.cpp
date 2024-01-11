@@ -30,6 +30,7 @@ typedef struct UVProcess_t {
     uv_async_t async;
     FChildProcessManager* ChildProcessManager;
     FChildProcessManager::FOnReadDelegate  OnReadDelegate;
+    FChildProcessManager::FOnExitDelegate  OnExitDelegate;
     CommonHandle_t handle;
     CharBuffer Buf;
     //std::mutex m;
@@ -53,11 +54,14 @@ void on_read(uv_stream_t* stream,
     const uv_buf_t* buf) {
     UVProcess_t& p = *(UVProcess_t*)stream->data;
 
-    if (nread < 0) {
-        p.OnReadDelegate(buf->base, nread);
-    }
-    else {
-        p.OnReadDelegate(buf->base, nread);
+    //if (nread < 0) {
+    //    p.OnReadDelegate(p.handle, buf->base, nread);
+    //}
+    //else {
+    //    p.OnReadDelegate(p.handle, buf->base, nread);
+    //}
+    if (p.OnReadDelegate) {
+        p.OnReadDelegate(p.handle, buf->base, nread);
     }
 };
 
@@ -114,6 +118,14 @@ void FChildProcessManager::RegisterOnRead(CommonHandle_t handle, FOnReadDelegate
     }
     pair->second->OnReadDelegate = delegate;
 }
+void FChildProcessManager::RegisterOnExit(CommonHandle_t handle, FOnExitDelegate delegate)
+{
+    auto pair = processes.find(handle);
+    if (pair == processes.end()) {
+        return;
+    }
+    pair->second->OnExitDelegate = delegate;
+}
 bool FChildProcessManager::CheckIsFinished(CommonHandle_t handle)
 {
     auto pair = processes.find(handle);
@@ -157,7 +169,7 @@ void FChildProcessManager::ClearProcessData(CommonHandle_t handle)
     auto pp = pair->second.get();
     uv_close((uv_handle_t*)&pp->process, nullptr);
     uv_close((uv_handle_t*)&pp->pipe, nullptr);
-    uv_close((uv_handle_t*)&pp->async, nullptr);
+    //uv_close((uv_handle_t*)&pp->async, nullptr);
     uv_run(ploop, uv_run_mode::UV_RUN_DEFAULT);
     processes.erase(handle);
     currentHandle = 0;
@@ -174,6 +186,9 @@ void FChildProcessManager::OnUvProcessClosed(UVProcess_t* process, int64_t exit_
     //    }
     //    });
     //uv_async_send(&process->async);
+    if (process->OnExitDelegate) {
+        process->OnExitDelegate(process->handle, exit_status, term_signal);
+    }
     process->ChildProcessManager->ClearProcessData(process->handle);
 }
 
