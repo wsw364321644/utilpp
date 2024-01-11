@@ -165,15 +165,16 @@ void FChildProcessManager::ClearProcessData(CommonHandle_t handle)
 
 void FChildProcessManager::OnUvProcessClosed(UVProcess_t* process, int64_t exit_status, int term_signal)
 {
-    process->async.data = process;
-    uv_async_init(ploop, &process->async, [](uv_async_t* handle) {
-        {
-            UVProcess_t& UVProcess = *(UVProcess_t*)handle->data;
+    //process->async.data = process;
+    //uv_async_init(ploop, &process->async, [](uv_async_t* handle) {
+    //    {
+    //        UVProcess_t& UVProcess = *(UVProcess_t*)handle->data;
 
-            UVProcess.ChildProcessManager->ClearProcessData(UVProcess.handle);
-        }
-        });
-    uv_async_send(&process->async);
+    //        UVProcess.ChildProcessManager->ClearProcessData(UVProcess.handle);
+    //    }
+    //    });
+    //uv_async_send(&process->async);
+    process->ChildProcessManager->ClearProcessData(process->handle);
 }
 
 void FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
