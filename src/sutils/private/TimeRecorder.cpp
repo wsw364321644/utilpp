@@ -3,6 +3,7 @@
 
 FTimeRecorder::FTimeRecorder()
 {
+    CurTickTime = std::chrono::steady_clock::now();;
 }
 void FTimeRecorder::Tick()
 {
