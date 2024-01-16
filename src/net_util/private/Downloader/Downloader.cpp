@@ -499,6 +499,7 @@ void FDownloader::Tick()
                 std::shared_ptr<FDownloadBuf> buf;
                 buf = InsertInBuf(pchunk);
                 if (!buf) {
+                    pfile->RevertDownloadFilechunk(pchunk->ChunkIndex);
                     break;
                 }
                 auto range = pchunk->GetRange();
@@ -575,7 +576,7 @@ void FDownloader::IOThreadTick()
     }
     {
         std::scoped_lock lock(BufIOCompleteMtx);
-        BufIOComplete.swap(IOLocalBufList);
+        BufIOComplete.merge(IOLocalBufList);
     }
     {
         for (auto& chunk:CompleteChunk) {
