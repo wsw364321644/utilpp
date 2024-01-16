@@ -40,12 +40,12 @@ FCurlHttpRequest::~FCurlHttpRequest()
 
 }
 
-std::string FCurlHttpRequest::GetURL()
+std::string_view FCurlHttpRequest::GetURL()
 {
     return URL;
 }
 
-std::string FCurlHttpRequest::GetURLParameter(const std::string& ParameterName)
+std::string_view FCurlHttpRequest::GetURLParameter(const std::string_view ParameterName)
 {
     ParsedURL_t res;
     ParseUrl(URL, &res);
@@ -63,9 +63,9 @@ std::string FCurlHttpRequest::GetURLParameter(const std::string& ParameterName)
     return std::string();
 }
 
-std::string FCurlHttpRequest::GetHeader(const std::string& HeaderName)
+std::string_view FCurlHttpRequest::GetHeader(const std::string_view HeaderName)
 {
-    auto itr = Headers.find(HeaderName);
+    auto itr = Headers.find(std::string(HeaderName));
     if (itr != Headers.end()) {
         return itr->second;
     }
@@ -79,7 +79,7 @@ std::vector<std::string> FCurlHttpRequest::GetAllHeaders()
     return out;
 }
 
-std::string FCurlHttpRequest::GetContentType()
+std::string_view FCurlHttpRequest::GetContentType()
 {
     return GetHeader("Content-Type");
 }
@@ -100,32 +100,32 @@ std::vector<MimePart_t> FCurlHttpRequest::GetAllMime()
     return MimeParts;
 }
 
-std::string FCurlHttpRequest::GetVerb()
+std::string_view FCurlHttpRequest::GetVerb()
 {
     return Verb;
 }
 
-void FCurlHttpRequest::SetVerb(const std::string& _Verb)
+void FCurlHttpRequest::SetVerb(const std::string_view _Verb)
 {
     Verb = _Verb;
 }
 
-void FCurlHttpRequest::SetURL(const std::string& _URL)
+void FCurlHttpRequest::SetURL(const std::string_view _URL)
 {
     URL = _URL;
 }
 
-void FCurlHttpRequest::SetHost(const std::string& _Host)
+void FCurlHttpRequest::SetHost(const std::string_view _Host)
 {
     Host = _Host;
 }
 
-void FCurlHttpRequest::SetPath(const std::string& _Path)
+void FCurlHttpRequest::SetPath(const std::string_view _Path)
 {
     Path = _Path;
 }
 
-void FCurlHttpRequest::SetScheme(const std::string& _Scheme)
+void FCurlHttpRequest::SetScheme(const std::string_view _Scheme)
 {
     Scheme = _Scheme;
 }
@@ -135,9 +135,9 @@ void FCurlHttpRequest::SetPortNum(uint32_t _Port)
     Port = _Port;
 }
 
-void FCurlHttpRequest::SetQuery(const std::string& QueryName, const std::string& QueryValue)
+void FCurlHttpRequest::SetQuery(const std::string_view QueryName, const std::string_view QueryValue)
 {
-    Queries[QueryName] = QueryValue;
+    Queries[std::string(QueryName)] = QueryValue;
 }
 
 void FCurlHttpRequest::SetContent(const std::vector<uint8_t>& ContentPayload)
@@ -145,20 +145,20 @@ void FCurlHttpRequest::SetContent(const std::vector<uint8_t>& ContentPayload)
     Content = ContentPayload;
 }
 
-void FCurlHttpRequest::SetContentAsString(const std::string& ContentString)
+void FCurlHttpRequest::SetContentAsString(const std::string_view ContentString)
 {
     Content.assign(ContentString.begin(), ContentString.end());
 }
 
 
-void FCurlHttpRequest::SetHeader(const std::string& HeaderName, const std::string& HeaderValue)
+void FCurlHttpRequest::SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue)
 {
-    Headers[HeaderName] = HeaderValue;
+    Headers[std::string(HeaderName)] = HeaderValue;
 }
 
-void FCurlHttpRequest::AppendToHeader(const std::string& HeaderName, const std::string& AdditionalHeaderValue)
+void FCurlHttpRequest::AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue)
 {
-    auto itr = Headers.find(HeaderName);
+    auto itr = Headers.find(std::string(HeaderName));
     if (itr == Headers.end()) {
         SetHeader(HeaderName, AdditionalHeaderValue);
     }
@@ -308,13 +308,13 @@ size_t FCurlHttpRequest::StaticDebugCallback(CURL* Handle, curl_infotype DebugIn
 }
 
 
-std::string FCurlHttpResponse::GetHeader(const std::string& HeaderName)
+std::string_view FCurlHttpResponse::GetHeader(const std::string_view HeaderName)
 {
-    auto itr = Headers.find(HeaderName);
+    auto itr = Headers.find(std::string(HeaderName));
     if (itr != Headers.end()) {
-        return itr->second;
+        return std::string_view(itr->second);
     }
-    return std::string();
+    return std::string_view();
 }
 
 std::vector<std::string> FCurlHttpResponse::GetAllHeaders()
@@ -329,7 +329,7 @@ std::vector<MimePart_t> FCurlHttpResponse::GetAllMime()
     return std::vector<MimePart_t>();
 }
 
-std::string FCurlHttpResponse::GetContentType()
+std::string_view FCurlHttpResponse::GetContentType()
 {
     return GetHeader("Content-Type");
 }
@@ -339,9 +339,9 @@ const std::vector<uint8_t>& FCurlHttpResponse::GetContent()
     return Content;
 }
 
-std::string FCurlHttpResponse::GetContentAsString()
+std::string_view FCurlHttpResponse::GetContentAsString()
 {
-    return std::string((char*)Content.data(), Content.size());
+    return std::string_view((char*)Content.data(), Content.size());
 }
 
 void FCurlHttpResponse::SetContentBuf(void* Ptr, int64_t Len)

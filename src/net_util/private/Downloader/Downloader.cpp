@@ -421,7 +421,7 @@ void FDownloader::Tick()
 
 
                     if (!pfile->Content && std::filesystem::is_directory(pfile->Path)) {
-                        auto str = rep->GetHeader("Content-Disposition");
+                        auto str = std::string(rep->GetHeader("Content-Disposition"));
                         if (str.empty()) {
                             LOG_ERROR("FDownloader cant get file name");
                             pfile->Status = EFileTaskStatus::Finished;
