@@ -134,7 +134,7 @@ bool FChildProcessManager::CheckIsFinished(CommonHandle_t handle)
     }
     return false;
 }
-void FChildProcessManager::Tick()
+void FChildProcessManager::Tick(float delSec)
 {
     if (!currentHandle.IsValid()) {
         auto itr = processes.begin();

@@ -135,9 +135,9 @@ public:
     bool RegisterDownloadFinishedDelegate(DownloadTaskHandle, FDownloadFinishedDelegate);
     bool RegisterGetFileInfoDelegate(DownloadTaskHandle, FGetFileInfoDelegate);
     std::optional<TaskStatus_t> GetTaskStatus(DownloadTaskHandle handle);
-    void Tick();
-    void NetThreadTick();
-    void IOThreadTick();
+    void Tick(float delSec);
+    void NetThreadTick(float delSec);
+    void IOThreadTick(float delSec);
     FDownloader& operator=(const FDownloader& other) = delete;
     FDownloader(FDownloader&) = delete;
     FDownloader& operator=(const FDownloader&& other) = delete;

@@ -26,7 +26,7 @@ public:
     }
     virtual HttpRequestPtr NewRequest()=0;
     virtual bool ProcessRequest(HttpRequestPtr) = 0;
-    virtual void Tick() = 0;
+    virtual void Tick(float delSec) = 0;
 
     std::string GetDefaultUserAgent() { return "Mozilla"; }
 private:

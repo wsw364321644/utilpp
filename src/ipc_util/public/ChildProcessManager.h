@@ -34,7 +34,7 @@ public:
     typedef std::function< void(CommonHandle_t,int64_t, int) > FOnExitDelegate;
     void RegisterOnExit(CommonHandle_t handle, FOnExitDelegate delegate);
     bool CheckIsFinished(CommonHandle_t handle);
-    void Tick();
+    void Tick(float delSec);
     void Run();
     void ClearProcessData(CommonHandle_t handle);
     void OnUvProcessClosed(UVProcess_t* process, int64_t exit_status, int term_signal);

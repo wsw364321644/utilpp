@@ -383,9 +383,9 @@ std::optional<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle handle
     return status;
 }
 
-void FDownloader::Tick()
+void FDownloader::Tick(float delSec)
 {
-    HttpManager.Tick();
+    HttpManager.Tick(delSec);
     TransferBuf();
     for (auto itr = RequireRemoveFiles.begin(); itr != RequireRemoveFiles.end(); std::advance(itr,1)) {
         Files.erase(*itr);
@@ -549,12 +549,12 @@ void FDownloader::Tick()
     }
 }
 
-void FDownloader::NetThreadTick()
+void FDownloader::NetThreadTick(float delSec)
 {
-    HttpManager.HttpThreadTick();
+    HttpManager.HttpThreadTick(delSec);
 }
 
-void FDownloader::IOThreadTick()
+void FDownloader::IOThreadTick(float delSec)
 {
     BufList IOLocalBufList;
     std::list<std::shared_ptr<file_chunk_t>> CompleteChunk;

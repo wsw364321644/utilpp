@@ -25,9 +25,9 @@ public:
 
     virtual HttpRequestPtr NewRequest() override;
     virtual bool ProcessRequest(HttpRequestPtr);
-    virtual void Tick();
+    virtual void Tick(float delSec);
 
-    void HttpThreadTick();
+    void HttpThreadTick(float delSec);
 
     static struct CurlRequestOptions_t
     {

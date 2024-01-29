@@ -76,7 +76,7 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
     return true;
 }
 
-void FCurlHttpManager::Tick()
+void FCurlHttpManager::Tick(float delSec)
 {
     std::set<CurlHttpRequestPtr> LocalFinishedRequests;
     {
@@ -113,7 +113,7 @@ void FCurlHttpManager::Tick()
     }
 }
 
-void FCurlHttpManager::HttpThreadTick()
+void FCurlHttpManager::HttpThreadTick(float delSec)
 {
 
     HttpThreadAddTask();
