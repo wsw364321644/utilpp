@@ -8,18 +8,9 @@ typedef struct CommonHandle
 {
     struct _Tag {};
     constexpr explicit CommonHandle(_Tag):ID(0){ }
-    constexpr CommonHandle()
-    {
-        ID = 0;
-    }
-    constexpr CommonHandle(uint32_t id)
-    {
-        ID = id;
-    }
-    constexpr CommonHandle(const CommonHandle &handle)
-    {
-        ID = handle.ID;
-    }
+    constexpr CommonHandle() : ID(0) {}
+    constexpr CommonHandle(uint32_t id) : ID(id) {}
+    constexpr CommonHandle(const CommonHandle& handle) : ID(handle.ID) {}
     CommonHandle(std::atomic_uint32_t &counter)
     {
         ID = ++counter ? counter.load() : ++counter;
