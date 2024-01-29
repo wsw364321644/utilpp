@@ -40,6 +40,14 @@ struct EnumClassHash
     }
 };
 
+template <class _Type, template <class...> class _Template>
+inline constexpr bool is_specialization_v = false; // true if and only if _Type is a specialization of _Template
+template <template <class...> class _Template, class... _Types>
+inline constexpr bool is_specialization_v<_Template<_Types...>, _Template> = true;
+
+template <class _Type, template <class...> class _Template>
+struct is_specialization : std::bool_constant<is_specialization_v<_Type, _Template>> {};
+
 #ifdef _MSVC_LANG
 #if _MSVC_LANG <= 202002L and _MSVC_LANG >= 201112L
 #include <type_traits>

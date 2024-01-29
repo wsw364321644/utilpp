@@ -8,15 +8,15 @@ typedef struct CommonHandle
 {
     struct _Tag {};
     constexpr explicit CommonHandle(_Tag):ID(0){ }
-    CommonHandle()
+    constexpr CommonHandle()
     {
         ID = 0;
     }
-    CommonHandle(uint32_t id)
+    constexpr CommonHandle(uint32_t id)
     {
         ID = id;
     }
-    CommonHandle(const CommonHandle &handle)
+    constexpr CommonHandle(const CommonHandle &handle)
     {
         ID = handle.ID;
     }
