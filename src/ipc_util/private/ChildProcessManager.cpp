@@ -144,7 +144,7 @@ void FChildProcessManager::Tick(float delSec)
         currentHandle = itr->first;
         InternalSpawnProcess(itr->second.get());
     }
-    uv_run(ploop, uv_run_mode::UV_RUN_ONCE);
+    uv_run(ploop, uv_run_mode::UV_RUN_NOWAIT);
 }
 
 void FChildProcessManager::Run()
