@@ -49,6 +49,7 @@ add_subdirectory(src/sutils)
 add_subdirectory(src/simple_logger)
 add_subdirectory(src/rapidjson)
 add_subdirectory(src/better-enums)
+add_subdirectory(src/task_manager)
 
 if(WIN32)
   add_subdirectory(src/windows_util)
