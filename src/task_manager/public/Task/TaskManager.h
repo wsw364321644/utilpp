@@ -1,9 +1,13 @@
+#pragma once
 #include <functional>
 #include <unordered_map>
 #include <memory>
 #include <chrono>
 #include <mutex>
 #include <atomic>
+#include <future>
+#include <tuple>
+#include <set>
 
 #include <shared_mutex>
 #include <handle.h>
@@ -13,7 +17,6 @@ constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_
 
 
 typedef std::function<void()> FCommonTask;
-typedef std::function<void()> FTaskCompleteDelegate;
 typedef std::function<void(float)> FTickTask;
 
 typedef struct CommonTaskHandle_t : CommonHandle_t
@@ -43,7 +46,6 @@ typedef struct TimerTaskData_t {
 typedef struct CommonTaskData_t {
     WorkflowHandle_t Workflow;
     FCommonTask Task;
-    FTaskCompleteDelegate Delegate;
 }CommonTaskData_t;
 
 typedef struct TickTaskData_t {
@@ -51,9 +53,15 @@ typedef struct TickTaskData_t {
     FTickTask Task;
 }TickTaskData_t;
 
-
-struct TaskWorkflow_t;
-typedef struct TaskWorkflow_t TaskWorkflow_t;
+typedef struct TaskWorkflow_t {
+    std::chrono::nanoseconds RepeatTime{ DEFAULT_REPEAT_TIME };
+    std::chrono::nanoseconds Timeout{ 0 };
+    FTimeRecorder TimeRecorder;
+    std::optional<std::future<void>> OptFuture;
+    std::vector<CommonTaskHandle_t> TimerTasks;
+    std::vector<CommonTaskHandle_t> TickTasks;
+    std::set<CommonTaskHandle_t> Tasks;
+}TaskWorkflow_t;
 
 class FTaskManager {
 public:
@@ -72,12 +80,56 @@ public:
     CommonTaskHandle_t AddTick(WorkflowHandle_t, FTickTask task);
     CommonTaskHandle_t AddTimer(WorkflowHandle_t, FCommonTask task, uint64_t repeat, uint64_t timeout = 0);
     // pass a task to excuse
-    CommonTaskHandle_t AddTask(WorkflowHandle_t, FCommonTask task, FTaskCompleteDelegate cb = nullptr);
+    template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
+    std::tuple<CommonTaskHandle_t,std::future<R>> AddTask(WorkflowHandle_t handle, F&& task) {
+        const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
+        std::scoped_lock lock(TaskWorkflowMutex, TaskMutex);
+        auto itr = TaskWorkflowDatas.find(handle);
+        if (itr == TaskWorkflowDatas.end()) {
+            return { CommonTaskHandle_t(), task_promise->get_future() };
+        }
+        auto res = Tasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared < CommonTaskData_t>(handle, 
+            [task = std::forward<F>(task),task_promise]() {
+                try
+                {
+                    if constexpr (std::is_void_v<R>)
+                    {
+                        task();
+                        task_promise->set_value();
+                    }
+                    else
+                    {
+                        task_promise->set_value(task());
+                    }
+                }
+                catch (...)
+                {
+                    try
+                    {
+                        task_promise->set_exception(std::current_exception());
+                    }
+                    catch (...)
+                    {
+                    }
+                }
+            }
+        ));
+        if (!res.second) {
+            return { CommonTaskHandle_t(), task_promise->get_future() };
+        }
+        auto setres = itr->second->Tasks.emplace(res.first->first);
+        if (!setres.second) {
+            Tasks.erase(res.first->first);
+            return { CommonTaskHandle_t(), task_promise->get_future() };
+        }
+        return { res.first->first, task_promise->get_future() };
+
+    }
     void RemoveTask(CommonTaskHandle_t);
 
-    bool IsTaskComplete(CommonTaskHandle_t);
 private:
     void TickTaskWorkflow(WorkflowHandle_t handle);
+    void TickRandonTaskWorkflow();
     FTaskManager();
 
     std::unordered_map<CommonHandle_t, std::shared_ptr<TaskWorkflow_t>>  TaskWorkflowDatas;

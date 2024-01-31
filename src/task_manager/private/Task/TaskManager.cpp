@@ -1,18 +1,5 @@
 #include "Task/TaskManager.h"
 #include <taskflow/taskflow.hpp>
-#include <set>
-typedef struct TaskWorkflow_t {
-    std::chrono::nanoseconds RepeatTime{ DEFAULT_REPEAT_TIME };
-    std::chrono::nanoseconds Timeout{ 0 };
-    FTimeRecorder TimeRecorder;
-    std::optional<std::future<void>> OptFuture;
-    std::vector<CommonTaskHandle_t> TimerTasks;
-
-    std::vector<CommonTaskHandle_t> TickTasks;
-    std::set<CommonTaskHandle_t> Tasks;
-    std::set<CommonTaskHandle_t> InProgressTasks;
-
-}TaskWorkflow_t;
 
 std::atomic_uint32_t WorkflowHandle_t::WorkflowCount;
 std::atomic_uint32_t CommonTaskHandle_t::TaskCount;
@@ -30,6 +17,8 @@ TaskManagerInterData_t* GetTaskManagerInterDataPtr(void* ptr) {
 
 FTaskManager::FTaskManager() {
     InterData = new TaskManagerInterData_t;
+
+    TaskWorkflowDatas.try_emplace(RandomWorkflowHandle, std::make_shared<TaskWorkflow_t>());
     MainThread = NewWorkflow();
 }
 
@@ -112,8 +101,104 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
             std::shared_ptr<CommonTaskData_t> pTaskData;
             pTaskData = localTaskDatas[task];
             pTaskData->Task();
-            pTaskData->Delegate();
         }
+        {
+            std::scoped_lock lock(TaskLock);
+            for (auto& task : localTasks) {
+                Tasks.erase(task);
+                pTaskWorkflow->Tasks.erase(task);
+            }
+        }
+    }
+}
+
+void FTaskManager::TickRandonTaskWorkflow()
+{
+    std::shared_lock TaskWorkflowLock{ TaskWorkflowMutex, std::defer_lock };
+    std::unique_lock TaskLock{ TaskMutex, std::defer_lock };
+    std::shared_lock TaskRLock{ TaskMutex, std::defer_lock };
+    std::shared_lock TickRLock{ TickMutex, std::defer_lock };
+    std::shared_lock TimerRLock{ TimerMutex, std::defer_lock };
+    auto& Executor = GetTaskManagerInterDataPtr(InterData)->Executor;
+    tf::Taskflow Taskflow;
+    std::shared_ptr<TaskWorkflow_t> pTaskWorkflow;
+    {
+        std::scoped_lock lock(TaskWorkflowLock);
+        pTaskWorkflow = TaskWorkflowDatas[RandomWorkflowHandle];
+    }
+    pTaskWorkflow->TimeRecorder.Tick();
+    auto deltime = pTaskWorkflow->TimeRecorder.GetDelta<std::chrono::nanoseconds>();
+    auto delsec = float(deltime.count()) / std::chrono::nanoseconds::period::den;
+    bool needTick;
+    if (pTaskWorkflow->Timeout <= deltime) {
+        pTaskWorkflow->Timeout = pTaskWorkflow->RepeatTime;
+        needTick = true;
+    }
+    else {
+        pTaskWorkflow->Timeout -= deltime;
+        needTick = false;
+    }
+
+    if (needTick) {
+        std::unordered_map < CommonHandle_t, std::shared_ptr<TickTaskData_t>> localTickTasks;
+        std::vector<CommonTaskHandle_t> localThreadTickTasks;
+        {
+            std::scoped_lock lock(TickRLock);
+            localTickTasks = TickTasks;
+            localThreadTickTasks = pTaskWorkflow->TickTasks;
+        }
+        for (auto& task : localThreadTickTasks) {
+            Taskflow.emplace(
+                [task = localTickTasks[task]->Task, delsec]() {
+                    task(delsec);
+                }
+            );
+        }
+    }
+
+    {
+        std::unordered_map < CommonHandle_t, std::shared_ptr<TimerTaskData_t>> localTimerTasks;
+        std::vector<CommonTaskHandle_t> localThreadTasks;
+        {
+            std::scoped_lock lock(TimerRLock);
+            localTimerTasks = TimerTasks;
+            localThreadTasks = pTaskWorkflow->TimerTasks;
+        }
+        for (auto& task : localThreadTasks) {
+            if (localTimerTasks[task]->Timeout <= deltime) {
+                localTimerTasks[task]->Timeout = localTimerTasks[task]->Repeat;
+                Taskflow.emplace(
+                    [task = localTimerTasks[task]->Task]() {
+                        task();
+                    }
+                );
+            }
+            else {
+                localTimerTasks[task]->Timeout -= deltime;
+            }
+        }
+    }
+
+    std::set<CommonTaskHandle_t> localTasks;
+    {
+        std::unordered_map < CommonHandle_t, std::shared_ptr<CommonTaskData_t>> localTaskDatas;
+        {
+            std::scoped_lock lock(TaskRLock);
+            localTasks = pTaskWorkflow->Tasks;
+            localTaskDatas = Tasks;
+        }
+        for (auto& task : localTasks) {
+            std::shared_ptr<CommonTaskData_t> pTaskData;
+            pTaskData = localTaskDatas[task];
+            Taskflow.emplace(
+                [task = pTaskData->Task]() {
+                    task();
+                }
+            );
+        }
+    }
+    Executor.run(Taskflow).wait();
+    {
         {
             std::scoped_lock lock(TaskLock);
             for (auto& task : localTasks) {
@@ -184,6 +269,15 @@ void FTaskManager::Tick()
         if (pair.first == MainThread)
         {
             TickTaskWorkflow(pair.first);
+        }
+        else if (pair.first == RandomWorkflowHandle) {
+            auto& optfuture = pTaskWorkflow->OptFuture;
+            if (optfuture.has_value() && optfuture.value().wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
+                continue;
+            }
+            optfuture = GetTaskManagerInterDataPtr(InterData)->Executor.async("", [handle, this]() {
+                TickRandonTaskWorkflow();
+                });
         }
         else {
             auto& optfuture = pTaskWorkflow->OptFuture;
@@ -302,24 +396,7 @@ CommonTaskHandle_t FTaskManager::AddTimer(WorkflowHandle_t handle, FCommonTask t
     return res.first->first;
 }
 
-CommonTaskHandle_t FTaskManager::AddTask(WorkflowHandle_t handle, FCommonTask task, FTaskCompleteDelegate cb)
-{
-    std::scoped_lock lock(TaskWorkflowMutex, TaskMutex);
-    auto itr = TaskWorkflowDatas.find(handle);
-    if (itr == TaskWorkflowDatas.end()) {
-        return CommonTaskHandle_t();
-    }
-    auto res = Tasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared < CommonTaskData_t>(handle, task, cb));
-    if (!res.second) {
-        return CommonTaskHandle_t();
-    }
-    auto setres = itr->second->Tasks.emplace(res.first->first);
-    if (!setres.second) {
-        Tasks.erase(res.first->first);
-        return CommonTaskHandle_t();
-    }
-    return res.first->first;
-}
+
 
 void FTaskManager::RemoveTask(CommonTaskHandle_t handle)
 {
@@ -365,19 +442,5 @@ void FTaskManager::RemoveTask(CommonTaskHandle_t handle)
             Tasks.erase(itr);
         }
         return;
-    }
-}
-
-bool FTaskManager::IsTaskComplete(CommonTaskHandle_t handle)
-{
-    std::shared_lock TaskWorkflowLock{ TaskWorkflowMutex, std::defer_lock };
-    std::shared_lock TaskLock{ TaskMutex, std::defer_lock };
-    {
-        std::scoped_lock lock(TaskWorkflowLock, TaskLock);
-        auto itr = Tasks.find(handle);
-        if (itr != Tasks.end()) {
-            return false;
-        }
-        return true;
     }
 }
