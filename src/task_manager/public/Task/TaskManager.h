@@ -16,8 +16,7 @@
 constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)) / 60);
 
 
-typedef std::function<void()> FCommonTask;
-typedef std::function<void(float)> FTickTask;
+
 
 typedef struct CommonTaskHandle_t : CommonHandle_t
 {
@@ -34,11 +33,13 @@ typedef struct WorkflowHandle_t : CommonHandle_t
 }WorkflowHandle_t;
 inline constexpr WorkflowHandle_t RandomWorkflowHandle{ 0 };
 
-
+typedef std::function<void()> FCommonTask;
+typedef std::function<void(CommonTaskHandle_t)> FTimerTask;
+typedef std::function<void(float)> FTickTask;
 
 typedef struct TimerTaskData_t {
     WorkflowHandle_t Workflow;
-    FCommonTask Task;
+    FTimerTask Task;
     std::chrono::nanoseconds Repeat;
     std::chrono::nanoseconds Timeout;
 }TimerTaskData_t;
@@ -78,7 +79,7 @@ public:
     void Stop();
 
     CommonTaskHandle_t AddTick(WorkflowHandle_t, FTickTask task);
-    CommonTaskHandle_t AddTimer(WorkflowHandle_t, FCommonTask task, uint64_t repeat, uint64_t timeout = 0);
+    CommonTaskHandle_t AddTimer(WorkflowHandle_t, FTimerTask task, uint64_t repeat, uint64_t timeout = 0);
     // pass a task to excuse
     template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
     std::tuple<CommonTaskHandle_t,std::future<R>> AddTask(WorkflowHandle_t handle, F&& task) {

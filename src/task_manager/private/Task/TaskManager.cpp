@@ -78,13 +78,13 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
             localTimerTasks = TimerTasks;
             localThreadTasks = pTaskWorkflow->TimerTasks;
         }
-        for (auto& task : localThreadTasks) {
-            if (localTimerTasks[task]->Timeout <= deltime) {
-                localTimerTasks[task]->Timeout = localTimerTasks[task]->Repeat;
-                localTimerTasks[task]->Task();
+        for (auto& handle : localThreadTasks) {
+            if (localTimerTasks[handle]->Timeout <= deltime) {
+                localTimerTasks[handle]->Timeout = localTimerTasks[handle]->Repeat;
+                localTimerTasks[handle]->Task(handle);
             }
             else {
-                localTimerTasks[task]->Timeout -= deltime;
+                localTimerTasks[handle]->Timeout -= deltime;
             }
         }
     }
@@ -164,17 +164,17 @@ void FTaskManager::TickRandonTaskWorkflow()
             localTimerTasks = TimerTasks;
             localThreadTasks = pTaskWorkflow->TimerTasks;
         }
-        for (auto& task : localThreadTasks) {
-            if (localTimerTasks[task]->Timeout <= deltime) {
-                localTimerTasks[task]->Timeout = localTimerTasks[task]->Repeat;
+        for (auto& handle : localThreadTasks) {
+            if (localTimerTasks[handle]->Timeout <= deltime) {
+                localTimerTasks[handle]->Timeout = localTimerTasks[handle]->Repeat;
                 Taskflow.emplace(
-                    [task = localTimerTasks[task]->Task]() {
-                        task();
+                    [task = localTimerTasks[handle]->Task, handle]() {
+                        task(handle);
                     }
                 );
             }
             else {
-                localTimerTasks[task]->Timeout -= deltime;
+                localTimerTasks[handle]->Timeout -= deltime;
             }
         }
     }
@@ -381,7 +381,7 @@ CommonTaskHandle_t FTaskManager::AddTick(WorkflowHandle_t handle, FTickTask task
     return res.first->first;
 }
 
-CommonTaskHandle_t FTaskManager::AddTimer(WorkflowHandle_t handle, FCommonTask task, uint64_t repeat, uint64_t timeout)
+CommonTaskHandle_t FTaskManager::AddTimer(WorkflowHandle_t handle, FTimerTask task, uint64_t repeat, uint64_t timeout)
 {
     std::scoped_lock lock(TaskWorkflowMutex, TimerMutex);
     auto itr = TaskWorkflowDatas.find(handle);
