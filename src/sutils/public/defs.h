@@ -8,14 +8,13 @@
 #include <stdint.h>
 
 #ifdef WIN32
-#include <Windows.h>
-#include <Strsafe.h>
-#define F_HANDLE HANDLE
-const uint32_t UTIL_CREATE_ALWAYS = CREATE_ALWAYS;
-const uint32_t UTIL_CREATE_NEW = CREATE_NEW;
-const uint32_t UTIL_OPEN_ALWAYS = OPEN_ALWAYS;
-const uint32_t UTIL_OPEN_EXISTING = OPEN_EXISTING;
-const uint32_t UTIL_TRUNCATE_EXISTING = TRUNCATE_EXISTING;
+
+#define F_HANDLE  void *
+const uint32_t UTIL_CREATE_ALWAYS = 2;//CREATE_ALWAYS;
+const uint32_t UTIL_CREATE_NEW = 1;// CREATE_NEW;
+const uint32_t UTIL_OPEN_ALWAYS = 4;// OPEN_ALWAYS;
+const uint32_t UTIL_OPEN_EXISTING = 3;// OPEN_EXISTING;
+const uint32_t UTIL_TRUNCATE_EXISTING = 5;// TRUNCATE_EXISTING;
 #else
 #include <fcntl.h>
 #include <errno.h>
