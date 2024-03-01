@@ -3,12 +3,18 @@
 
 FTimeRecorder::FTimeRecorder()
 {
-    CurTickTime = std::chrono::steady_clock::now();;
+    CurTickTime = std::chrono::steady_clock::now();
+    StartTime = CurTickTime;
 }
 void FTimeRecorder::Tick()
 {
     LastTickTime = CurTickTime;
     CurTickTime = std::chrono::steady_clock::now();
+}
+
+void FTimeRecorder::Reset()
+{
+    StartTime = LastTickTime = CurTickTime = std::chrono::steady_clock::now();
 }
 
 float FTimeRecorder::GetDeltaSec() const
