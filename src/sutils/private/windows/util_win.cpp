@@ -14,6 +14,7 @@ int util_dll_path(char* path, size_t* size)
     wchar_t modulestr[MAX_PATH] = { 0 };
     GetModuleFileNameW((HINSTANCE)&__ImageBase, modulestr, _countof(modulestr));
     auto u8str=U16ToU8((char16_t*)modulestr);
+    
     memcpy(path, u8str.c_str(), u8str.size()+1);
     *size = u8str.size();
     return 0;
@@ -21,12 +22,34 @@ int util_dll_path(char* path, size_t* size)
 
 int util_dll_wpath(wchar_t* path, size_t* size)
 {
-	wchar_t module[1024] = { 0 };
-	GetModuleFileNameW((HINSTANCE)&__ImageBase, module, _countof(module));
-	*size = wcslen(module);
-	wcscpy(path, module);
-	//memcpy(path, module, *size + 1);
-	return 0;
+    size_t buflen{ 128 };
+    wchar_t* temppath = NULL;
+    char* retval = NULL;
+    size_t len = 0;
+    if (path != nullptr) {
+        buflen = *size;
+        temppath = path;
+    }
+    else {
+        temppath = (wchar_t*)malloc(buflen * sizeof(WCHAR));
+    }
+    while (true) {
+
+        len = GetModuleFileNameW((HINSTANCE)&__ImageBase, temppath, buflen);
+        /* if it truncated, then len >= buflen - 1 */
+        /* if there was enough room (or failure), len < buflen - 1 */
+        if (len < buflen - 1) {
+            *size = len;
+            break;
+        }
+        if (path) {
+            break;
+        }
+        free(temppath);
+        buflen *= 2;
+        temppath = (wchar_t*)malloc(buflen * sizeof(WCHAR));
+    }
+    return 0;
 }
 
 uint64_t GetProcessParentId(uint64_t* id)
@@ -67,6 +90,38 @@ int util_exe_path(char* path, size_t* size)
     auto u8str = U16ToU8((char16_t*)modulestr);
     memcpy(path, u8str.c_str(), u8str.size() + 1);
     *size = u8str.size();
+    return 0;
+}
+
+int util_exe_wpath(wchar_t* path, size_t* size)
+{
+    size_t buflen{ 128 };
+    wchar_t* temppath = NULL;
+    char* retval = NULL;
+    size_t len = 0;
+    if (path != nullptr) {
+        buflen = *size;
+        temppath = path;
+    }
+    else {
+        temppath =(wchar_t*) malloc(buflen * sizeof(WCHAR));
+    }
+    while (true) {
+
+        len = GetModuleFileNameW(NULL, temppath, buflen);
+        /* if it truncated, then len >= buflen - 1 */
+        /* if there was enough room (or failure), len < buflen - 1 */
+        if (len < buflen - 1) {
+            *size = len;
+            break;
+        }
+        if (path) {
+            break;
+        }
+        free(temppath);
+        buflen *= 2;
+        temppath = (wchar_t*)malloc(buflen * sizeof(WCHAR));
+    }
     return 0;
 }
 
