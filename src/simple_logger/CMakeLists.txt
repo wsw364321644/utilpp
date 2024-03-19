@@ -8,7 +8,6 @@ set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
 set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_compile_definitions(${TARGET_NAME} PUBLIC SPDLOG_USE_STD_FORMAT)
 
 AddTargetInclude(${TARGET_NAME})
 
