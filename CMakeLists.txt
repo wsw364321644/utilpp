@@ -36,14 +36,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fmt)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
-set(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "" FORCE)
+set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
 set(SPDLOG_INSTALL ON CACHE BOOL "" FORCE)
+set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY git@ssh.github.com:gabime/spdlog.git
   GIT_TAG 7c02e204c92545f869e2f04edaab1f19fe8b19fd #1.13.0
 )
 FetchContent_MakeAvailable(spdlog)
+
 
 add_subdirectory(src/sutils)
 add_subdirectory(src/simple_logger)
