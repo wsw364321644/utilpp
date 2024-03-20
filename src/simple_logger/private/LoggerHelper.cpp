@@ -92,7 +92,7 @@ std::shared_ptr<FLoggerWrapper> CreateDefaultFileLogger(std::string name) {
     auto pathstr = new wchar_t[++size];
     util_exe_wpath(pathstr, &size);
     std::filesystem::path path(pathstr);
-    delete pathstr;
+    delete[] pathstr;
     auto stru8=path.stem().u8string();
     stru8.append(u8".log");
 
