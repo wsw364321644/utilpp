@@ -25,7 +25,9 @@ extern "C" {
     HANDLE create_event(const char* name, BOOL is_app);
     HANDLE open_event(const char* name, BOOL is_app);
 
-
+    //not support  parallel
+    HMODULE get_system_module(const char* module_name);
+    HMODULE load_system_module(const char* module_name);
 #ifdef __cplusplus
 }
 #endif
