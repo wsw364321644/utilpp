@@ -89,7 +89,7 @@ void* MapSharedMemory(CommonHandle_t* phandle)
 {
     WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
     if (!handle) {
-        return  false;
+        return  nullptr;
     }
     LPVOID pBuf = MapViewOfFile(handle->HMapFile,   // handle to map object
         FILE_MAP_ALL_ACCESS, // read/write permission
@@ -103,7 +103,7 @@ void* MapReadSharedMemory(CommonHandle_t* phandle)
 {
     WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
     if (!handle) {
-        return  false;
+        return  nullptr;
     }
     LPVOID pBuf = MapViewOfFile(handle->HMapFile,   // handle to map object
         FILE_MAP_READ, // read/write permission
