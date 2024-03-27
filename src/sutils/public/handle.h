@@ -3,28 +3,31 @@
 #include <atomic>
 #include <functional>
 
-
-typedef struct CommonHandle
-{
+struct NullCommonHandle_t {
     struct _Tag {};
-    constexpr explicit CommonHandle(_Tag):ID(0){ }
-    constexpr CommonHandle() : ID(0) {}
-    constexpr CommonHandle(uint32_t id) : ID(id) {}
-    constexpr CommonHandle(const CommonHandle& handle) : ID(handle.ID) {}
-    CommonHandle(std::atomic_uint32_t &counter)
+    constexpr explicit NullCommonHandle_t(_Tag) {}
+};
+typedef struct CommonHandle_t
+{
+    constexpr explicit CommonHandle_t(NullCommonHandle_t):ID(0){ }
+    constexpr CommonHandle_t() : ID(0) {}
+    constexpr CommonHandle_t(uint32_t id) : ID(id) {}
+    constexpr CommonHandle_t(const CommonHandle_t& handle) : ID(handle.ID) {}
+    CommonHandle_t(std::atomic_uint32_t &counter)
     {
         ID = ++counter ? counter.load() : ++counter;
     }
+    virtual ~CommonHandle_t(){}
     bool IsValid()
     {
         return ID != 0;
     }
 
-    bool operator<(const CommonHandle &handle) const
+    bool operator<(const CommonHandle_t&handle) const
     {
         return ID < handle.ID;
     }
-    bool operator==(const CommonHandle &handle) const
+    bool operator==(const CommonHandle_t&handle) const
     {
         return ID == handle.ID;
     }
@@ -32,7 +35,8 @@ typedef struct CommonHandle
     static std::atomic_uint32_t atomic_count;
     uint32_t ID;
 } CommonHandle_t;
-inline constexpr CommonHandle NullHandle{ CommonHandle::_Tag{} };
+
+inline constexpr NullCommonHandle_t NullHandle{ NullCommonHandle_t::_Tag{} };
 // inline bool operator< (const CommonHandle_t& lhs, const CommonHandle_t& rhs) {
 //     return lhs < rhs;
 // }

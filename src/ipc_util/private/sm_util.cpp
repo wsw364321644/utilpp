@@ -1,16 +1,16 @@
 #include "sm_util.h"
 #include <uv.h>
-#include <logger.h>
+#include <LoggerHelper.h>
 
-typedef struct WindowsHandle:public CommonHandle
+typedef struct WindowsHandle_t :public CommonHandle_t
 {
-    WindowsHandle(HANDLE _handle):CommonHandle(WindowsHandleCount), HMapFile(_handle)
+    WindowsHandle_t(HANDLE _handle):CommonHandle_t(WindowsHandleCount), HMapFile(_handle)
     {
         if (HMapFile == NULL) {
-            CommonHandle();
+            CommonHandle_t();
         }
         else {
-            CommonHandle(WindowsHandleCount);
+            CommonHandle_t(WindowsHandleCount);
         }
     }
 
@@ -21,7 +21,7 @@ typedef struct WindowsHandle:public CommonHandle
 } WindowsHandle_t;
 std::atomic_uint32_t WindowsHandle_t::WindowsHandleCount{ 0 };
 
-CommonHandle_t* CreateSharedMemory(const char* name)
+CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
 {
     //int flags = UV_FS_O_RDWR | UV_FS_O_CREAT | UV_FS_O_TRUNC | UV_FS_O_FILEMAP;
     //int mode = S_IREAD | S_IWRITE;
@@ -35,11 +35,23 @@ CommonHandle_t* CreateSharedMemory(const char* name)
     //}
     //out = req.result;
     //return  out;
+    HANDLE HMapFile = CreateFileMappingA(
+        INVALID_HANDLE_VALUE,    // use paging file
+        NULL,                    // default security
+        PAGE_READWRITE,          // read/write access
+        len >> 32 & 0xffff,                       // maximum object size (high-order DWORD)
+        len & 0xffff,                // maximum object size (low-order DWORD)
+        name);                 // name of mapping object
 
-    auto out=new WindowsHandle_t(nullptr) ;
-    out->Name = name;
-    out->FileSize = 0;
-    return out;
+    if (HMapFile == NULL)
+    {
+        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not create file mapping object({}).\n", GetLastError());
+        return nullptr;
+    }
+    auto handle = new WindowsHandle_t(HMapFile);
+    handle->Name = name;
+    handle->FileSize = len;
+    return handle;
 }
 
 CommonHandle_t* OpenSharedMemory(const char* name) {
@@ -64,7 +76,7 @@ CommonHandle_t* OpenSharedMemory(const char* name) {
 
     if (hMapFile == NULL)
     {
-        LOG_ERROR("Could not open file mapping object({}).\n", GetLastError());
+        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not open file mapping object({}).", GetLastError());
         return nullptr;
     }
     auto out = new WindowsHandle_t(hMapFile);
@@ -73,7 +85,40 @@ CommonHandle_t* OpenSharedMemory(const char* name) {
 
 }
 
-bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
+void* MapSharedMemory(CommonHandle_t* phandle)
+{
+    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
+    if (!handle) {
+        return  false;
+    }
+    LPVOID pBuf = MapViewOfFile(handle->HMapFile,   // handle to map object
+        FILE_MAP_ALL_ACCESS, // read/write permission
+        0,
+        0,
+        handle->FileSize);
+    return pBuf;
+}
+
+void* MapReadSharedMemory(CommonHandle_t* phandle)
+{
+    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
+    if (!handle) {
+        return  false;
+    }
+    LPVOID pBuf = MapViewOfFile(handle->HMapFile,   // handle to map object
+        FILE_MAP_READ, // read/write permission
+        0,
+        0,
+        handle->FileSize);
+    return pBuf;
+}
+
+void UnmapSharedMemory(void* ptr)
+{
+    UnmapViewOfFile(ptr);
+}
+
+bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t len)
 {
     if (!phandle||!phandle->IsValid()) {
         return false;
@@ -88,48 +133,32 @@ bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
     //*len = write_req.result;
     
 
-    WindowsHandle_t* handle = static_cast<WindowsHandle_t*>(phandle);
-    if (handle->FileSize < *len) {
-        if (handle->HMapFile) {
-            CloseHandle(handle->HMapFile);
-        }
-        handle->HMapFile = CreateFileMappingA(
-            INVALID_HANDLE_VALUE,    // use paging file
-            NULL,                    // default security
-            PAGE_READWRITE,          // read/write access
-            0,                       // maximum object size (high-order DWORD)
-            *len,                // maximum object size (low-order DWORD)
-            handle->Name.c_str());                 // name of mapping object
-
-        if (handle->HMapFile == NULL)
-        {
-            LOG_ERROR("Could not create file mapping object({}).\n", GetLastError());
-            handle->FileSize = 0;
-            return false;
-        }
-        handle->FileSize = *len;
+    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
+    if (!handle) {
+        return  false;
     }
-        
+    if (handle->FileSize < len) {
+        return false;
+    }
 
     LPTSTR pBuf = (LPTSTR)MapViewOfFile(handle->HMapFile,   // handle to map object
         FILE_MAP_ALL_ACCESS, // read/write permission
         0,
         0,
-        *len);
+        len);
 
     if (pBuf == NULL)
     {
-        LOG_ERROR("Could not map view of file({}).\n", GetLastError());
+        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not map view of file({}).\n", GetLastError());
         return false;
     }
 
 
-    CopyMemory((PVOID)pBuf, content, *len);
-
+    CopyMemory((PVOID)pBuf, content, len);
     UnmapViewOfFile(pBuf);
-
     return true;
 }
+
 bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
 {
     if (!phandle || !phandle->IsValid()) {
@@ -144,7 +173,10 @@ bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
     //    LOG_ERROR("uv_fs_write error: {}\n", uv_strerror(res));
     //}
     //*len = read_req.result;
-    WindowsHandle_t* handle = static_cast<WindowsHandle_t*>(phandle);
+    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
+    if (!handle) {
+        return  false;
+    }
     LPTSTR pBuf = (LPTSTR)MapViewOfFile(handle->HMapFile, // handle to map object
         FILE_MAP_ALL_ACCESS,  // read/write permission
         0,
@@ -153,18 +185,14 @@ bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
 
     if (pBuf == NULL)
     {
-        LOG_ERROR("Could not map view of file({}).\n", GetLastError());
+        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not map view of file({}).", GetLastError());
         return false;
     }
-
     CopyMemory( content, (PVOID)pBuf, *len);
-
     UnmapViewOfFile(pBuf);
-
-
-
     return true;
 }
+
 void CloseSharedMemory(CommonHandle_t* phandle)
 {
     if (!phandle || !phandle->IsValid()) {
@@ -174,7 +202,11 @@ void CloseSharedMemory(CommonHandle_t* phandle)
     //uv_fs_close(uv_default_loop(), &closeReq,
     //    handle.ID,
     //    NULL);
-    WindowsHandle_t* handle = static_cast<WindowsHandle_t*>(phandle);
+    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
+    if (!handle) {
+        return;
+    }
     if (handle->HMapFile)
         CloseHandle(handle->HMapFile);
+    delete handle;
 }
