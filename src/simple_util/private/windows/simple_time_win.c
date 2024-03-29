@@ -1,6 +1,20 @@
 #include "simple_time.h"
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+
+static inline uint64_t get_clockfreq(void)
+{
+	static bool have_clockfreq = false;
+	static LARGE_INTEGER clock_freq;
+
+	if (!have_clockfreq) {
+		QueryPerformanceFrequency(&clock_freq);
+		have_clockfreq = true;
+	}
+
+	return clock_freq.QuadPart;
+}
+
 uint64_t os_gettime_ns(void)
 {
 	LARGE_INTEGER current_time;
