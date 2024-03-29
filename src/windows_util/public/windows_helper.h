@@ -1,4 +1,4 @@
-#include <defs.h>
+#include <os_defs.h>
 #include <Windows.h>
 
 #define REG_COMMAND_PATH "shell\\open\\command";

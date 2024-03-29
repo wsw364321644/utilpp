@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <defs.h>
+#include <os_defs.h>
 #include <memory>
 #include <string>
 
