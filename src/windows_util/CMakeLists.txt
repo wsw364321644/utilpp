@@ -9,7 +9,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 AddTargetInclude(${TARGET_NAME})
 
-target_link_libraries (${TARGET_NAME} PUBLIC sutils)
+target_link_libraries (${TARGET_NAME} PUBLIC simple_util)
 
 
 install(TARGETS ${TARGET_NAME}
