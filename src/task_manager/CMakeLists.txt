@@ -15,7 +15,7 @@ if(${TASK_LIB_TARGET_NAME}_POPULATED)
 
     AddTargetInclude(${TARGET_NAME})
 
-    target_link_libraries(${TARGET_NAME} PUBLIC sutils)
+    target_link_libraries(${TARGET_NAME} PRIVATE simple_utilpp_a)
     target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
     target_link_libraries(${TARGET_NAME} PRIVATE Taskflow)
 

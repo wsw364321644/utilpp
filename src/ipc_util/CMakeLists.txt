@@ -12,9 +12,7 @@ function(add_ipc_util TARGET_NAME)
 
     AddTargetInclude(${TARGET_NAME})
 
-    target_link_libraries(${TARGET_NAME} PUBLIC sutils)
     target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
-
     if(UTILPP_WITH_STATIC_LIBUV)
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv_a)
     else()
@@ -37,7 +35,9 @@ function(add_ipc_util TARGET_NAME)
 endfunction()
 
 add_library(${TARGET_NAME} SHARED ${SourceFiles})
+target_link_libraries(${TARGET_NAME} PRIVATE simple_utilpp)
 add_ipc_util(${TARGET_NAME})
 
 add_library(${TARGET_NAME}_a STATIC ${SourceFiles})
+target_link_libraries(${TARGET_NAME} PRIVATE simple_utilpp_a)
 add_ipc_util(${TARGET_NAME}_a)
