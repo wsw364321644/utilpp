@@ -21,7 +21,6 @@
 #define SIMPLE_UTIL_API extern "C" 
 #endif 
 #endif
-#endif
 #else
 #if defined( _WIN32 ) && !defined( _X360 )
 #if defined( SIMPLE_UTIL_API_EXPORTS )
