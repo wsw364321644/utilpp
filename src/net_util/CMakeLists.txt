@@ -13,7 +13,7 @@ target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
 set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 target_compile_definitions(${TARGET_NAME} PUBLIC -DWIN32_LEAN_AND_MEAN)
 
-target_link_libraries(${TARGET_NAME} PRIVATE sutils)
+target_link_libraries(${TARGET_NAME} PRIVATE simple_utilpp)
 target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
 target_link_libraries(${TARGET_NAME} PRIVATE CURL::libcurl)
 

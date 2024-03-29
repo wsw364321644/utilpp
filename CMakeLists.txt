@@ -8,7 +8,7 @@ include(FetchContent)
 # include(ProjectImport)
 set(VERSION "0.0.1")
 project(utilpp VERSION ${VERSION})
-enable_language(CXX ASM)
+enable_language(C CXX ASM)
 
 option(UTILPP_STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
 option(UTILPP_WITH_STATIC_LIBUV "USE UV_a." OFF)
@@ -47,7 +47,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(spdlog)
 
 
-add_subdirectory(src/sutils)
+add_subdirectory(src/simple_util)
+add_subdirectory(src/simple_utilpp)
 add_subdirectory(src/simple_logger)
 add_subdirectory(src/rapidjson)
 add_subdirectory(src/better-enums)
