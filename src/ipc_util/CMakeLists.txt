@@ -39,5 +39,5 @@ target_link_libraries(${TARGET_NAME} PRIVATE simple_utilpp)
 add_ipc_util(${TARGET_NAME})
 
 add_library(${TARGET_NAME}_a STATIC ${SourceFiles})
-target_link_libraries(${TARGET_NAME} PRIVATE simple_utilpp_a)
+target_link_libraries(${TARGET_NAME}_a PRIVATE simple_utilpp_a)
 add_ipc_util(${TARGET_NAME}_a)
