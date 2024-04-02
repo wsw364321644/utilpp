@@ -128,3 +128,8 @@ std::shared_ptr<FLoggerWrapper> GetLogger(std::string name)
     return CreateDefaultFileLogger(name);
 }
 
+std::shared_ptr<FLoggerWrapper> GetLogger(std::nullptr_t  ptr)
+{
+    return GetLogger("");
+}
+
