@@ -295,7 +295,7 @@ HMODULE get_system_module(const char* module_name)
     return GetModuleHandleW(base_path);
 }
 
-HMODULE load_system_module(const char* module_name)
+HMODULE load_system_library(const char* module_name)
 {
     WCHAR base_path[MAX_PATH];
     if (get_system_module_path(base_path, module_name) != NULL) {
