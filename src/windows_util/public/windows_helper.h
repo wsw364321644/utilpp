@@ -27,7 +27,7 @@ extern "C" {
 
     //not support  parallel
     HMODULE get_system_module(const char* module_name);
-    HMODULE load_system_module(const char* module_name);
+    HMODULE load_system_library(const char* module_name);
 #ifdef __cplusplus
 }
 #endif
