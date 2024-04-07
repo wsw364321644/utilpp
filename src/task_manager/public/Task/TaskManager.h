@@ -27,11 +27,12 @@ typedef struct CommonTaskHandle_t : CommonHandle_t
 
 typedef struct WorkflowHandle_t : CommonHandle_t
 {
-    constexpr WorkflowHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
+    WorkflowHandle_t(NullCommonHandle_t h) :CommonHandle_t(h) {}
+    WorkflowHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
     constexpr WorkflowHandle_t() : CommonHandle_t() {}
     static std::atomic_uint32_t WorkflowCount;
 }WorkflowHandle_t;
-inline constexpr WorkflowHandle_t RandomWorkflowHandle{ 0 };
+
 
 typedef std::function<void()> FCommonTask;
 typedef std::function<void(CommonTaskHandle_t)> FTimerTask;

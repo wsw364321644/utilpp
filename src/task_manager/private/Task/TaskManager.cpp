@@ -18,7 +18,7 @@ TaskManagerInterData_t* GetTaskManagerInterDataPtr(void* ptr) {
 FTaskManager::FTaskManager() {
     InterData = new TaskManagerInterData_t;
 
-    TaskWorkflowDatas.try_emplace(RandomWorkflowHandle, std::make_shared<TaskWorkflow_t>());
+    TaskWorkflowDatas.try_emplace(CommonHandle_t(NullHandle), std::make_shared<TaskWorkflow_t>());
     MainThread = NewWorkflow();
 }
 
@@ -124,7 +124,7 @@ void FTaskManager::TickRandonTaskWorkflow()
     std::shared_ptr<TaskWorkflow_t> pTaskWorkflow;
     {
         std::scoped_lock lock(TaskWorkflowLock);
-        pTaskWorkflow = TaskWorkflowDatas[RandomWorkflowHandle];
+        pTaskWorkflow = TaskWorkflowDatas[CommonHandle_t(NullHandle)];
     }
     pTaskWorkflow->TimeRecorder.Tick();
     auto deltime = pTaskWorkflow->TimeRecorder.GetDelta<std::chrono::nanoseconds>();
@@ -270,7 +270,7 @@ void FTaskManager::Tick()
         {
             TickTaskWorkflow(pair.first);
         }
-        else if (pair.first == RandomWorkflowHandle) {
+        else if (pair.first == NullHandle) {
             auto& optfuture = pTaskWorkflow->OptFuture;
             if (optfuture.has_value() && optfuture.value().wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
                 continue;
