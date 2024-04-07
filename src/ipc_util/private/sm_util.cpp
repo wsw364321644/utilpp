@@ -39,7 +39,7 @@ CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
         INVALID_HANDLE_VALUE,    // use paging file
         NULL,                    // default security
         PAGE_READWRITE,          // read/write access
-        len >> 32 & 0xffff,                       // maximum object size (high-order DWORD)
+        (uint64_t)len >> 32 & 0xffff,                       // maximum object size (high-order DWORD)
         len & 0xffff,                // maximum object size (low-order DWORD)
         name);                 // name of mapping object
 
