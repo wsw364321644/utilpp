@@ -35,12 +35,16 @@ CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
     //}
     //out = req.result;
     //return  out;
+    LARGE_INTEGER li;
+    li.QuadPart = len;
+    DWORD low = li.LowPart;
+    DWORD high = li.HighPart;
     HANDLE HMapFile = CreateFileMappingA(
         INVALID_HANDLE_VALUE,    // use paging file
         NULL,                    // default security
         PAGE_READWRITE,          // read/write access
-        (uint64_t)len >> 32 & 0xffff,                       // maximum object size (high-order DWORD)
-        len & 0xffff,                // maximum object size (low-order DWORD)
+        high,                       // maximum object size (high-order DWORD)
+        low,                // maximum object size (low-order DWORD)
         name);                 // name of mapping object
 
     if (HMapFile == NULL)
