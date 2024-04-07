@@ -1,3 +1,23 @@
+set( TARGET_NAME simple_util_include )
+NewTargetSource()
+AddSourceFolder(INCLUDE RECURSE INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/public")
+add_library (${TARGET_NAME} INTERFACE  ${SourceFiles})
+AddTargetInclude(${TARGET_NAME})
+
+install(TARGETS ${TARGET_NAME}
+EXPORT ${TARGET_NAME}Targets
+LIBRARY DESTINATION lib
+ARCHIVE DESTINATION lib
+RUNTIME DESTINATION bin
+PUBLIC_HEADER DESTINATION include
+)
+
+install(EXPORT ${TARGET_NAME}Targets
+FILE ${TARGET_NAME}Targets.cmake
+NAMESPACE UTILPP::
+DESTINATION lib/cmake/${TARGET_NAME}
+)
+
 set( TARGET_NAME simple_util )
 NewTargetSource()
 AddSourceFolder(INCLUDE RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
