@@ -18,7 +18,7 @@ typedef struct CommonHandle_t
         ID = ++counter ? counter.load() : ++counter;
     }
     virtual ~CommonHandle_t(){}
-    bool IsValid()
+    bool IsValid() const
     {
         return ID != 0;
     }
@@ -32,6 +32,10 @@ typedef struct CommonHandle_t
         return ID == handle.ID;
     }
 
+    bool operator==(const NullCommonHandle_t& handle) const
+    {
+        return !IsValid();
+    }
     static std::atomic_uint32_t atomic_count;
     uint32_t ID;
 } CommonHandle_t;
