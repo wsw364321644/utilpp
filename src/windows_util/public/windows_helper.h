@@ -1,5 +1,5 @@
 #include <simple_os_defs.h>
-#include <Windows.h>
+
 
 #define REG_COMMAND_PATH "shell\\open\\command";
 
@@ -17,8 +17,10 @@ extern "C" {
     bool get_window_exe(LPSTR* const name, HWND window, fnmalloc mallocptr);
     void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
     void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
-    HWND find_main_window(unsigned long process_id);
+    HWND find_main_window(DWORD process_id);
     HWND find_window_by_title(const char* name);
+    DWORD  get_process_file_name(DWORD process_id, LPSTR  file_path, DWORD  nSize);
+    DWORD  get_process_file_name_by_handle(HANDLE  hProcess, LPSTR  file_path, DWORD  nSize);
 
     HANDLE create_mutex(const char* name, BOOL is_app);
     HANDLE open_mutex(const char* name, BOOL is_app);

@@ -9,6 +9,11 @@
 
 #ifdef WIN32
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif // !WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #define F_HANDLE  void *
 const uint32_t UTIL_CREATE_ALWAYS = 2;//CREATE_ALWAYS;
 const uint32_t UTIL_CREATE_NEW = 1;// CREATE_NEW;

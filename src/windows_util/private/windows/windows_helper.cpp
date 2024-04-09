@@ -203,7 +203,7 @@ BOOL CALLBACK find_main_window_callback(HWND handle, LPARAM lParam)
     data.window_handle = handle;
     return FALSE;
 }
-HWND find_main_window(unsigned long process_id)
+HWND find_main_window(DWORD process_id)
 {
     handle_data data;
     data.process_id = process_id;
@@ -237,6 +237,29 @@ HWND find_window_by_title(const char* name)
     EnumWindows(find_window_by_title_callback, (LPARAM)&data);
     return data.handle;
 }
+
+
+DWORD  get_process_file_name(DWORD process_id, LPSTR  file_path, DWORD  size) {
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
+        PROCESS_VM_READ,
+        FALSE, process_id);
+    DWORD res=get_process_file_name_by_handle(hProcess, file_path, size);
+    CloseHandle(hProcess);
+    return res;
+}
+
+DWORD  get_process_file_name_by_handle(HANDLE  hProcess, LPSTR  file_path, DWORD  size) {
+    return GetProcessImageFileNameA(hProcess, file_path, size);
+    //HMODULE hMod;
+    //DWORD cbNeeded;
+    //if (EnumProcessModules(hProcess, &hMod, sizeof(hMod),
+    //    &cbNeeded))
+    //{
+    //    GetModuleFileNameExA(hProcess, hMod, file_path,size);
+    //}
+}
+
+
 
 HANDLE create_mutex(const char* name, BOOL is_app)
 {
