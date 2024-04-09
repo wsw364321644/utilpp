@@ -169,7 +169,7 @@ void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr)
     if (GetWindowTextW(hwnd, temp, len + 1)) {
         auto u8str = U16ToU8((char16_t*)temp);
         *name = (char*)mallocptr(u8str.size() + 1);
-        strcpy(*name, u8str.c_str());
+        lstrcpyA(*name, u8str.c_str());
     }
 
     free(temp);
@@ -183,7 +183,7 @@ void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr)
     if (GetClassNameW(hwnd, temp, sizeof(temp) / sizeof(wchar_t))) {
         auto u8str = U16ToU8((char16_t*)temp);
         *name = (char*)mallocptr(u8str.size() + 1);
-        strcpy(*name, u8str.c_str());
+        lstrcpyA(*name, u8str.c_str());
     }
 }
 struct handle_data {
@@ -303,9 +303,9 @@ UINT get_system_module_path(WCHAR* base_path, const char* module_name) {
         bsystem_path_inited = true;
     }
     lstrcpyW(base_path, system_path);
-    lstrcpyW(base_path, L"\\");
+    lstrcatW(base_path, L"\\");
     auto module_name16 = U8ToU16(module_name);
-    lstrcpyW(base_path, (WCHAR*)module_name16.c_str());
+    lstrcatW(base_path, (WCHAR*)module_name16.c_str());
     return NULL;
 }
 HMODULE get_system_module(const char* module_name)
