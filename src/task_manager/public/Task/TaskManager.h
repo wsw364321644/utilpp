@@ -85,7 +85,9 @@ public:
     template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
     std::tuple<CommonTaskHandle_t,std::future<R>> AddTask(WorkflowHandle_t handle, F&& task) {
         const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
-        std::scoped_lock lock(TaskWorkflowMutex, TaskMutex);
+        std::shared_lock TaskWorkflowRLock{ TaskWorkflowMutex, std::defer_lock };
+        std::unique_lock TaskLock{ TaskMutex, std::defer_lock };
+        std::scoped_lock lock(TaskWorkflowRLock, TaskLock);
         auto itr = TaskWorkflowDatas.find(handle);
         if (itr == TaskWorkflowDatas.end()) {
             return { CommonTaskHandle_t(), task_promise->get_future() };

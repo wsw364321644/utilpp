@@ -24,8 +24,9 @@ FTaskManager::FTaskManager() {
 
 FTaskManager::~FTaskManager()
 {
-    if (InterData) {
-        delete InterData;
+    if (GetTaskManagerInterDataPtr(InterData)) {
+        delete GetTaskManagerInterDataPtr(InterData);
+        InterData = nullptr;
     }
 }
 
@@ -368,7 +369,9 @@ void FTaskManager::Stop()
 
 CommonTaskHandle_t FTaskManager::AddTick(WorkflowHandle_t handle, FTickTask task)
 {
-    std::scoped_lock lock(TaskWorkflowMutex, TickMutex);
+    std::shared_lock TaskWorkflowRLock{ TaskWorkflowMutex, std::defer_lock };
+    std::unique_lock TickLock{ TickMutex, std::defer_lock };
+    std::scoped_lock lock(TaskWorkflowRLock, TickLock);
     auto itr = TaskWorkflowDatas.find(handle);
     if (itr == TaskWorkflowDatas.end()) {
         return CommonTaskHandle_t();
@@ -383,7 +386,9 @@ CommonTaskHandle_t FTaskManager::AddTick(WorkflowHandle_t handle, FTickTask task
 
 CommonTaskHandle_t FTaskManager::AddTimer(WorkflowHandle_t handle, FTimerTask task, uint64_t repeat, uint64_t timeout)
 {
-    std::scoped_lock lock(TaskWorkflowMutex, TimerMutex);
+    std::shared_lock TaskWorkflowRLock{ TaskWorkflowMutex, std::defer_lock };
+    std::unique_lock TimerLock{ TimerMutex, std::defer_lock };
+    std::scoped_lock lock(TaskWorkflowRLock, TimerLock);
     auto itr = TaskWorkflowDatas.find(handle);
     if (itr == TaskWorkflowDatas.end()) {
         return CommonTaskHandle_t();
