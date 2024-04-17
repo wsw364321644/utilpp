@@ -67,3 +67,8 @@ find_package(CURL)
 if(CURL_FOUND)
   add_subdirectory(src/net_util)
 endif()
+
+find_package(SDL2)
+if(SDL2_FOUND)
+  add_subdirectory(src/sdl_helper)
+endif()
