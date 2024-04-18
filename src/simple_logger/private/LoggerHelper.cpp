@@ -111,10 +111,11 @@ std::shared_ptr<FLoggerWrapper> CreateDefaultFileLogger(std::string name) {
 }
 std::shared_ptr<FLoggerWrapper> CreateAsyncLogger(const LoggerSetting_t& setting)
 {
-    auto logger = spdlog::get(setting.Name);
-    if (logger){
-        return std::make_shared<FLoggerWrapper>(logger);
-    }
+    spdlog::drop(setting.Name);
+    //auto logger = spdlog::get(setting.Name);
+    //if (logger){
+    //    return std::make_shared<FLoggerWrapper>(logger);
+    //}
     return InternalCreateAsyncLogger(setting);
 }
 
