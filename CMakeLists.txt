@@ -28,12 +28,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-FetchContent_Declare(
-  fmt
-  GIT_REPOSITORY git@ssh.github.com:fmtlib/fmt.git
-  GIT_TAG e69e5f977d458f2650bb346dadf2ad30c5320281 #10.2.1
-)
-FetchContent_MakeAvailable(fmt)
+#FetchContent_Declare(
+#  fmt
+#  GIT_REPOSITORY git@ssh.github.com:fmtlib/fmt.git
+#  GIT_TAG e69e5f977d458f2650bb346dadf2ad30c5320281 #10.2.1
+#)
+#FetchContent_MakeAvailable(fmt)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -46,6 +46,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+set(JSON_Install TRUE)
+FetchContent_Declare(
+  nlohmann-json
+  GIT_REPOSITORY git@ssh.github.com:nlohmann/json.git
+  GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 # 3.11.3
+)
+FetchContent_MakeAvailable(nlohmann-json)
+
+set(JSON_VALIDATOR_INSTALL TRUE)
+FetchContent_Declare(
+  json-schema-validator
+  GIT_REPOSITORY git@ssh.github.com:pboettch/json-schema-validator.git
+  GIT_TAG 349cba9f7e3cb423bbc1811bdd9f6770f520b468 # 2.3.0
+)
+FetchContent_MakeAvailable(json-schema-validator)
+
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp)
@@ -53,6 +69,7 @@ add_subdirectory(src/simple_logger)
 add_subdirectory(src/rapidjson)
 add_subdirectory(src/better-enums)
 add_subdirectory(src/task_manager)
+add_subdirectory(src/rpc_parser)
 
 if(WIN32)
   add_subdirectory(src/windows_util)

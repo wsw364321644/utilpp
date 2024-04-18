@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "index": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 16
+    },
+    "policy": {
+      "type": "string",
+      "enum": [
+        "Unordered",
+        "Ordered",
+        "Stream"
+      ]
+    }
+  },
+  "required": [
+    "index",
+    "policy",
+  ]
+}

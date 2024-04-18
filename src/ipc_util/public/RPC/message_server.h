@@ -1,0 +1,61 @@
+#pragma once
+
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <memory>
+
+#include <shared_mutex>
+
+#include "message_common.h"
+#include "delegate_macros.h"
+#include "message_session.h"
+#pragma warning(push)
+#pragma warning(disable:4251)
+
+struct uv_loop_s;
+typedef struct uv_loop_s uv_loop_t;
+
+class IPC_EXPORT MessageServerUV
+{
+    friend class MessageSessionUV;
+    friend class UVCallBack;
+public:
+    MessageServerUV();
+    ~MessageServerUV();
+
+public:
+    bool OpenServer(EMessageConnectionType, const std::string& url);
+    void Tick(float delSec);
+    void Run();
+    void Stop();
+    void CloseConnection(MessageSessionUV*);
+
+    EMessageConnectionType GetServerType() {
+        return messageConnectionType;
+    }
+private:
+
+    void CloseServer();
+
+
+private:
+
+    void UVOnConnection(uv_stream_t* stream, int status);
+    void UVOnUDPRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags);
+    void OnSessionClose(MessageSessionUV* session);
+    uv_loop_t* loop;
+    EMessageConnectionType messageConnectionType;
+    union UVHandle_u serverHandle;
+    std::vector<std::unique_ptr<MessageSessionUV>> sessions;
+    std::shared_mutex sessionMutex;
+    uint32_t idCount;
+    std::string url;
+
+
+public:
+    DEFINE_EVENT_ONE_PARAM(OnConnect, MessageSessionUV*);
+
+
+};
+#pragma warning(pop)

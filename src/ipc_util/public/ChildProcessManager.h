@@ -15,6 +15,8 @@ typedef SSIZE_T ssize_t;
 #include <unistd.h>
 #endif
 #endif
+
+#include "ipc_util_export.h"
 typedef struct uv_loop_s uv_loop_t;
 typedef struct uv_pipe_s uv_pipe_t;
 typedef struct uv_stream_s uv_stream_t;
@@ -23,7 +25,7 @@ typedef struct uv_buf_t uv_buf_t;
 
 typedef struct UVProcess_t UVProcess_t;
 ///use FChildProcessManager in one thread
-class FChildProcessManager {
+class IPC_EXPORT FChildProcessManager {
 public:
     FChildProcessManager();
     ~FChildProcessManager() {}
