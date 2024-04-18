@@ -13,9 +13,9 @@ function(add_ipc_util TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
     target_link_libraries(${TARGET_NAME} PRIVATE rpc_parser_a)
     if(UTILPP_WITH_STATIC_LIBUV)
-        target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv_a)
+        target_link_libraries(${TARGET_NAME} PUBLIC libuv::uv_a)
     else()
-        target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv)
+        target_link_libraries(${TARGET_NAME} PUBLIC libuv::uv)
     endif()
 
     install(TARGETS ${TARGET_NAME}
