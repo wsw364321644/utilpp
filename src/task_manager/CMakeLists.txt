@@ -1,8 +1,7 @@
-set(TARGET_NAME task_manager)
 set(TASK_LIB_TARGET_NAME taskflow)
 FetchContent_GetProperties(${TASK_LIB_TARGET_NAME})
-
 if(${TASK_LIB_TARGET_NAME}_POPULATED)
+    set(TARGET_NAME task_manager)
     NewTargetSource()
     AddSourceFolder(INCLUDE RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
     AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
