@@ -41,6 +41,6 @@ add_ipc_util(${TARGET_NAME})
 
 set(TARGET_NAME ipc_util_a)
 add_library(${TARGET_NAME} STATIC ${SourceFiles})
-target_compile_definitions(${TARGET_NAME} PRIVATE -DIPC_UTIL_NODLL)
+target_compile_definitions(${TARGET_NAME} PUBLIC -DIPC_UTIL_NODLL)
 target_link_libraries(${TARGET_NAME} PUBLIC simple_utilpp_a)
 add_ipc_util(${TARGET_NAME})
