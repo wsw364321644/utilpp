@@ -3,8 +3,8 @@
 #include <functional>
 #include <format>
 
-const ssize_t MAX_CHANNAL = 16;
-const ssize_t MAX_CACHED_PACKET = 100;
+const uint32_t MAX_CHANNAL = 16;
+const uint32_t MAX_CACHED_PACKET = 100;
 const char* MessageBegin = "V1.0";
 const char* MessageHeaderLength = "Length";
 const char* MessageHeaderIndex = "Index";
@@ -22,13 +22,13 @@ std::unordered_map<std::string, EMessageHeader> MessageProcesser::mapHeader{ {Me
 MessageProcesser::MessageProcesser() :sendChannels(MAX_CHANNAL, 0), recvChannels(MAX_CHANNAL, 0), ConnectionType(), session(nullptr), messageQueues(MAX_CHANNAL)
 {
 }
-MessageProcesser::MessageProcesser(MessageSessionInterface* mif) : MessageProcesser() {
+MessageProcesser::MessageProcesser(IMessageSession* mif) : MessageProcesser() {
     Init(mif);
 }
 MessageProcesser::~MessageProcesser()
 {
 }
-bool MessageProcesser::Init(MessageSessionInterface* insession)
+bool MessageProcesser::Init(IMessageSession* insession)
 {
     if (!insession) {
         return false;
@@ -182,7 +182,7 @@ void MessageProcesser::Tick()
 
 
 
-void MessageProcesser::OnRead(MessageSessionInterface* session, char* str, ssize_t size)
+void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size)
 {
     if (ConnectionType == EMessageConnectionType::EMCT_UDP) {
         auto result = TryConsume(str, size);

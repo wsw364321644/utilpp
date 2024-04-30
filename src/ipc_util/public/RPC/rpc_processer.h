@@ -8,8 +8,6 @@
 #include "rpc_interface.h"
 #include "message_processer.h"
 #include "delegate_macros.h"
-#pragma warning(push)
-#pragma warning(disable:4251)
 
 
 class IGroupRPC;
@@ -59,4 +57,3 @@ private:
     std::unordered_map<RPCHandle_t, std::shared_ptr<RPCRequest>> requestMap;
     std::mutex requestMapMutex;
 };
-#pragma warning(pop)

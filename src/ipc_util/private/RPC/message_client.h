@@ -7,12 +7,12 @@
 #include <shared_mutex>
 #include <map>
 #include <thread>
-#include "message_common.h"
+#include "message_internal.h"
 #include "delegate_macros.h"
 #pragma warning(push)
 #pragma warning(disable:4251)
 
-class IPC_EXPORT MessageClientUV : public MessageSessionInterface
+class IPC_EXPORT MessageClientUV : public IMessageClient
 {
     friend class UVCallBack;
 public:
@@ -21,7 +21,7 @@ public:
 
 public:
 
-    bool Connect(EMessageConnectionType, const std::string& url);
+    virtual bool Connect(EMessageConnectionType, const std::string& url) override;
     virtual CommonHandle_t Write(const char* data, int len) override;
     virtual void Disconnect()override;
 
@@ -57,7 +57,6 @@ private:
     std::thread uvworkThread;
     std::atomic<EMessageConnectionState> state;
     std::atomic_bool running;
-public:
-    DEFINE_EVENT_ONE_PARAM(OnConnect, MessageClientUV*);
+
 };
 #pragma warning(pop)

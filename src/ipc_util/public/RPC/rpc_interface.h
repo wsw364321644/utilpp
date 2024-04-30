@@ -26,7 +26,7 @@ typedef struct RPCHandle_t :CommonHandle_t {
 
 
 
-class  IGroupRPC {
+class IPC_EXPORT IGroupRPC {
 public:
     virtual const char* GetName() = 0;
     virtual bool OnRequestRecv(std::shared_ptr<RPCRequest>) = 0;
@@ -169,7 +169,67 @@ namespace std {
 #pragma warning(pop)
 
 typedef std::function<void(RPCHandle_t,double,const char*, const char*)> TRPCErrorDelegate;
+
+
+
+#define REGISTER_RPC_API(APIName,ClassName,RequestRecvFunc,ResponseRecvFunc) \
+    const char ClassName::APIName##Name[] = #APIName; \
+    static RPCInfoRegister<##ClassName> APIName##Register(RPCMethodInfo<##ClassName>{.Name = ClassName::APIName##Name, \
+        .OnRequestMethod = &##ClassName::##RequestRecvFunc, \
+        .OnResponseMethod = &##ClassName::##ResponseRecvFunc \
+    });
+
+#define REGISTER_RPC_EVENT_API(APIName,ClassName,RequestRecvFunc) \
+    const char ClassName::APIName##Name[] = #APIName; \
+    static RPCInfoRegister<##ClassName> APIName##Register(RPCMethodInfo<##ClassName>{.Name = ClassName::APIName##Name, \
+        .OnRequestMethod = &##ClassName::##RequestRecvFunc, \
+        .OnResponseMethod = nullptr \
+    });
+
 #define REGISTER_RPC_API_AUTO(APIName,ClassName) REGISTER_RPC_API(APIName,ClassName,On##APIName##RequestRecv, On##APIName##ResponseRecv)
+
+#define DECLARE_RPC_OVERRIDE_FUNCTION(ClassName)                                                              \
+public:                                                                                                       \
+    ClassName##(RPCProcesser*);                                                                               \
+    virtual ~##ClassName##();                                                                                 \
+    static std::unique_ptr<IGroupRPC> Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew);             \
+    static const char* GetGroupName();                                                                        \
+    static void StaticInit(bool(*func)(const char* name, RPCInterfaceInfo info));                             \
+    virtual const char* GetName() override;                                                                   \
+    virtual bool OnRequestRecv(std::shared_ptr<RPCRequest>)override;                                          \
+    virtual bool OnResponseRecv(std::shared_ptr<RPCResponse>, std::shared_ptr<RPCRequest>)override;          
+
+#define DEFINE_RPC_OVERRIDE_FUNCTION(ClassName,GroupName)                                                 \
+std::unordered_map<std::string, RPCMethodInfo<ClassName>> RPCInfoData<ClassName>::MethodInfos;            \
+ClassName::ClassName(RPCProcesser* inprocesser) :IGroupJRPC(inprocesser)                                  \
+{                                                                                                         \
+}                                                                                                         \
+ClassName::~ClassName()                                                                                   \
+{                                                                                                         \
+}                                                                                                         \
+std::unique_ptr<IGroupRPC> ClassName::Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew fn)       \
+{                                                                                                         \
+    if (fn) {                                                                                             \
+        ClassName* ptr = (ClassName*)fn(sizeof(ClassName));                                               \
+        new(ptr)ClassName(inprocesser);                                                                   \
+        return  std::unique_ptr<ClassName>(ptr);                                                          \
+    }                                                                                                     \
+    return std::make_unique<ClassName>(inprocesser);                                                      \
+}                                                                                                         \
+const char* ClassName::GetGroupName()                                                                     \
+{                                                                                                         \
+    return GroupName;                                                                                     \
+}                                                                                                         \
+const char* ClassName::GetName() {                                                                        \
+    return GetGroupName();                                                                                \
+}                                                                                                         \
+void ClassName::StaticInit(bool(*func)(const char* name, RPCInterfaceInfo info)) {                        \
+    func(ClassName::GetGroupName(), { .CreateFunc = &ClassName::Create,                                   \
+        .CheckFunc = &RPCInfoData<ClassName>::CheckMethod });                                             \
+}
+
+
+
 
 
 #define DECLARE_RESPONSE_RPC_BASIC(Name)  \

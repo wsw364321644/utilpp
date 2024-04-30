@@ -40,7 +40,7 @@ void MessageServerUV::Stop()
     uv_loop_close(loop);
 }
 
-void MessageServerUV::CloseConnection(MessageSessionUV* session)
+void MessageServerUV::CloseConnection(IMessageSession* session)
 {
     session->Disconnect();
 }

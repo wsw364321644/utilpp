@@ -135,7 +135,7 @@ void MessageSessionUV::UVOnRead(uv_stream_t* stream, ssize_t nread, const uv_buf
 
 void MessageSessionUV::OnWrite(MessageSendRequestUV* mreq, uv_write_t* req, int status)
 {
-    TriggerOnWriteDelegates(this, mreq);
+    TriggerOnWriteDelegates(this, mreq->Handle,status);
     writeMtx.lock();
     auto itr = writeRequests.find(mreq->Handle);
     if (itr == writeRequests.end()) {
@@ -148,7 +148,7 @@ void MessageSessionUV::OnWrite(MessageSendRequestUV* mreq, uv_write_t* req, int 
 
 void MessageSessionUV::OnUDPSend(MessageSendRequestUV* mreq, uv_udp_send_t* req, int status)
 {
-    TriggerOnWriteDelegates(this, mreq);
+    TriggerOnWriteDelegates(this, mreq->Handle, status);
     writeMtx.lock();
     auto itr = writeRequests.find(mreq->Handle);
     if (itr == writeRequests.end()) {

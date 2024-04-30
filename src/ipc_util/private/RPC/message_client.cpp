@@ -12,14 +12,6 @@ MessageClientUV::MessageClientUV() :messageConnectionType(EMessageConnectionType
     loop = new uv_loop_t;
     connectHandle.data = this;
     uvworkThread = std::thread(&MessageClientUV::UVWorker, this);
-    //connectDelegate.reset(new UVOnConnectCB(std::bind(&MessageClientUV::OnConnection, this, std::placeholders::_1, std::placeholders::_2)));
-    //readDelegate.reset(new UVOnReadCB(std::bind(&MessageClientUV::OnRead, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-    ////writeDelegate.reset(new UVOnWriteCB(std::bind(&MessageClientUV::OnWrite, this, std::placeholders::_1, std::placeholders::_2)));
-    //dnsResolvedDelegate.reset(new UVOnDNSResolvedCB(std::bind(&MessageClientUV::OnDNSResolved, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
-    //closeDelegate.reset(new UVOnCloseCB(std::bind(&MessageClientUV::OnClose, this, std::placeholders::_1)));
-    //udpRecvDelegate.reset(new UVOnUDPRecvCB(std::bind(&MessageClientUV::OnUDPRecv, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5)));
-    ////udpSendDelegate.reset(new UVOnUDPSendCB(std::bind(&MessageClientUV::OnUDPSend, this, std::placeholders::_1, std::placeholders::_2)));
-    //shutdownDelegate.reset(new UVOnShutdownCB(std::bind(&MessageClientUV::OnShutdown, this, std::placeholders::_1, std::placeholders::_2)));
 }
 MessageClientUV::~MessageClientUV()
 {
@@ -242,7 +234,7 @@ void MessageClientUV::UVOnRead(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* 
 }
 void MessageClientUV::OnWrite(MessageSendRequestUV* msreq, uv_write_t* req, int status)
 {
-    TriggerOnWriteDelegates(this, msreq);
+    TriggerOnWriteDelegates(this, msreq->Handle,status);
     writeMtx.lock();
     auto itr = writeRequests.find(msreq->Handle);
     //auto itr=std::find_if(writeRequests.begin(), writeRequests.end(), [&](const UVWriteRequest& inreq)->bool {
@@ -311,7 +303,7 @@ void MessageClientUV::UVOnUDPRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_
 
 void MessageClientUV::OnUDPSend(MessageSendRequestUV* msreq, uv_udp_send_t* req, int status)
 {
-    TriggerOnWriteDelegates(this, msreq);
+    TriggerOnWriteDelegates(this, msreq->Handle,status);
     writeMtx.lock();
     auto itr = writeRequests.find(msreq->Handle);
     //auto itr = std::find_if(writeRequests.begin(), writeRequests.end(), [&](const UVWriteRequest& inreq)->bool {

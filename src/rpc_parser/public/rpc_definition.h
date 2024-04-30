@@ -10,18 +10,6 @@
 #pragma warning(push)
 #pragma warning(disable:4251)
 
-#define REGISTER_RPC_API(APIName,ClassName,RequestRecvFunc,ResponseRecvFunc) \
-    const char ClassName::APIName##Name[] = #APIName; \
-    static RPCInfoRegister<##ClassName> APIName##Register(RPCMethodInfo<##ClassName>{.Name = ClassName::APIName##Name, \
-        .OnRequestMethod = &##ClassName::##RequestRecvFunc, \
-        .OnResponseMethod = &##ClassName::##ResponseRecvFunc \
-    });
-#define REGISTER_RPC_EVENT_API(APIName,ClassName,RequestRecvFunc) \
-    const char ClassName::APIName##Name[] = #APIName; \
-    static RPCInfoRegister<##ClassName> APIName##Register(RPCMethodInfo<##ClassName>{.Name = ClassName::APIName##Name, \
-        .OnRequestMethod = &##ClassName::##RequestRecvFunc, \
-        .OnResponseMethod = nullptr \
-    });
 enum class ERPCParseError {
     OK,
     ParseError,

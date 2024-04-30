@@ -54,7 +54,7 @@ class IPC_EXPORT  MessageProcesser
 {
 public:
     MessageProcesser();
-    MessageProcesser(MessageSessionInterface*);
+    MessageProcesser(IMessageSession*);
     ~MessageProcesser();
 
 public:
@@ -65,7 +65,7 @@ public:
         uint32_t ConsumptionLength;
         std::vector<std::shared_ptr<MessagePacket_t>> MessagePackets;
     };
-    bool Init(MessageSessionInterface*);
+    bool Init(IMessageSession*);
     CharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy);
     bool SendContent(const char*, uint32_t len, uint8_t channel = 0);
     ConsumeResult_t TryConsume(const char* data, uint32_t len);
@@ -82,13 +82,13 @@ public:
 private:
 
     CharBuffer BuildPacket(const char* data, uint32_t len, uint8_t channel = 0);
-    void OnRead(MessageSessionInterface*, char*, ssize_t);
+    void OnRead(IMessageSession*, char*, intptr_t);
     void HeartBeat();
     void AddHeader(CharBuffer& buf, CharBuffer key, CharBuffer value);
 
 private:
 
-    MessageSessionInterface* session;
+    IMessageSession* session;
     std::vector<char> readBuf;
     std::vector<std::list<std::shared_ptr<MessagePacket_t>>> messageQueues;
     std::shared_mutex messageQueuesMutex;

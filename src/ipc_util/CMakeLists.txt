@@ -4,19 +4,20 @@ AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
 function(add_ipc_util TARGET_NAME)
-    set_property(TARGET ${TARGET_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:LIBCMT.LIB")
+    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:LIBCMTD.LIB")
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 
     AddTargetInclude(${TARGET_NAME})
 
     target_link_libraries(${TARGET_NAME} PRIVATE simple_logger)
-    target_link_libraries(${TARGET_NAME} PRIVATE rpc_parser_a)
+    target_link_libraries(${TARGET_NAME} PUBLIC rpc_parser_a)
     target_link_libraries(${TARGET_NAME} PUBLIC simple_utilpp_a)
     if(UTILPP_WITH_STATIC_LIBUV)
-        target_link_libraries(${TARGET_NAME} PUBLIC libuv::uv_a)
+        target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv_a)
     else()
-        target_link_libraries(${TARGET_NAME} PUBLIC libuv::uv)
+        target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv)
     endif()
 
     install(TARGETS ${TARGET_NAME}

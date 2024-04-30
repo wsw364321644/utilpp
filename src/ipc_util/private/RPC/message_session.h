@@ -6,14 +6,14 @@
 #include <atomic>
 #include <mutex>
 #include <map>
-#include "message_common.h"
+#include "message_internal.h"
 #pragma warning(push)
 #pragma warning(disable:4251)
 
 class MessageServerUV;
 
 
-class IPC_EXPORT MessageSessionUV : public MessageSessionInterface, public std::enable_shared_from_this<MessageSessionUV>
+class IPC_EXPORT MessageSessionUV : public IMessageSession, public std::enable_shared_from_this<MessageSessionUV>
 {
     friend class UVCallBack;
 public:

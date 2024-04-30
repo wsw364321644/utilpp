@@ -7,7 +7,7 @@
 
 #include <shared_mutex>
 
-#include "message_common.h"
+#include "message_internal.h"
 #include "delegate_macros.h"
 #include "message_session.h"
 #pragma warning(push)
@@ -16,7 +16,7 @@
 struct uv_loop_s;
 typedef struct uv_loop_s uv_loop_t;
 
-class IPC_EXPORT MessageServerUV
+class IPC_EXPORT MessageServerUV :public IMessageServer
 {
     friend class MessageSessionUV;
     friend class UVCallBack;
@@ -29,7 +29,7 @@ public:
     void Tick(float delSec);
     void Run();
     void Stop();
-    void CloseConnection(MessageSessionUV*);
+    void CloseConnection(IMessageSession*);
 
     EMessageConnectionType GetServerType() {
         return messageConnectionType;
@@ -54,7 +54,6 @@ private:
 
 
 public:
-    DEFINE_EVENT_ONE_PARAM(OnConnect, MessageSessionUV*);
 
 
 };
