@@ -1,11 +1,16 @@
-/**
- * defs.h
- * common definition for shared on all projects
- *
- */
-
 #pragma once
+#ifdef __cplusplus
+#include <cstdint>
+#else
 #include <stdint.h>
+#endif // __cplusplus
+
+
+extern const uint32_t UTIL_CREATE_ALWAYS ;//CREATE_ALWAYS;
+extern const uint32_t UTIL_CREATE_NEW;// CREATE_NEW;
+extern const uint32_t UTIL_OPEN_ALWAYS;// OPEN_ALWAYS;
+extern const uint32_t UTIL_OPEN_EXISTING;// OPEN_EXISTING;
+extern const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 
 #ifdef WIN32
 
@@ -15,11 +20,7 @@
 #include <Windows.h>
 
 #define F_HANDLE  void *
-const uint32_t UTIL_CREATE_ALWAYS = 2;//CREATE_ALWAYS;
-const uint32_t UTIL_CREATE_NEW = 1;// CREATE_NEW;
-const uint32_t UTIL_OPEN_ALWAYS = 4;// OPEN_ALWAYS;
-const uint32_t UTIL_OPEN_EXISTING = 3;// OPEN_EXISTING;
-const uint32_t UTIL_TRUNCATE_EXISTING = 5;// TRUNCATE_EXISTING;
+
 #else
 #include <fcntl.h>
 #include <errno.h>
@@ -28,9 +29,6 @@ const uint32_t UTIL_TRUNCATE_EXISTING = 5;// TRUNCATE_EXISTING;
 #include <langinfo.h>
 #include <cstring>
 #define F_HANDLE int
-const uint32_t UTIL_CREATE_ALWAYS = O_RDWR | O_CREAT | O_TRUNC;
-const uint32_t UTIL_OPEN_ALWAYS = O_RDWR | O_CREAT;
-const uint32_t UTIL_OPEN_EXISTING = O_RDWR;
 #endif
 
 #define ERR_SUCCESS			(0)		// success 
@@ -38,4 +36,6 @@ const uint32_t UTIL_OPEN_EXISTING = O_RDWR;
 #define ERR_ARGUMENT		(-2)	// argument error 
 #define ERR_FILE			(-3)	// file operation related
 #define ERR_METAPARSE		(-4)	// faile to parse mf file
-typedef void* (*fnmalloc)(size_t _Size);
+
+typedef void* (__cdecl *fnmalloc)(size_t _Size);
+typedef void(__cdecl* fnfree)(void* const block);
