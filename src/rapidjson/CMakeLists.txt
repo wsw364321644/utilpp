@@ -7,7 +7,6 @@ if(${TARGET_NAME}_POPULATED)
 
     source_group(TREE ${${TARGET_NAME}_SOURCE_DIR} FILES ${SourceFiles})
     add_library(${TARGET_NAME} INTERFACE ${SourceFiles})
-    set_property(TARGET ${TARGET_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(${TARGET_NAME} INTERFACE -DNOMINMAX)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "data")
 
