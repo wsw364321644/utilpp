@@ -103,9 +103,9 @@ CommonHandle_t MessageSessionUV::Write(const char* data, int len)
     return res;
 }
 
-uint64_t MessageSessionUV::GetPID()
+uint64_t MessageSessionUV::GetPID() const
 {
-    auto messageConnectionType = GetServer()->GetServerType();
+    auto messageConnectionType = server->GetServerType();
     if (messageConnectionType != EMessageConnectionType::EMCT_IPC) {
         return NULL;
     }
@@ -140,9 +140,10 @@ void MessageSessionUV::OnWrite(MessageSendRequestUV* mreq, uv_write_t* req, int 
     auto itr = writeRequests.find(mreq->Handle);
     if (itr == writeRequests.end()) {
         LOG_ERROR("OnWrite req error");
-        return;
     }
-    writeRequests.erase(itr);
+    else {
+        writeRequests.erase(itr);
+    }
     writeMtx.unlock();
 }
 
@@ -153,9 +154,10 @@ void MessageSessionUV::OnUDPSend(MessageSendRequestUV* mreq, uv_udp_send_t* req,
     auto itr = writeRequests.find(mreq->Handle);
     if (itr == writeRequests.end()) {
         LOG_ERROR("OnUDPSend req error");
-        return;
     }
-    writeRequests.erase(itr);
+    else {
+        writeRequests.erase(itr);
+    }
     writeMtx.unlock();
 }
 

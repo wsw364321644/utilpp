@@ -22,16 +22,16 @@ class IPC_EXPORT MessageServerUV :public IMessageServer
     friend class UVCallBack;
 public:
     MessageServerUV();
-    ~MessageServerUV();
+    virtual ~MessageServerUV();
 
 public:
-    bool OpenServer(EMessageConnectionType, const std::string& url);
-    void Tick(float delSec);
-    void Run();
-    void Stop();
-    void CloseConnection(IMessageSession*);
+    virtual bool OpenServer(EMessageConnectionType, const std::string& url) override;
+    virtual void Tick(float delSec) override;
+    virtual void Run() override;
+    virtual void Stop() override;
+    virtual void CloseConnection(IMessageSession*) override;
 
-    EMessageConnectionType GetServerType() {
+    virtual EMessageConnectionType GetServerType() const  override {
         return messageConnectionType;
     }
 private:

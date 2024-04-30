@@ -34,7 +34,7 @@ public:
     virtual void Disconnect()override;
     virtual CommonHandle_t Write(const char* data, int len)override;
 public:
-    uint64_t GetPID();
+    virtual uint64_t GetPID() const override;
 
     void UVOnRead(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf);
     void OnWrite(MessageSendRequestUV*, uv_write_t* req, int status);

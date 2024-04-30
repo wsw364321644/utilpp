@@ -36,6 +36,7 @@ public:
     virtual void Disconnect() = 0;
     virtual CommonHandle_t Write(const char* data, int len) = 0;
     virtual EMessageConnectionState GetConnectionState()const = 0;
+    virtual uint64_t GetPID()const { return 0; };
     DEFINE_EVENT_ONE_PARAM(OnDisconnect, IMessageSession*);
     DEFINE_EVENT_THREE_PARAM(OnRead, IMessageSession*, char*, intptr_t);
     DEFINE_EVENT_THREE_PARAM(OnWrite, IMessageSession*, CommonHandle_t,int);
@@ -54,5 +55,6 @@ public:
     virtual void Run() = 0;
     virtual void Stop() = 0;
     virtual void CloseConnection(IMessageSession*) = 0;
+    virtual EMessageConnectionType GetServerType() const =0;
     DEFINE_EVENT_ONE_PARAM(OnConnect, IMessageSession*);
 };
