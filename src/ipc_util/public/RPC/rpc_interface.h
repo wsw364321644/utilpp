@@ -179,6 +179,8 @@ typedef std::function<void(RPCHandle_t,double,const char*, const char*)> TRPCErr
         .OnResponseMethod = &##ClassName::##ResponseRecvFunc \
     });
 
+#define REGISTER_RPC_API_AUTO(APIName,ClassName) REGISTER_RPC_API(APIName,ClassName,On##APIName##RequestRecv, On##APIName##ResponseRecv)
+
 #define REGISTER_RPC_EVENT_API(APIName,ClassName,RequestRecvFunc) \
     const char ClassName::APIName##Name[] = #APIName; \
     static RPCInfoRegister<##ClassName> APIName##Register(RPCMethodInfo<##ClassName>{.Name = ClassName::APIName##Name, \
@@ -186,12 +188,13 @@ typedef std::function<void(RPCHandle_t,double,const char*, const char*)> TRPCErr
         .OnResponseMethod = nullptr \
     });
 
-#define REGISTER_RPC_API_AUTO(APIName,ClassName) REGISTER_RPC_API(APIName,ClassName,On##APIName##RequestRecv, On##APIName##ResponseRecv)
+#define REGISTER_RPC_EVENT_API_AUTO(ClassName,APIName) REGISTER_RPC_EVENT_API(APIName,ClassName,On##APIName##RequestRecv)
+
 
 #define DECLARE_RPC_OVERRIDE_FUNCTION(ClassName)                                                              \
 public:                                                                                                       \
-    ClassName##(RPCProcesser*);                                                                               \
-    virtual ~##ClassName##();                                                                                 \
+    ClassName(RPCProcesser*);                                                                               \
+    virtual ~ClassName();                                                                                 \
     static std::unique_ptr<IGroupRPC> Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew);             \
     static const char* GetGroupName();                                                                        \
     static void StaticInit(bool(*func)(const char* name, RPCInterfaceInfo info));                             \

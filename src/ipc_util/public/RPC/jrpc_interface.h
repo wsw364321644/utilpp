@@ -40,7 +40,7 @@ bool ClassName::OnResponseRecv(std::shared_ptr<RPCResponse> resp, std::shared_pt
     if (jresp->CheckResult(req->Method.c_str()) != ERPCParseError::OK) {                                      \
         return false;                                                                                         \
     }                                                                                                         \
-    auto opt = RPCInfoData<JRPCHookHelperAPI>::GetMethodInfo(req->Method.c_str());                            \
+    auto opt = RPCInfoData<ClassName>::GetMethodInfo(req->Method.c_str());                            \
     if (!opt.has_value()) {                                                                                   \
         return false;                                                                                         \
     }                                                                                                         \
