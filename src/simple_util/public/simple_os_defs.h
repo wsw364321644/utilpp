@@ -4,13 +4,13 @@
 #else
 #include <stdint.h>
 #endif // __cplusplus
+#include "simple_export_defs.h"
 
-
-extern const uint32_t UTIL_CREATE_ALWAYS ;//CREATE_ALWAYS;
-extern const uint32_t UTIL_CREATE_NEW;// CREATE_NEW;
-extern const uint32_t UTIL_OPEN_ALWAYS;// OPEN_ALWAYS;
-extern const uint32_t UTIL_OPEN_EXISTING;// OPEN_EXISTING;
-extern const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
+SIMPLE_UTIL_API extern const uint32_t UTIL_CREATE_ALWAYS ;//CREATE_ALWAYS;
+SIMPLE_UTIL_API extern const uint32_t UTIL_CREATE_NEW;// CREATE_NEW;
+SIMPLE_UTIL_API extern const uint32_t UTIL_OPEN_ALWAYS;// OPEN_ALWAYS;
+SIMPLE_UTIL_API extern const uint32_t UTIL_OPEN_EXISTING;// OPEN_EXISTING;
+SIMPLE_UTIL_API extern const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 
 #ifdef WIN32
 

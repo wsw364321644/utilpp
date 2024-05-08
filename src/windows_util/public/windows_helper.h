@@ -1,35 +1,30 @@
 #include <simple_os_defs.h>
-
-
+#include "windows_util_export_defs.h"
 #define REG_COMMAND_PATH "shell\\open\\command";
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-    bool is_app_container(HANDLE process);
-    bool is_uwp_window(HWND hwnd);
-    BOOL is_main_window(HWND handle);
-    bool is_64bit_process(HANDLE process);
 
-    HWND get_uwp_actual_window(HWND parent);
-    BOOL get_app_sid(HANDLE process, LPSTR* out);
+WINDOWS_UTIL_API bool is_app_container(HANDLE process);
+WINDOWS_UTIL_API bool is_uwp_window(HWND hwnd);
+WINDOWS_UTIL_API BOOL is_main_window(HWND handle);
+WINDOWS_UTIL_API bool is_64bit_process(HANDLE process);
 
-    bool get_window_exe(LPSTR* const name, HWND window, fnmalloc mallocptr);
-    void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
-    void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
-    HWND find_main_window(DWORD process_id);
-    HWND find_window_by_title(const char* name);
-    DWORD  get_process_file_name(DWORD process_id, LPSTR  file_path, DWORD  nSize);
-    DWORD  get_process_file_name_by_handle(HANDLE  hProcess, LPSTR  file_path, DWORD  nSize);
+WINDOWS_UTIL_API HWND get_uwp_actual_window(HWND parent);
+WINDOWS_UTIL_API BOOL get_app_sid(HANDLE process, LPSTR* out);
 
-    HANDLE create_mutex(const char* name, BOOL is_app);
-    HANDLE open_mutex(const char* name, BOOL is_app);
-    HANDLE create_event(const char* name, BOOL is_app);
-    HANDLE open_event(const char* name, BOOL is_app);
+WINDOWS_UTIL_API bool get_window_exe(LPSTR* const name, HWND window, fnmalloc mallocptr);
+WINDOWS_UTIL_API void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
+WINDOWS_UTIL_API void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr);
+WINDOWS_UTIL_API HWND find_main_window(DWORD process_id);
+WINDOWS_UTIL_API HWND find_window_by_title(const char* name);
+WINDOWS_UTIL_API DWORD  get_process_file_name(DWORD process_id, LPSTR  file_path, DWORD  nSize);
+WINDOWS_UTIL_API DWORD  get_process_file_name_by_handle(HANDLE  hProcess, LPSTR  file_path, DWORD  nSize);
 
-    //not support  parallel
-    HMODULE get_system_module(const char* module_name);
-    HMODULE load_system_library(const char* module_name);
-#ifdef __cplusplus
-}
-#endif
+WINDOWS_UTIL_API HANDLE create_mutex(const char* name, BOOL is_app);
+WINDOWS_UTIL_API HANDLE open_mutex(const char* name, BOOL is_app);
+WINDOWS_UTIL_API HANDLE create_event(const char* name, BOOL is_app);
+WINDOWS_UTIL_API HANDLE open_event(const char* name, BOOL is_app);
+
+//not support  parallel
+WINDOWS_UTIL_API HMODULE get_system_module(const char* module_name);
+WINDOWS_UTIL_API HMODULE load_system_library(const char* module_name);
+

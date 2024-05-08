@@ -2,6 +2,7 @@ set( TARGET_NAME simple_util_include )
 NewTargetSource()
 AddSourceFolder(INCLUDE RECURSE INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/public")
 add_library (${TARGET_NAME} INTERFACE  ${SourceFiles})
+set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 AddTargetInclude(${TARGET_NAME})
 
 install(TARGETS ${TARGET_NAME}

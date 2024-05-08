@@ -33,6 +33,7 @@ function(add_simple_utilpp TARGET_NAME)
 endfunction()
 
 add_library (${TARGET_NAME} SHARED  ${SourceFiles} )
+target_compile_definitions(${TARGET_NAME} PRIVATE -DSIMPLE_UTIL_API_EXPORTS)
 target_link_libraries (${TARGET_NAME} PRIVATE simple_util_obj)
 target_link_libraries (${TARGET_NAME} PUBLIC simple_util_include)
 add_simple_utilpp(${TARGET_NAME})
