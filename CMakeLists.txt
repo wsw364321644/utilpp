@@ -12,8 +12,8 @@ enable_language(C CXX ASM)
 
 option(UTILPP_STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
 option(UTILPP_WITH_STATIC_LIBUV "USE UV_a." OFF)
-#option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 
+# option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 if(UTILPP_STATIC_CRT)
   if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -28,12 +28,13 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-#FetchContent_Declare(
-#  fmt
-#  GIT_REPOSITORY git@ssh.github.com:fmtlib/fmt.git
-#  GIT_TAG e69e5f977d458f2650bb346dadf2ad30c5320281 #10.2.1
-#)
-#FetchContent_MakeAvailable(fmt)
+
+
+FetchContent_Declare(
+  OCmakeUtil
+  GIT_REPOSITORY git@ssh.github.com:wsw364321644/OCmakeUtil.git
+  GIT_TAG bd0502e8e4561a4cbcc8961303891eef9383eb9d
+)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -42,9 +43,8 @@ set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY git@ssh.github.com:gabime/spdlog.git
-  GIT_TAG 7c02e204c92545f869e2f04edaab1f19fe8b19fd #1.13.0
+  GIT_TAG 7c02e204c92545f869e2f04edaab1f19fe8b19fd # 1.13.0
 )
-FetchContent_MakeAvailable(spdlog)
 
 set(JSON_Install TRUE)
 FetchContent_Declare(
@@ -52,7 +52,6 @@ FetchContent_Declare(
   GIT_REPOSITORY git@ssh.github.com:nlohmann/json.git
   GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 # 3.11.3
 )
-FetchContent_MakeAvailable(nlohmann-json)
 
 set(JSON_VALIDATOR_INSTALL TRUE)
 FetchContent_Declare(
@@ -60,7 +59,15 @@ FetchContent_Declare(
   GIT_REPOSITORY git@ssh.github.com:pboettch/json-schema-validator.git
   GIT_TAG 349cba9f7e3cb423bbc1811bdd9f6770f520b468 # 2.3.0
 )
-FetchContent_MakeAvailable(json-schema-validator)
+
+FetchContent_Declare(
+  gcem
+  GIT_REPOSITORY git@ssh.github.com:kthohr/gcem.git
+  GIT_TAG 012ae73c6d0a2cb09ffe86475f5c6fba3926e200 # 1.18.0
+)
+
+FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator gcem)
+
 
 
 add_subdirectory(src/simple_util)
@@ -76,16 +83,18 @@ if(WIN32)
 endif()
 
 find_package(LIBUV)
+
 if(LIBUV_FOUND)
   add_subdirectory(src/ipc_util)
+  find_package(SDL2)
+  find_package(MbedTLS)
+  if(SDL2_FOUND AND MbedTLS_FOUND)
+    add_subdirectory(src/simple_hook_helper)
+  endif()
 endif()
 
 find_package(CURL)
+
 if(CURL_FOUND)
   add_subdirectory(src/net_util)
-endif()
-
-find_package(SDL2)
-if(SDL2_FOUND)
-  add_subdirectory(src/sdl_helper)
 endif()

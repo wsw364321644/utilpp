@@ -1,4 +1,4 @@
-#include "sdl_helper_win.h"
+#include "windows/sdl_helper_win.h"
 
 static const SDL_Scancode windows_scancode_table[] =
 {
