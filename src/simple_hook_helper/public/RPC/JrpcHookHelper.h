@@ -12,8 +12,6 @@ public:
     DECLARE_RESPONSE_RPC(ConnectToHost);
     DECLARE_REQUEST_RPC_TWO_PARAM(ConnectToHost, uint64_t, const char*);
 
- 
-
 private:
 
 };

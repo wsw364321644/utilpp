@@ -6,21 +6,12 @@
 #include <stdbool.h>
 #include "simple_hook_helper_common.h"
 
-typedef struct keyboard_event_t
-{
-    SDL_EventType type;
-    SDL_Keycode key_code;
-} keyboard_event_t;
-
-
-
-
 
 typedef uintptr_t hot_key_list_handle_t;
 
 typedef struct key_with_modifier_t
 {
-    SDL_Keycode sym;            /**< SDL virtual key code - see ::SDL_Keycode for details */
+    SDL_Keycode key_code;            /**< SDL virtual key code - see ::SDL_Keycode for details */
     Uint16 mod;                 /**< current key modifiers */
 } key_with_modifier_t;
 

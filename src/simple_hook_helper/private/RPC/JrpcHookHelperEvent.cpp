@@ -14,10 +14,49 @@ DEFINE_RPC_OVERRIDE_FUNCTION(JRPCHookHelperEventAPI, "HookHelperEvent");
 DEFINE_JRPC_OVERRIDE_FUNCTION(JRPCHookHelperEventAPI);
 
 
+REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, HotkeyListUpdate);
+DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, HotkeyListUpdate);
+bool JRPCHookHelperEventAPI::HotkeyListUpdate(HotKeyList_t& HotKeyList)
+{
+    std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
+    req->Method = HotkeyListUpdateName;
+    nlohmann::json obj = nlohmann::json::object();
+    for (auto pair: HotKeyList) {
+        for (auto hotkey : pair.second) {
+            nlohmann::json hotkeyNode;
+            hotkeyNode["mod"] = hotkey.mod;
+            hotkeyNode["keyCode"] = hotkey.key_code;
+            obj[pair.first].push_back(hotkeyNode);
+        }
+    }
+
+    req->Params = obj.dump();
+    return  processer->SendEvent(req);
+}
+
+void JRPCHookHelperEventAPI::OnHotkeyListUpdateRequestRecv(std::shared_ptr<RPCRequest> req)
+{
+    std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
+    auto doc = jreq->GetParamsNlohmannJson();
+    HotKeyList_t HotKeyList;
+    if (!recvHotkeyListUpdateDelegate) {
+        return;
+    }
+    for (auto it = doc.begin(); it != doc.end();it++) {
+        for (auto hotkeyNode : it.value()) {
+            key_with_modifier_t key{.key_code= (SDL_Keycode)hotkeyNode["keyCode"].get_ref<nlohmann::json::number_integer_t&>(),
+                .mod=(Uint16) hotkeyNode["mod"].get_ref<nlohmann::json::number_integer_t&>()};
+            HotKeyList[it.key()].push_back(key);
+        }
+    }
+    recvHotkeyListUpdateDelegate(HotKeyList);
+}
+
+
 
 REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, OverlayMouseWheelEvent);
 DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, OverlayMouseWheelEvent);
-bool JRPCHookHelperEventAPI::OverlayMouseWheelEvent(uint64_t windowId, mouse_wheel_event_t event)
+bool JRPCHookHelperEventAPI::OverlayMouseWheelEvent(uint64_t windowId, mouse_wheel_event_t& event)
 {
     uint8_t base64buf[MOUSE_WHEEL_EVENT_BASE64_LEN+1];
     size_t olen;
@@ -32,8 +71,6 @@ bool JRPCHookHelperEventAPI::OverlayMouseWheelEvent(uint64_t windowId, mouse_whe
     nlohmann::json obj = nlohmann::json::object();
     obj["windowId"] = windowId;
     obj["event"] = base64buf;
-
-
     req->Params = obj.dump();
     return  processer->SendEvent(req);
 }
@@ -59,7 +96,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseWheelEventRequestRecv(std::shared_ptr
 
 REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, OverlayMouseButtonEvent);
 DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, OverlayMouseButtonEvent);
-bool JRPCHookHelperEventAPI::OverlayMouseButtonEvent(uint64_t windowId, mouse_button_event_t event)
+bool JRPCHookHelperEventAPI::OverlayMouseButtonEvent(uint64_t windowId, mouse_button_event_t& event)
 {
     uint8_t base64buf[MOUSE_WHEEL_EVENT_BASE64_LEN + 1];
     size_t olen;
@@ -100,7 +137,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseButtonEventRequestRecv(std::shared_pt
 
 REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, OverlayMouseMotionEvent);
 DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, OverlayMouseMotionEvent);
-bool JRPCHookHelperEventAPI::OverlayMouseMotionEvent(uint64_t windowId, mouse_motion_event_t event)
+bool JRPCHookHelperEventAPI::OverlayMouseMotionEvent(uint64_t windowId, mouse_motion_event_t& event)
 {
     uint8_t base64buf[MOUSE_WHEEL_EVENT_BASE64_LEN + 1];
     size_t olen;
@@ -142,7 +179,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseMotionEventRequestRecv(std::shared_pt
 
 REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, OverlayKeyboardEvent);
 DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, OverlayKeyboardEvent);
-bool JRPCHookHelperEventAPI::OverlayKeyboardEvent(uint64_t windowId, keyboard_event_t event)
+bool JRPCHookHelperEventAPI::OverlayKeyboardEvent(uint64_t windowId, keyboard_event_t& event)
 {
     uint8_t base64buf[MOUSE_WHEEL_EVENT_BASE64_LEN + 1];
     size_t olen;
