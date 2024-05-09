@@ -158,29 +158,6 @@ MessageProcesser::ConsumeResult_t MessageProcesser::TryConsume(const char* data,
     return result;
 }
 
-void MessageProcesser::Tick()
-{
-    std::unique_lock<std::shared_mutex> lck(messageQueuesMutex);
-    auto tempQueues = messageQueues;
-    lck.unlock();
-    std::vector<uint32_t> tempRecvChannels = recvChannels;
-    //for ( auto const& cqueue : tempQueues) {
-    //    for (auto const& packet : cqueue) {
-    //        if (channelsPolicy[packet->Channel] == EMessagePolicy::Stream) {
-    //            if (tempRecvChannels[packet->Channel] + 1 != packet->Index) {
-    //                break;
-    //            }
-    //        }
-    //        TriggerOnPacketRecvDelegates(packet.get());
-    //        tempRecvChannels[packet->Channel]++;
-    //    }
-    //}
-    lck.lock();
-    recvChannels = tempRecvChannels;
-}
-
-
-
 
 void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size)
 {
@@ -202,11 +179,12 @@ void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size
 
                 auto itr = queue.rbegin();
                 for (; itr != queue.rend(); itr++) {
-                    if (packet->Index - (*itr)->Index < MAX_CACHED_PACKET) {
-                        if ((*itr)->Index == packet->Index) {
-                            continue;
-                        }
-                        queue.insert(itr.base(), packet);
+                    if ((*itr)->Index == packet->Index) {
+                        break;
+                    }
+                    if (packet->Index > (*itr)->Index ) {
+                        queue.insert(++(itr.base()), packet);
+                        break;
                     }
                 }
                 if (itr == queue.rend()) {
@@ -221,9 +199,28 @@ void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size
                 }
             }
         }
+
+
+        for (int i = 0; i < MAX_CHANNAL; i++) {
+            if (channelsPolicy[i] == EMessagePolicy::Unordered) {
+                for (auto& packet : messageQueues[i]) {
+                    TriggerOnPacketRecvDelegates(packet.get());
+                }
+                messageQueues[i].clear();
+            }
+            else {
+                for (auto itr = messageQueues[i].begin(); itr != messageQueues[i].end();) {
+                    if ((*itr)->Index != recvChannels[i]) {
+                        break;
+                    }
+                    recvChannels[i]++;
+                    TriggerOnPacketRecvDelegates((*itr).get());
+                    itr = messageQueues[i].erase(itr);
+                }
+            }
+        }
     }
     else {
-        //readBuf.resize(readBuf.size() + size);
         readBuf.insert(readBuf.end(), str, str + size);
         auto result = TryConsume(readBuf.data(), readBuf.size());
         if (result.Result != EMessageError::OK) {
@@ -236,14 +233,14 @@ void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size
             std::unique_lock<std::shared_mutex> lck(messageQueuesMutex);
             messageQueues[packet->Channel].push_back(std::move(packet));
         }
-    }
-    for (int i = 0; i < MAX_CHANNAL; i++) {
-        for (auto& packet : messageQueues[i]) {
-            TriggerOnPacketRecvDelegates(packet.get());
-        }
-        messageQueues[i].clear();
-    }
 
+        for (int i = 0; i < MAX_CHANNAL; i++) {
+            for (auto& packet : messageQueues[i]) {
+                TriggerOnPacketRecvDelegates(packet.get());
+            }
+            messageQueues[i].clear();
+        }
+    }
     return;
 }
 void MessageProcesser::HeartBeat()

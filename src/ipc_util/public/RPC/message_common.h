@@ -45,6 +45,7 @@ public:
 class IPC_EXPORT IMessageClient:public IMessageSession {
 public:
     virtual bool Connect(EMessageConnectionType, const std::string& url)=0;
+    virtual void Tick(float delSec) = 0;
     DEFINE_EVENT_ONE_PARAM(OnConnect, IMessageClient*);
 };
 

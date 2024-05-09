@@ -24,18 +24,16 @@ public:
     virtual bool Connect(EMessageConnectionType, const std::string& url) override;
     virtual CommonHandle_t Write(const char* data, int len) override;
     virtual void Disconnect()override;
-
+    virtual void Tick(float delSec) override;
     virtual EMessageConnectionType GetConnectionType()const override {
         return messageConnectionType;
     }
     virtual EMessageConnectionState GetConnectionState()const override {
         return state.load();
     }
-private:
-    void UVWorker();
-
 
 private:
+    //void UVWorker();
     void UVOnConnect(uv_connect_t* req, int status);
     void UVOnClose(uv_handle_t* handle);
     void UVOnShutdown(uv_shutdown_t* req, int status);

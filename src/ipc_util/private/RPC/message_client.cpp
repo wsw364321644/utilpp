@@ -11,7 +11,7 @@ MessageClientUV::MessageClientUV() :messageConnectionType(EMessageConnectionType
 {
     loop = new uv_loop_t;
     connectHandle.data = this;
-    uvworkThread = std::thread(&MessageClientUV::UVWorker, this);
+    //uvworkThread = std::thread(&MessageClientUV::UVWorker, this);
 }
 MessageClientUV::~MessageClientUV()
 {
@@ -144,19 +144,24 @@ void MessageClientUV::Disconnect()
     return;
 }
 
-
-void MessageClientUV::UVWorker()
+void MessageClientUV::Tick(float delSec)
 {
-    while (running) {
-        auto curstate = state.load();
-        if (curstate != EMessageConnectionState::Idle && curstate != EMessageConnectionState::InitConnect) {
-            uv_run(loop, uv_run_mode::UV_RUN_NOWAIT);
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+    auto curstate = state.load();
+    if (curstate != EMessageConnectionState::Idle && curstate != EMessageConnectionState::InitConnect) {
+        uv_run(loop, uv_run_mode::UV_RUN_NOWAIT);
     }
 }
 
-
+//void MessageClientUV::UVWorker()
+//{
+//    while (running) {
+//        auto curstate = state.load();
+//        if (curstate != EMessageConnectionState::Idle && curstate != EMessageConnectionState::InitConnect) {
+//            uv_run(loop, uv_run_mode::UV_RUN_NOWAIT);
+//        }
+//        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+//    }
+//}
 
 void MessageClientUV::UVOnConnect(uv_connect_t* req, int status)
 {

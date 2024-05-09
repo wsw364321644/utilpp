@@ -70,12 +70,6 @@ public:
     bool SendContent(const char*, uint32_t len, uint8_t channel = 0);
     ConsumeResult_t TryConsume(const char* data, uint32_t len);
 
-    /// <summary>
-    /// invoke event in loop;
-    /// </summary>
-    void Tick();
-
-
 public:
     EMessageConnectionType ConnectionType;
     DEFINE_EVENT_ONE_PARAM(OnPacketRecv, MessagePacket_t*)
