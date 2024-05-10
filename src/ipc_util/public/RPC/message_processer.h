@@ -46,7 +46,7 @@ struct IPC_EXPORT MessagePacket_t {
     MessagePacket_t(const MessagePacket_t&) = delete;
     ~MessagePacket_t();
     char* MessageContent;
-    uint16_t ContentLength;
+    uint32_t ContentLength;
     uint8_t Channel;
     uint32_t Index;
 };
