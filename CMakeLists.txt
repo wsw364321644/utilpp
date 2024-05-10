@@ -66,7 +66,18 @@ FetchContent_Declare(
   GIT_TAG 012ae73c6d0a2cb09ffe86475f5c6fba3926e200 # 1.18.0
 )
 
-FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator gcem)
+set(TF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(TF_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(TF_BUILD_PROFILER ON CACHE BOOL "" FORCE)
+set(TF_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  taskflow
+  GIT_REPOSITORY git@ssh.github.com:taskflow/taskflow.git
+  GIT_TAG 12f8bd4e970ab27fd3dee3bffa24b5b48b54ba39 # 3.6.0
+)
+FetchContent_MakeAvailable(taskflow)
+
+FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem)
 
 
 

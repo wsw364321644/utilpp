@@ -288,77 +288,8 @@ void FTaskManager::Tick()
             optfuture =GetTaskManagerInterDataPtr(InterData)->Executor.async("", [handle,this]() {
                 TickTaskWorkflow(handle);
                 });
-            //tf::Taskflow taskflow;
-            //tf::Task lastTFTask, curTFTask;
-
-            //pTaskWorkflow->TimeRecorder.Tick();
-            //auto deltime = pTaskWorkflow->TimeRecorder.GetDelta<std::chrono::nanoseconds>();
-            //auto delsec = float(deltime.count()) / std::chrono::nanoseconds::period::den;
-            //bool needTick;
-            //if (pTaskWorkflow->Timeout <= deltime) {
-            //    pTaskWorkflow->Timeout = pTaskWorkflow->RepeatTime;
-            //    needTick = true;
-            //}
-            //else {
-            //    pTaskWorkflow->Timeout -= deltime;
-            //    needTick = false;
-            //}
-            //{
-            //    if (needTick) {
-            //        for (auto& task : pTaskWorkflow->TickTasks) {
-            //            lastTFTask = curTFTask;
-            //            auto newtick = std::bind(TickTasks[task]->Task, delsec);
-            //            curTFTask = taskflow.emplace([newtick]() {newtick(); });
-            //            if (!lastTFTask.empty()) {
-            //                lastTFTask.precede(curTFTask);
-            //            }
-            //        }
-            //    }
-            //}
-            //{
-            //    for (auto& task : pTaskWorkflow->TimerTasks) {
-            //        if (TimerTasks[task]->Timeout <= deltime) {
-            //            TimerTasks[task]->Timeout = TimerTasks[task]->Repeat;
-            //            lastTFTask = curTFTask;
-            //            curTFTask = taskflow.emplace(TimerTasks[task]->Task);
-            //            if (!lastTFTask.empty()) {
-            //                lastTFTask.precede(curTFTask);
-            //            }
-            //        }
-            //        else {
-            //            TimerTasks[task]->Timeout -= deltime;
-            //        }
-
-            //    }
-            //}
-            //{
-            //    std::scoped_lock lock(TaskRLock);
-            //    for (auto& task : pTaskWorkflow->InProgressTasks) {
-            //        auto itr = Tasks.find(task);
-            //        if (itr != Tasks.end()) {
-            //            itr->second->Delegate();
-            //            Tasks.erase(itr);
-            //        }
-            //    }
-            //}
-            //{
-            //    std::scoped_lock lock(TaskMutex);
-            //    for (auto& task : pTaskWorkflow->Tasks) {
-            //        lastTFTask = curTFTask;
-            //        curTFTask = taskflow.emplace(Tasks[task]->Task);
-            //        if (!lastTFTask.empty()) {
-            //            lastTFTask.precede(curTFTask);
-            //        }
-            //    }
-            //    pTaskWorkflow->InProgressTasks = pTaskWorkflow->Tasks;
-            //    pTaskWorkflow->Tasks.clear();
-            //}
-            //optfuture = GetTaskManagerInterDataPtr(InterData)->Executor.run(taskflow);
-            //optfuture.value().wait();
         }
     }
-
-
 }
 
 void FTaskManager::Stop()
