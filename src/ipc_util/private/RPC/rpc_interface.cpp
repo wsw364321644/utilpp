@@ -1,8 +1,23 @@
 #include "RPC/rpc_interface.h"
-
+#include "RPC/rpc_processer.h"
 std::unordered_map<std::string, RPCInterfaceInfo>* RPCInterfaceFactory::RPCInfos;
 //static std::unordered_map<std::string, RPCInterfaceInfo>* RPCInfos;
 
+RPCHandle_t IGroupRPC::SendRPCRequest(std::shared_ptr<RPCRequest> req)
+{
+    auto handle= processer->SendRequest(req);
+    handle.PIGroupRPC = this;
+    return handle;
+}
+std::shared_ptr<RPCRequest>  IGroupRPC::CancelRPCRequest(RPCHandle_t handle)
+{
+    return processer->CancelRequest(handle);
+}
+
+bool IGroupRPC::SendRPCResponse(RPCHandle_t handle, std::shared_ptr<RPCResponse> response)
+{
+    return processer->SendResponse(handle, response);
+}
 
 bool RPCInterfaceFactory::Register(const char* name, RPCInterfaceInfo info)
 {

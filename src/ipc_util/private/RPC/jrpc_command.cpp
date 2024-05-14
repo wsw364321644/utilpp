@@ -10,68 +10,12 @@
 #include <chrono>
 #include <list>
 #include <sstream>
+#include <cassert>
 
+DEFINE_RPC_OVERRIDE_FUNCTION(JRPCCommandAPI, "command");
+DEFINE_JRPC_OVERRIDE_FUNCTION(JRPCCommandAPI);
 
-
-
-//std::unique_ptr<IGroupRPC> DefaultJRPCCommandAPI= JRPCCommandAPI::Create(nullptr);
-//std::unordered_map<std::string, RPCMethodInfo<JRPCCommandAPI>> JRPCCommandAPI::rpcInfoData;
-
-
-
-std::unordered_map<std::string, RPCMethodInfo<JRPCCommandAPI>> RPCInfoData<JRPCCommandAPI>::MethodInfos;
-JRPCCommandAPI::JRPCCommandAPI(RPCProcesser* inprocesser) :IGroupJRPC(inprocesser)
-{
-}
-JRPCCommandAPI::~JRPCCommandAPI()
-{
-}
-
-std::unique_ptr<IGroupRPC> JRPCCommandAPI::Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew fn)
-{
-    if (fn) {
-        JRPCCommandAPI* ptr = (JRPCCommandAPI*)fn(sizeof(JRPCCommandAPI));
-        new(ptr)JRPCCommandAPI(inprocesser);
-
-        return  std::unique_ptr<JRPCCommandAPI>(ptr);
-    }
-    return std::make_unique<JRPCCommandAPI>(inprocesser);
-}
-
-const char* JRPCCommandAPI::GetGroupName()
-{
-    return "command";
-}
-void JRPCCommandAPI::StaticInit(bool(*func)(const char* name, RPCInterfaceInfo info))
-{
-    func(JRPCCommandAPI::GetGroupName(), { .CreateFunc = &JRPCCommandAPI::Create ,.CheckFunc = &RPCInfoData<JRPCCommandAPI>::CheckMethod });
-}
-bool JRPCCommandAPI::OnRequestRecv(std::shared_ptr<RPCRequest> req)
-{
-    auto opt = RPCInfoData<JRPCCommandAPI>::GetMethodInfo(req->Method.c_str());
-    if (!opt.has_value()) {
-        return false;
-    }
-    opt.value().OnRequestMethod(this, req);
-    return true;
-}
-
-bool JRPCCommandAPI::OnResponseRecv(std::shared_ptr<RPCResponse> res, std::shared_ptr<RPCRequest> req)
-{
-    auto opt = RPCInfoData<JRPCCommandAPI>::GetMethodInfo(req->Method.c_str());
-    if (!opt.has_value()) {
-        return false;
-    }
-    opt.value().OnResponseMethod(this, res, req);
-    return true;
-}
-
-//static const char HeartBeatName[] = "HeartBeat";
-//static RPCInfoRegister<JRPCCommandAPI> HeartBeatRegister(RPCMethodInfo<JRPCCommandAPI>{.Name = HeartBeatName,
-//    .OnRequestMethod = &JRPCCommandAPI::OnHeartBeatRequestRecv,
-//    .OnResponseMethod = &JRPCCommandAPI::OnHeartBeatResponseRecv
-//});
-REGISTER_RPC_API_AUTO(HeartBeat, JRPCCommandAPI);
+REGISTER_RPC_API_AUTO(JRPCCommandAPI, HeartBeat);
 DEFINE_REQUEST_RPC(JRPCCommandAPI, HeartBeat);
 RPCHandle_t JRPCCommandAPI::HeartBeat(THeartBeatDelegate inDelegate,TRPCErrorDelegate errDelegate)
 {
@@ -104,7 +48,7 @@ void JRPCCommandAPI::OnHeartBeatResponseRecv(std::shared_ptr<RPCResponse> resp, 
 }
 
 
-REGISTER_RPC_API_AUTO(SetChannel, JRPCCommandAPI);
+REGISTER_RPC_API_AUTO(JRPCCommandAPI, SetChannel);
 DEFINE_REQUEST_RPC(JRPCCommandAPI, SetChannel);
 RPCHandle_t JRPCCommandAPI::SetChannel(uint8_t index, EMessagePolicy policy, TSetChannelDelegate inDelegate, TRPCErrorDelegate errDelegate)
 {

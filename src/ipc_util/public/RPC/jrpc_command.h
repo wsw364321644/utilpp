@@ -11,17 +11,7 @@
 class IPC_EXPORT JRPCCommandAPI :public IGroupJRPC, public IRPCCommandAPI
 {
 public:
-    JRPCCommandAPI(RPCProcesser*);
-    virtual ~JRPCCommandAPI();
-
-    static std::unique_ptr<IGroupRPC> Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew);
-    static  void StaticInit(bool(*func)(const char* name, RPCInterfaceInfo info));
-    static  const char* GetGroupName();
-    virtual const char* GetName() {
-        return GetGroupName();
-    }
-    virtual bool OnRequestRecv(std::shared_ptr<RPCRequest>) override;
-    virtual bool OnResponseRecv(std::shared_ptr<RPCResponse>, std::shared_ptr<RPCRequest>) override;
+    DECLARE_RPC_OVERRIDE_FUNCTION(JRPCCommandAPI);
 
     DECLARE_RESPONSE_RPC(HeartBeat);
     DECLARE_REQUEST_RPC(HeartBeat);

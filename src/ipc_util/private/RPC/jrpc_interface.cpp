@@ -15,5 +15,5 @@ bool IGroupJRPC::RespondError(RPCHandle_t handle, double errorCode, const char* 
     if (errorData) {
         response->ErrorData = errorData;
     }
-    return processer->SendResponse(handle, response);
+    return SendRPCResponse(handle, response);
 }
