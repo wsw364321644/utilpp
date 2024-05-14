@@ -57,10 +57,9 @@ void RPCProcesser::OnRecevRPC(const char* str, uint32_t len)
                 return;
             }
             rpcReq = result->second;
-            GetInterfaceByMethodName(rpcReq->Method.c_str())->OnResponseRecv(response, rpcReq);
             requestMap.erase(result);
         }
-
+        GetInterfaceByMethodName(rpcReq->Method.c_str())->OnResponseRecv(response, rpcReq);
     }
     auto pRequest = std::get_if<std::shared_ptr<RPCRequest>>(&parseResult);
     if (pRequest) {
