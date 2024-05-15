@@ -13,7 +13,7 @@
 DEFINE_RPC_OVERRIDE_FUNCTION(JRPCHookHelperAPI, "HookHelper");
 DEFINE_JRPC_OVERRIDE_FUNCTION(JRPCHookHelperAPI);
 
-REGISTER_RPC_API_AUTO(ConnectToHost, JRPCHookHelperAPI);
+REGISTER_RPC_API_AUTO(JRPCHookHelperAPI, ConnectToHost);
 DEFINE_REQUEST_RPC(JRPCHookHelperAPI, ConnectToHost);
 RPCHandle_t JRPCHookHelperAPI::ConnectToHost(uint64_t processId, const char* commandline, TConnectToHostDelegate inDelegate, TRPCErrorDelegate errDelegate)
 {
