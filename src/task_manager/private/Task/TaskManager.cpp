@@ -18,7 +18,7 @@ TaskManagerInterData_t* GetTaskManagerInterDataPtr(void* ptr) {
 FTaskManager::FTaskManager() {
     InterData = new TaskManagerInterData_t;
 
-    TaskWorkflowDatas.try_emplace(CommonHandle_t(NullHandle), std::make_shared<TaskWorkflow_t>());
+    TaskWorkflowDatas.try_emplace(NullHandle, std::make_shared<TaskWorkflow_t>());
     MainThread = NewWorkflow();
 }
 
@@ -125,7 +125,7 @@ void FTaskManager::TickRandonTaskWorkflow()
     std::shared_ptr<TaskWorkflow_t> pTaskWorkflow;
     {
         std::scoped_lock lock(TaskWorkflowLock);
-        pTaskWorkflow = TaskWorkflowDatas[CommonHandle_t(NullHandle)];
+        pTaskWorkflow = TaskWorkflowDatas[NullHandle];
     }
     pTaskWorkflow->TimeRecorder.Tick();
     auto deltime = pTaskWorkflow->TimeRecorder.GetDelta<std::chrono::nanoseconds>();
@@ -226,7 +226,7 @@ WorkflowHandle_t FTaskManager::NewWorkflow()
     std::scoped_lock lock(TaskWorkflowMutex);
     auto pair = TaskWorkflowDatas.try_emplace(WorkflowHandle_t::WorkflowCount, std::make_shared<TaskWorkflow_t>());
     if (!pair.second) {
-        WorkflowHandle_t();
+        return NullHandle;
     }
     return pair.first->first;
 }
@@ -305,11 +305,11 @@ CommonTaskHandle_t FTaskManager::AddTick(WorkflowHandle_t handle, FTickTask task
     std::scoped_lock lock(TaskWorkflowRLock, TickLock);
     auto itr = TaskWorkflowDatas.find(handle);
     if (itr == TaskWorkflowDatas.end()) {
-        return CommonTaskHandle_t();
+        return NullHandle;
     }
     auto res = TickTasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared<TickTaskData_t>(handle, task));
     if (!res.second) {
-        return CommonTaskHandle_t();
+        return NullHandle;
     }
     itr->second->TickTasks.push_back(res.first->first);
     return res.first->first;
@@ -322,11 +322,11 @@ CommonTaskHandle_t FTaskManager::AddTimer(WorkflowHandle_t handle, FTimerTask ta
     std::scoped_lock lock(TaskWorkflowRLock, TimerLock);
     auto itr = TaskWorkflowDatas.find(handle);
     if (itr == TaskWorkflowDatas.end()) {
-        return CommonTaskHandle_t();
+        return NullHandle;
     }
     auto res = TimerTasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared < TimerTaskData_t>(handle, task, std::chrono::nanoseconds(repeat), std::chrono::nanoseconds(timeout)));
     if (!res.second) {
-        return CommonTaskHandle_t();
+        return NullHandle;
     }
     itr->second->TimerTasks.push_back(res.first->first);
     return res.first->first;

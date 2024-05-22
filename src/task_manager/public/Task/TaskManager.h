@@ -21,7 +21,8 @@ constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_
 typedef struct CommonTaskHandle_t : CommonHandle_t
 {
     CommonTaskHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
-    CommonTaskHandle_t() :CommonHandle_t() {}
+    CommonTaskHandle_t() :CommonHandle_t(TaskCount) {}
+    CommonTaskHandle_t(const NullCommonHandle_t handle) :CommonHandle_t(handle) {}
     static std::atomic_uint32_t TaskCount;
 }CommonTaskHandle_t;
 
@@ -29,7 +30,7 @@ typedef struct WorkflowHandle_t : CommonHandle_t
 {
     WorkflowHandle_t(NullCommonHandle_t h) :CommonHandle_t(h) {}
     WorkflowHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
-    constexpr WorkflowHandle_t() : CommonHandle_t() {}
+    WorkflowHandle_t() : CommonHandle_t(WorkflowCount) {}
     static std::atomic_uint32_t WorkflowCount;
 }WorkflowHandle_t;
 
@@ -90,7 +91,7 @@ public:
         std::scoped_lock lock(TaskWorkflowRLock, TaskLock);
         auto itr = TaskWorkflowDatas.find(handle);
         if (itr == TaskWorkflowDatas.end()) {
-            return { CommonTaskHandle_t(), task_promise->get_future() };
+            return { NullHandle, task_promise->get_future() };
         }
         auto res = Tasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared < CommonTaskData_t>(handle, 
             [task = std::forward<F>(task),task_promise]() {
@@ -119,12 +120,12 @@ public:
             }
         ));
         if (!res.second) {
-            return { CommonTaskHandle_t(), task_promise->get_future() };
+            return { NullHandle, task_promise->get_future() };
         }
         auto setres = itr->second->Tasks.emplace(res.first->first);
         if (!setres.second) {
             Tasks.erase(res.first->first);
-            return { CommonTaskHandle_t(), task_promise->get_future() };
+            return { NullHandle, task_promise->get_future() };
         }
         return { res.first->first, task_promise->get_future() };
 

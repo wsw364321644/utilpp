@@ -44,6 +44,6 @@ private :
     void InternalSpawnProcess(UVProcess_t*);
     std::atomic_uint32_t processCount{0};
     uv_loop_t* ploop;
-    CommonHandle_t currentHandle{ 0 };
+    CommonHandle_t currentHandle{ NullHandle };
     std::unordered_map<CommonHandle_t, std::shared_ptr<UVProcess_t>> processes;
 };

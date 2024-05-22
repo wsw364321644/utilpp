@@ -19,7 +19,7 @@
     virtual CommonHandle_t Add##DelegateName##Delegate(DelegateName##DelegateType indelegate) { \
         const auto& pair= DelegateName##Delegates.emplace(CommonHandle_t(CommonHandle_t::atomic_count), indelegate); \
         if (!pair.second) { \
-            return CommonHandle_t(); \
+            return NullHandle; \
         } \
         return pair.first->first; \
     } \

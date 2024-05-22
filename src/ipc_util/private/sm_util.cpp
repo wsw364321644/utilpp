@@ -4,10 +4,10 @@
 
 typedef struct WindowsHandle_t :public CommonHandle_t
 {
-    WindowsHandle_t(HANDLE _handle):CommonHandle_t(WindowsHandleCount), HMapFile(_handle)
+    WindowsHandle_t(HANDLE _handle): HMapFile(_handle)
     {
         if (HMapFile == NULL) {
-            CommonHandle_t();
+            CommonHandle_t(NullHandle);
         }
         else {
             CommonHandle_t(WindowsHandleCount);
@@ -17,9 +17,9 @@ typedef struct WindowsHandle_t :public CommonHandle_t
     HANDLE HMapFile{NULL};
     size_t FileSize{0};
     std::string Name;
-    static std::atomic_uint32_t WindowsHandleCount;
+    static std::atomic<CommonHandleID_t> WindowsHandleCount;
 } WindowsHandle_t;
-std::atomic_uint32_t WindowsHandle_t::WindowsHandleCount{ 0 };
+std::atomic<WindowsHandle_t::CommonHandleID_t> WindowsHandle_t::WindowsHandleCount{0};
 
 CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
 {

@@ -76,7 +76,7 @@ bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& ur
 }
 CommonHandle_t MessageClientUV::Write(const char* data, int len)
 {
-    auto res = CommonHandle_t();
+    CommonHandle_t res(NullHandle);
     if (state.load() != EMessageConnectionState::Connected) {
         return res;
     }

@@ -31,7 +31,7 @@ typedef struct UVProcess_t {
     FChildProcessManager* ChildProcessManager;
     FChildProcessManager::FOnReadDelegate  OnReadDelegate;
     FChildProcessManager::FOnExitDelegate  OnExitDelegate;
-    CommonHandle_t handle;
+    CommonHandle_t handle{ NullHandle };
     CharBuffer Buf;
     //std::mutex m;
     //std::condition_variable cv;
@@ -81,11 +81,11 @@ FChildProcessManager* FChildProcessManager::GetInstance()
 CommonHandle_t FChildProcessManager::SpawnProcess(const char* _filepath, const char** _args)
 {
     if (!_filepath) {
-        return CommonHandle_t();
+        return NullHandle;
     }
     auto pair = processes.emplace(processCount, std::make_shared< UVProcess_t>());
     if (!pair.second) {
-        return CommonHandle_t();
+        return NullHandle;
     }
     UVProcess_t* pp = pair.first->second.get();
     pp->ChildProcessManager = this;

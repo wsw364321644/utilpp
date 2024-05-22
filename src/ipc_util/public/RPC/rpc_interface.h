@@ -16,7 +16,8 @@ class RPCResponse;
 class IGroupRPC;
 typedef struct RPCHandle_t :CommonHandle_t {
     constexpr  RPCHandle_t(CommonHandleID_t id) : CommonHandle_t(id) {}
-    constexpr  RPCHandle_t():CommonHandle_t() {}
+    RPCHandle_t():CommonHandle_t() {}
+    constexpr RPCHandle_t(const NullCommonHandle_t nullhandle):CommonHandle_t(nullhandle) {}
     RPCHandle_t(std::atomic<CommonHandleID_t>& counter) :CommonHandle_t(counter) {}
     bool operator<(const RPCHandle_t& handle) const {
         return ID < handle.ID;

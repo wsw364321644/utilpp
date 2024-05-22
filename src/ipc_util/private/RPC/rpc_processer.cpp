@@ -97,12 +97,12 @@ RPCHandle_t RPCProcesser::SendRequest(std::shared_ptr<RPCRequest> request)
             lock.lock();
             requestMap.erase(res.first);
             lock.unlock();
-            return RPCHandle_t();
+            return NullHandle;
         }
 
     }
     else {
-        return RPCHandle_t();
+        return NullHandle;
     }
 
 }
