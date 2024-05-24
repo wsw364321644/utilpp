@@ -7,6 +7,8 @@
 #define MUTEX_TEXTURE1 "CaptureHook_TextureMutex1"
 #define MUTEX_TEXTURE2 "CaptureHook_TextureMutex2"
 
+#define HOOK_IPC_PIPE   "\\\\.\\pipe\\CaptureHook_pipe"
+
 #define EVENT_CAPTURE_RESTART "CaptureHook_Restart"
 #define EVENT_CAPTURE_STOP "CaptureHook_Stop"
 #define EVENT_HOOK_READY "CaptureHook_HookReady"

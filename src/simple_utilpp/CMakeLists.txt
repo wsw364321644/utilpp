@@ -39,5 +39,6 @@ target_link_libraries (${TARGET_NAME} PUBLIC simple_util_include)
 add_simple_utilpp(${TARGET_NAME})
 
 add_library (${TARGET_NAME}_a STATIC  ${SourceFiles} )
+target_compile_definitions(${TARGET_NAME} PUBLIC -DSIMPLE_UTIL_API_NODLL)
 target_link_libraries (${TARGET_NAME}_a PUBLIC simple_util_a)
 add_simple_utilpp(${TARGET_NAME}_a)
