@@ -2,6 +2,8 @@
 
 #include <type_traits>
 #include <variant>
+#include <stdexcept>
+
 template <class T>
 inline void hash_combine(std::size_t &seed, const T &v)
 {
