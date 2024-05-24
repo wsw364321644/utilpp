@@ -13,6 +13,7 @@
 enum class ERPCParseError {
     OK,
     ParseError,
+    InvalidRequest,
     InternalError
 };
 
@@ -30,7 +31,7 @@ class RPCResponse {
 public:
     virtual ~RPCResponse() = default;
     virtual CharBuffer ToBytes() = 0;
-    uint32_t ID;
+    std::optional<uint32_t> ID;
     double ErrorCode;
     std::string ErrorMsg;
     std::string ErrorData;
@@ -40,6 +41,8 @@ class IRPCPaser {
 public:
     typedef std::variant<ERPCParseError, std::shared_ptr<RPCRequest>, std::shared_ptr<RPCResponse>> ParseResult;
     virtual ParseResult Parse(const char* data, int len) = 0;
+    virtual std::shared_ptr<RPCResponse> GetMethodNotFoundResponse(std::optional<uint32_t> id) = 0;
+    virtual std::shared_ptr<RPCResponse> GetErrorParseResponse(ERPCParseError error) = 0;
 };
 
 #pragma warning(pop)

@@ -96,7 +96,9 @@ public:
     ~JRPCPaser() = default;
     //typedef std::variant<EMessageError,JsonRPCRequest, JsonRPCResponse> ParseResult;
     static bool Init();
-    ParseResult Parse(const char* data, int len);
+    virtual ParseResult Parse(const char* data, int len) override;
+    virtual std::shared_ptr<RPCResponse> GetMethodNotFoundResponse(std::optional<uint32_t> id) override;
+    virtual std::shared_ptr<RPCResponse> GetErrorParseResponse(ERPCParseError error) override;
     static ParseResult StaticParse(const char* data, int len);
     static CharBuffer ToByte(const JsonRPCRequest&);
     static CharBuffer ToByte(const JsonRPCResponse&);

@@ -44,35 +44,52 @@ std::shared_ptr<IGroupRPC> RPCProcesser::GetInterfaceByMethodName(const char* na
 void RPCProcesser::OnRecevRPC(const char* str, uint32_t len)
 {
     IRPCPaser::ParseResult parseResult = rpcParserInterface->Parse(str, len);
-    auto pResponse = std::get_if<std::shared_ptr<RPCResponse>>(&parseResult);
 
+    auto pResponse = std::get_if<std::shared_ptr<RPCResponse>>(&parseResult);
     if (pResponse) {
         std::shared_ptr<RPCRequest> rpcReq;
         auto response = *pResponse;
-        auto id = response->ID;
-        {
-            std::scoped_lock sl(requestMapMutex);
-            auto result = requestMap.find(RPCHandle_t(id));
-            if (result == requestMap.end()) {
-                return;
-            }
-            rpcReq = result->second;
-            requestMap.erase(result);
+        if (!response->ID.has_value()) {
+            TriggerOnRequestErrorRespondDelegates(response);
         }
-        GetInterfaceByMethodName(rpcReq->Method.c_str())->OnResponseRecv(response, rpcReq);
+        else {
+            auto id = response->ID.value();
+            {
+                std::scoped_lock sl(requestMapMutex);
+                auto result = requestMap.find(RPCHandle_t(id));
+                if (result == requestMap.end()) {
+                    return;
+                }
+                rpcReq = result->second;
+                requestMap.erase(result);
+            }
+            auto rpcInterface = GetInterfaceByMethodName(rpcReq->Method.c_str());
+            if (rpcInterface) {
+                rpcInterface->OnResponseRecv(response, rpcReq);
+            }
+        }
+        return;
     }
     auto pRequest = std::get_if<std::shared_ptr<RPCRequest>>(&parseResult);
     if (pRequest) {
         auto request = *pRequest;
-        if (GetInterfaceByMethodName(request->Method.c_str())) {
-            if (!GetInterfaceByMethodName(request->Method.c_str())->OnRequestRecv(request)) {
+        auto rpcInterface = GetInterfaceByMethodName(request->Method.c_str());
+        if (rpcInterface) {
+            if (!rpcInterface->OnRequestRecv(request)) {
                 TriggerOnRPCConsumedErrorDelegates(request);
             }
         }
         else {
+            auto buf = rpcParserInterface->GetMethodNotFoundResponse(request->ID)->ToBytes();
+            msgprocesser->SendContent(buf.CStr(), buf.Length());
             TriggerOnMethoedNotFoundDelegates(request);
         }
+        return;
     }
+
+    auto ParseError = std::get<ERPCParseError>(parseResult);
+    auto buf = rpcParserInterface->GetErrorParseResponse(ParseError)->ToBytes();
+    msgprocesser->SendContent(buf.CStr(), buf.Length());
 }
 
 void RPCProcesser::OnRecevPacket(MessagePacket_t* p)

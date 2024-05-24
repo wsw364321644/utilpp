@@ -43,7 +43,7 @@ public:
 
     DEFINE_EVENT_ONE_PARAM(OnRPCConsumedError, std::shared_ptr<RPCRequest>);
     DEFINE_EVENT_ONE_PARAM(OnMethoedNotFound, std::shared_ptr<RPCRequest>);
-
+    DEFINE_EVENT_ONE_PARAM(OnRequestErrorRespond, std::shared_ptr<RPCResponse>);
 private:
 
     MessageProcesser* msgprocesser;

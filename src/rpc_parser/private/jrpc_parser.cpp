@@ -1,8 +1,9 @@
 #include "jrpc_parser.h"
 
-#include "delegate_macros.h"
-#include "logger.h"
-
+#include "JsonRPCError.h"
+#include <LoggerHelper.h>
+#include <std_ext.h>
+#include <delegate_macros.h>
 #include <memory>
 #include <stdint.h>
 #include <shared_mutex>
@@ -131,7 +132,7 @@ ERPCParseError JsonRPCResponse::CheckResult(const char* Method) const
         validator.set_root_schema(schemaDoc);
     }
     catch (const std::exception& e) {
-        LOG_ERROR("Validation of {} Result failed, here is why: {}", Method, e.what());
+        SIMPLELOG_LOGGER_ERROR(nullptr,"Validation of {} Result failed, here is why: {}", Method, e.what());
         return  ERPCParseError::InternalError;;
     }
     validator.validate(GetResultNlohmannJson(), err);
@@ -163,7 +164,7 @@ ERPCParseError JsonRPCRequest::CheckParams()const
         validator.set_root_schema(schemaDoc);
     }
     catch (const std::exception& e) {
-        LOG_ERROR("Validation of {} Params failed, here is why: {}", Method, e.what());
+        SIMPLELOG_LOGGER_ERROR(nullptr, "Validation of {} Params failed, here is why: {}", Method, e.what());
         return  ERPCParseError::InternalError;;
     }
     validator.validate(GetParamsNlohmannJson(), err);
@@ -192,7 +193,7 @@ bool JRPCPaser::Init()
         reqValidator.set_root_schema(reqSchema);
     }
     catch (const std::exception& e) {
-        LOG_ERROR("ReqSchema init failed, here is why: {}", e.what());
+        SIMPLELOG_LOGGER_ERROR(nullptr, "ReqSchema init failed, here is why: {}", e.what());
         return false;
     }
 
@@ -204,7 +205,7 @@ bool JRPCPaser::Init()
         respValidator.set_root_schema(respSchema);
     }
     catch (const std::exception& e) {
-        LOG_ERROR("RespSchema init failed, here is why: {}", e.what());
+        SIMPLELOG_LOGGER_ERROR(nullptr, "RespSchema init failed, here is why: {}", e.what());
         return false;
     }
     //todo
@@ -251,6 +252,43 @@ JRPCPaser::ParseResult JRPCPaser::Parse(const char* data, int len)
     return StaticParse(data, len);
 }
 
+std::shared_ptr<RPCResponse> JRPCPaser::GetMethodNotFoundResponse(std::optional<uint32_t> id)
+{
+    auto presponse = std::make_shared<JsonRPCResponse>();
+    auto& response = *presponse;
+    response.ID = id;
+    response.ErrorCode = std::to_underlying( EJsonRPCError::MethodNotFound);
+    response.ErrorMsg = ToString(EJsonRPCError::MethodNotFound);
+    response.OptError = true;
+    return  presponse;
+}
+
+std::shared_ptr<RPCResponse> JRPCPaser::GetErrorParseResponse(ERPCParseError error)
+{
+    auto presponse = std::make_shared<JsonRPCResponse>();
+    auto& response = *presponse;
+    response.OptError = true;
+    switch (error)
+    {
+    case ERPCParseError::ParseError:
+        response.ErrorCode = std::to_underlying(EJsonRPCError::ParseError);
+        response.ErrorMsg = ToString(EJsonRPCError::ParseError);
+        break;
+    case ERPCParseError::InternalError:
+        response.ErrorCode = std::to_underlying(EJsonRPCError::InternalError);
+        response.ErrorMsg = ToString(EJsonRPCError::InternalError);
+        break;
+    case ERPCParseError::InvalidRequest:
+        response.ErrorCode = std::to_underlying(EJsonRPCError::InvalidRequest);
+        response.ErrorMsg = ToString(EJsonRPCError::InvalidRequest);
+        break;
+    default:
+        return nullptr;
+        break;
+    }
+    return presponse;
+}
+
 JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
 {
     ParseResult res(ERPCParseError::ParseError);
@@ -259,6 +297,7 @@ JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
     if (doc.is_discarded()) {
         return res;
     }
+    res = ERPCParseError::InvalidRequest;
     nlohmann::json_schema::basic_error_handler err;
     reqValidator.validate(doc, err);
     if (!err) {
@@ -278,7 +317,9 @@ JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
     if (!err) {
         auto presponse = std::make_shared<JsonRPCResponse>();
         auto& response = *presponse;
-        response.ID = (uint32_t)doc[IDFieldStr].get_ref<nlohmann::json::number_unsigned_t&>();
+        if (doc[IDFieldStr].is_number()) {
+            response.ID = (uint32_t)doc[IDFieldStr].get_ref<nlohmann::json::number_unsigned_t&>();
+        }
 
         if (doc.find(ResultFieldStr)!=doc.end()) {
             response.OptError = false;
@@ -324,7 +365,12 @@ CharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
     if (!res.IsValiad()) {
         return buffer;
     }
-    doc[IDFieldStr] = res.ID;
+    if (res.ID.has_value()) {
+        doc[IDFieldStr] = res.ID.value();
+    }
+    else {
+        doc[IDFieldStr] = nlohmann::json(nlohmann::json::value_t::null);
+    }
     if (res.IsError()) {
         nlohmann::json errNode(nlohmann::json::value_t::object);
         errNode[ErrorCodeFieldStr] = res.ErrorCode;
