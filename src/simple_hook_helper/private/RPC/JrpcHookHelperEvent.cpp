@@ -4,6 +4,7 @@
 #include <mbedtls/base64.h>
 #include <RPC/message_common.h>
 #include <gcem.hpp>
+#include <typeindex>
 
 constexpr int MOUSE_WHEEL_EVENT_BASE64_LEN = (sizeof(mouse_wheel_event_t) + 2) / 3 * 4;
 constexpr int MOUSE_BOTTON_EVENT_BASE64_LEN = (sizeof(mouse_button_event_t) + 2) / 3 * 4;
@@ -16,19 +17,30 @@ DEFINE_JRPC_OVERRIDE_FUNCTION(JRPCHookHelperEventAPI);
 
 REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, HotkeyListUpdate);
 DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, HotkeyListUpdate);
-bool JRPCHookHelperEventAPI::HotkeyListUpdate(HotKeyList_t& HotKeyList)
+bool JRPCHookHelperEventAPI::HotkeyListUpdate(HotKeyList_t& HotKeyListNode)
 {
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
     req->Method = HotkeyListUpdateName;
-    nlohmann::json obj = nlohmann::json::object();
-    for (auto pair: HotKeyList) {
-        for (auto hotkey : pair.second) {
-            nlohmann::json hotkeyNode;
-            hotkeyNode["mod"] = hotkey.mod;
-            hotkeyNode["keyCode"] = hotkey.key_code;
-            obj[pair.first].push_back(hotkeyNode);
+    nlohmann::json obj = nlohmann::json::array();
+    std::function<void(nlohmann::json& ,const HotKeyList_t& )> fn = [fn](nlohmann::json& list,const HotKeyList_t& HotKeyListNode) {
+        for (auto& node : HotKeyListNode) {
+            nlohmann::json obj;
+            obj["mod"] = node.HotKey.mod;
+            obj["keyCode"] = node.HotKey.key_code;
+            if (std::holds_alternative<std::string>(node.Child)) {
+                auto& str = std::get<std::string>(node.Child);
+                obj["name"] = str;
+            }
+            else {
+                auto& children = std::get<HotKeyList_t>(node.Child);
+                nlohmann::json childrenNode = nlohmann::json::array();
+                fn(childrenNode, children);
+                obj["children"] = childrenNode;
+            }
+            list.push_back(obj);
         }
-    }
+        };
+    fn(obj,HotKeyListNode);
 
     req->Params = obj.dump();
     return  processer->SendEvent(req);
@@ -42,13 +54,23 @@ void JRPCHookHelperEventAPI::OnHotkeyListUpdateRequestRecv(std::shared_ptr<RPCRe
     if (!recvHotkeyListUpdateDelegate) {
         return;
     }
-    for (auto it = doc.begin(); it != doc.end();it++) {
-        for (auto hotkeyNode : it.value()) {
-            key_with_modifier_t key{.key_code= (SDL_Keycode)hotkeyNode["keyCode"].get_ref<nlohmann::json::number_integer_t&>(),
-                .mod=(Uint16) hotkeyNode["mod"].get_ref<nlohmann::json::number_integer_t&>()};
-            HotKeyList[it.key()].push_back(key);
+    std::function<void(nlohmann::json&, HotKeyList_t&)> fn = [fn](nlohmann::json& list, HotKeyList_t& HotKeyList) {
+        for (auto it = list.begin(); it != list.end(); it++) {
+            for (auto hotkeyNode : it.value()) {
+                key_with_modifier_t key{ .key_code = (SDL_Keycode)hotkeyNode["keyCode"].get_ref<nlohmann::json::number_integer_t&>(),
+                    .mod = (Uint16)hotkeyNode["mod"].get_ref<nlohmann::json::number_integer_t&>() };
+                if (hotkeyNode.contains("name")) {
+                    HotKeyList.emplace(std::move(key), hotkeyNode["name"].get_ref<nlohmann::json::string_t&>());
+                }
+                else {
+                    HotKeyList_t children;
+                    fn(hotkeyNode["children"], children);
+                    HotKeyList.emplace(key,std::move(children));
+                }
+            }
         }
-    }
+        };
+    fn(doc,HotKeyList);
     recvHotkeyListUpdateDelegate(HotKeyList);
 }
 

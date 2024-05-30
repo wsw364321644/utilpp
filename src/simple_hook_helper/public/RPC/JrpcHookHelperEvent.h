@@ -6,10 +6,41 @@
 #include "HOOK/keyboard_event.h"
 #include "HOOK/mouse_event.h"
 #include "HOOK/hotkey_list.h"
+#include "std_ext.h"
+#include <any>
+#include <set>
 #pragma warning(push)
 #pragma warning(disable:4251)
 
-typedef std::map<std::string, std::vector<key_with_modifier_t>> HotKeyList_t;
+struct HotKeyNode_t;
+
+typedef std::set<HotKeyNode_t> HotKeyList_t;
+
+typedef struct HotKeyNode_t {
+    key_with_modifier_t HotKey;
+    std::variant<HotKeyList_t, std::string> Child;
+    bool operator<(const HotKeyNode_t& other) const
+    {
+        return HotKey.key_code<other.HotKey.key_code;
+    }
+}HotKeyNode_t;
+
+
+
+namespace std
+{
+    template <>
+    struct hash<HotKeyNode_t>
+    {
+        std::size_t operator()(const HotKeyNode_t& c) const
+        {
+            return c.HotKey.key_code;
+        }
+    };
+}
+
+   //std::any is std::string or HotKeyListNode_t
+
 
 class HOOK_HELPER_EXPORT JRPCHookHelperEventAPI :public IGroupJRPC, public IRPCHookHelperEventAPI
 {
