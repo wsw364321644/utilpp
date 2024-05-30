@@ -9,3 +9,4 @@
 
 
 HOOK_HELPER_API SDL_Scancode WindowsScanCodeToSDLScanCode(LPARAM lParam, WPARAM wParam);
+HOOK_HELPER_API bool WindowsCheckModifier(Uint16 mod);
