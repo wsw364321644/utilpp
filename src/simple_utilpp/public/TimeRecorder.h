@@ -2,7 +2,8 @@
 #include <stdint.h>
 #include <chrono>
 #include <std_ext.h>
-class FTimeRecorder {
+#include "simple_export_ppdefs.h"
+class SIMPLE_UTIL_EXPORT FTimeRecorder {
 public:
     FTimeRecorder();
     void Tick();

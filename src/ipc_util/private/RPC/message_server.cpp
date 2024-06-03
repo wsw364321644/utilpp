@@ -1,7 +1,7 @@
 #include "RPC/message_server.h"
 #include "RPC/message_session.h"
 #include "message_internal.h"
-#include <logger.h>
+#include <LoggerHelper.h>
 #include <uv.h>
 #include <uri.h>
 
@@ -153,7 +153,7 @@ void MessageServerUV::CloseServer()
 void MessageServerUV::UVOnConnection(uv_stream_t* stream, int status)
 {
     if (status < 0) {
-        LOG_WARNING("{}, New connection error {}", Log_Server, uv_strerror(status));
+        SIMPLELOG_LOGGER_WARN(nullptr,"{}, New connection error {}", "UVOnConnection", uv_strerror(status));
         return;
     }
 
@@ -192,7 +192,7 @@ void MessageServerUV::UVOnConnection(uv_stream_t* stream, int status)
         break;
     }
     case EMessageConnectionType::EMCT_UDP: {
-        LOG_ERROR("{},OnConnection udp recv other  error", Log_Server);
+        SIMPLELOG_LOGGER_ERROR(nullptr,"{},OnConnection udp recv other  error", "UVOnConnection");
         break;
     }
     }
@@ -205,7 +205,7 @@ void MessageServerUV::UVOnConnection(uv_stream_t* stream, int status)
 void MessageServerUV::UVOnUDPRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags)
 {
     if (messageConnectionType != EMessageConnectionType::EMCT_UDP) {
-        LOG_ERROR("{},OnConnection other recv udp error", Log_Server);
+        SIMPLELOG_LOGGER_ERROR(nullptr,"{},OnConnection other recv udp error", "UVOnUDPRecv");
     }
     MessageSessionUV* session;
     sessionMutex.lock_shared();
@@ -243,7 +243,7 @@ void MessageServerUV::UVOnUDPRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_
 
     if (nread <= 0) {
         if (nread != UV_EOF) {
-            LOG_WARNING("{}, Read from remote error: {}", Log_Server, nread);
+            SIMPLELOG_LOGGER_WARN(nullptr,"{}, Read from remote error: {}", "UVOnUDPRecv", nread);
         }
         session->Disconnect();
         return;

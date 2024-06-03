@@ -18,7 +18,7 @@ struct RPCInfo_t {
     ERPCType type;
 };
 
-class  JsonRPCRequest :public RPCRequest {
+class RPC_PARSER_EXPORT  JsonRPCRequest :public RPCRequest {
 public:
     JsonRPCRequest() = default;
     virtual ~JsonRPCRequest() override = default;
@@ -34,7 +34,7 @@ public:
         Params = rhs.Params;
         return *this;
     }
-    JsonRPCRequest& operator=(JsonRPCRequest&& rhs) {
+    JsonRPCRequest& operator=(JsonRPCRequest&& rhs) noexcept {
         Method = rhs.Method;
         ID = rhs.ID;
         Params = std::move(rhs.Params);
@@ -48,7 +48,7 @@ public:
     virtual CharBuffer ToBytes() override;
 
 };
-class  JsonRPCResponse :public RPCResponse {
+class RPC_PARSER_EXPORT JsonRPCResponse :public RPCResponse {
 public:
     bool IsValiad() const {
         return  OptError.has_value();
@@ -66,7 +66,7 @@ public:
         Result = rhs.Result;
         return *this;
     }
-    JsonRPCResponse& operator=(JsonRPCResponse&& rhs) {
+    JsonRPCResponse& operator=(JsonRPCResponse&& rhs)noexcept {
         //bSuccess = rhs.bSuccess;
         ID = rhs.ID;
         ErrorCode = rhs.ErrorCode;
@@ -84,7 +84,7 @@ public:
     }
     std::optional<bool> OptError;
 };
-class JRPCPaser :public IRPCPaser
+class RPC_PARSER_EXPORT JRPCPaser :public IRPCPaser
 {
     friend class JsonRPCResponse;
     friend class JsonRPCRequest;

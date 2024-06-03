@@ -320,11 +320,11 @@ bool DirUtil::IterateDir(std::string path)
             entries_.emplace_back(DirEntry{ (char*)dir_entry.path().filename().u8string().c_str(), (uint64_t)dir_entry.file_size(), false });
         }
     }
-    //LOG_DEBUG("IterateDir {}  ", path);
+    //SIMPLELOG_LOGGER_DEBUG(nullptr,"IterateDir {}  ", path);
     //ClearDir();
     //DIR* dir = opendir(path.c_str());
     //if (dir == NULL) {
-    //    LOG_DEBUG("opendir  failed ");
+    //    SIMPLELOG_LOGGER_DEBUG(nullptr,"opendir  failed ");
     //    return false;
     //}
 
@@ -334,11 +334,11 @@ bool DirUtil::IterateDir(std::string path)
     //        continue;
     //    
     //    if (IsDirectory(ent->d_name)) {
-    //        LOG_DEBUG("iter dir {} ", ent->d_name);
+    //        SIMPLELOG_LOGGER_DEBUG(nullptr,"iter dir {} ", ent->d_name);
     //        entries_.emplace_back(DirEntry{ ent->d_name, 0, true });
     //    }
     //    else if (IsRegular(ent->d_name)) {
-    //        LOG_DEBUG("iter file {} ", ent->d_name);
+    //        SIMPLELOG_LOGGER_DEBUG(nullptr,"iter file {} ", ent->d_name);
     //        auto size = FileSize(ent->d_name);
     //        entries_.emplace_back(DirEntry{ ent->d_name, size, false });
     //    }

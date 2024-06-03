@@ -6,7 +6,7 @@
 #include "rpc_definition.h"
 
 #include <delegate_macros.h>
-#include <logger.h>
+#include <LoggerHelper.h>
 #include <memory>
 #include <stdint.h>
 #include <shared_mutex>
@@ -17,7 +17,7 @@
 RPCProcesser::RPCProcesser(MessageProcesser* inp) :msgprocesser(inp)
 {
     if (!JRPCPaser::bInited) {
-        LOG_ERROR("JRPCPaser bInited failed");
+        SIMPLELOG_LOGGER_ERROR(nullptr,"JRPCPaser bInited failed");
     }
     if (RPCInterfaceFactory::GetRPCInfos()) {
         for (auto& info : *RPCInterfaceFactory::GetRPCInfos()) {

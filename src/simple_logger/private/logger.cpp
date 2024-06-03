@@ -1,7 +1,3 @@
-/**
- *  logger.cpp
- */
-
 #include "logger.h"
 #include "dir_util.h"
 #include "module_util.h"

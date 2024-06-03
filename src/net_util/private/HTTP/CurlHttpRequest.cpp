@@ -5,7 +5,7 @@
 #include <uri.h>
 #include <string_view>
 #include <ranges>
-#include <logger.h>
+#include <LoggerHelper.h>
 
 
 template <typename Out>
@@ -255,45 +255,45 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
     {
     case CURLINFO_TEXT:
     {
-        LOG_DEBUG("{}:{}", (void*)this, std::string(DebugInfo, DebugInfoSize));
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}:{}", (void*)this, std::string(DebugInfo, DebugInfoSize));
     }
     break;
 
     case CURLINFO_HEADER_IN:
     {
-        LOG_DEBUG("{}: Received header ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received header ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     case CURLINFO_HEADER_OUT:
     {
-        LOG_DEBUG("{}: Sent header ({} bytes) - {}", (void*)this, DebugInfoSize, std::string(DebugInfo, DebugInfoSize));
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Sent header ({} bytes) - {}", (void*)this, DebugInfoSize, std::string(DebugInfo, DebugInfoSize));
     }
     break;
 
     case CURLINFO_DATA_IN:
     {
-        LOG_DEBUG("{}: Received data ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     case CURLINFO_DATA_OUT:
     {
-        LOG_DEBUG("{}: Sent data ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Sent data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
 
     case CURLINFO_SSL_DATA_IN:
     {
-        LOG_DEBUG("{}: Received SSL data ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received SSL data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     case CURLINFO_SSL_DATA_OUT:
     {
-        LOG_DEBUG("{}: Sent SSL data ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Sent SSL data ({} bytes)", (void*)this, DebugInfoSize);
     }
     break;
     default:
     {
-        LOG_DEBUG("{}: DebugCallback: Unknown DebugInfoType={} (DebugInfoSize: {} bytes)", (void*)this, (int32_t)DebugInfoType, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: DebugCallback: Unknown DebugInfoType={} (DebugInfoSize: {} bytes)", (void*)this, (int32_t)DebugInfoType, DebugInfoSize);
     }
     break;
     }

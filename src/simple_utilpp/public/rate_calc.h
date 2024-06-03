@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include <array>
-
+#include "simple_export_ppdefs.h"
 const uint32_t RateSlotSize = 25;
 
 struct SRateSlot
@@ -60,7 +60,7 @@ public:
 
 private:
     std::array<SRateSlot, RateSlotSize> m_RateSlots;
-    uint8_t m_uSlotPos;
-    uint32_t m_uDownRate;
-    uint64_t m_uLastDownloadSize;
+    uint8_t m_uSlotPos{ 0 };
+    uint32_t m_uDownRate{ 0 };
+    uint64_t m_uLastDownloadSize{ 0 };
 };

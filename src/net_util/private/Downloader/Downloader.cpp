@@ -1,12 +1,116 @@
-#include"Downloader/downloader.h"
+#include "Downloader/downloader.h"
+#include <simple_os_defs.h>
 #include <chrono>
-#include <logger.h>
+#include <LoggerHelper.h>
 #include <thread>
 #include <regex>
+#include <handle.h>
+
+class  FDownloadBuf : public std::enable_shared_from_this<FDownloadBuf> {
+public:
+
+    FDownloadBuf(uint32_t length) {
+        Len = length;
+        Buf = (char*)malloc(Len);
+    }
+    ~FDownloadBuf() {
+        if (Buf) {
+            free(Buf);
+        }
+    }
+    bool InsertInBuf(std::shared_ptr < file_chunk_t> pchunk);
+    bool RemoveChunk(std::shared_ptr < file_chunk_t> pchunk);
+
+    char* Buf{ nullptr };
+    uint32_t Len;
+    std::list<std::shared_ptr<file_chunk_t>> ChunkList;
+};
+
+
+
+class FDownloadFile : public std::enable_shared_from_this<FDownloadFile> {
+public:
+
+    FDownloadFile(std::string url, std::string folder);
+    FDownloadFile(std::string url, std::string* content);
+    FDownloadFile(std::string url, std::filesystem::path folder);
+
+    ~FDownloadFile();
+    void SetFileSize(uint64_t size);
+    std::shared_ptr<file_chunk_t> GetNotDownloadFilechunk();
+    void RevertDownloadFilechunk(uint32_t ChunkIndex);
+    bool IsAllChunkInDownload();
+    uint64_t GetDownloadSize();
+    bool IsIntact();
+
+    size_t SavaDate(std::shared_ptr<file_chunk_t> file_chunk);
+    bool CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk);
+    uint64_t GetChunkSize(uint32_t index);
+    void CloseFileStream();
+    void Finish(EDownloadCode err, std::string&& msg) {
+        Finish(err);
+        ErrorMsg = std::forward<std::string>(msg);
+    }
+    void Finish(EDownloadCode err) {
+        Status = EFileTaskStatus::Finished;
+        Code = err;
+        ErrorMsg.clear();
+    }
+
+    //FDownloadFile& operator=(const FDownloadFile& other) = delete;
+    //FDownloadFile(FDownloadFile&) = delete;
+    //FDownloadFile& operator=(const FDownloadFile&& other) = delete;
+    //FDownloadFile(FDownloadFile&&) = delete;
+
+    static const uint32_t CHUNK_SIZE;
+    EFileTaskStatus Status{ EFileTaskStatus::Idle };
+    EDownloadCode Code{ EDownloadCode::OK };
+    std::string ErrorMsg;
+    std::string URL;
+    std::atomic_int64_t Size{ 0 };
+    std::atomic_uint64_t DownloadSize{ 0 };
+    std::atomic_uint64_t PreDownloadSize{ 0 };
+    std::atomic_uint64_t LastTime;
+    std::atomic_uint64_t PreTime;
+    std::filesystem::path Path;
+    std::string* Content{ nullptr };
+    std::vector<std::byte> ChunksCompleteFlag;
+    std::vector<std::byte> ChunksDownloadFlag;
+    uint32_t ChunkNum{ 0 };
+    std::set<HttpRequestPtr> RequestPool;
+    std::unordered_map<HttpRequestPtr, file_chunk_t> Requests;
+
+    FDownloadProgressDelegate DownloadProgressDelegate;
+    FDownloadFinishedDelegate DownloadFinishedDelegate;
+    FGetFileInfoDelegate GetFileInfoDelegate;
+private:
+    bool Open();
+    CRawFile FileStream;
+    FDownloadFile();
+};
+
+typedef struct file_chunk_s {
+    uint32_t ChunkIndex{ 0 };
+    uint32_t DownloadSize{ 0 };
+    std::shared_ptr<FDownloadFile> File;
+    std::shared_ptr<FDownloadBuf> Buf;
+    char* BufCursor{ nullptr };
+    std::pair<uint64_t, uint64_t> GetRange() {
+        auto begin = FDownloadFile::CHUNK_SIZE * ChunkIndex;
+        auto end = begin + FDownloadFile::CHUNK_SIZE - 1;
+        auto filesize = File->Size.load();
+        return std::pair(begin, end > filesize - 1 ? filesize - 1 : end + 1);
+    }
+    uint64_t GetChunkSize() {
+        return GetRange().second - GetRange().first + 1;
+    }
+}file_chunk_t;
+
 
 const uint32_t FDownloadFile::CHUNK_SIZE = 4*1024*1024;
 const uint32_t FDownloader::BUF_NUM = 4;
 const uint32_t FDownloader::BUF_CHUNK_NUM = 3;
+
 
 std::atomic_uint32_t DownloadTaskHandle_t::task_count;
 
@@ -39,7 +143,7 @@ std::shared_ptr<file_chunk_t> FDownloadFile::GetNotDownloadFilechunk()
       my = shared_from_this();
     }
     catch (std::bad_weak_ptr& e) {
-        LOG_ERROR("GetNotDownloadFilechunk without shared_ptr");
+        SIMPLELOG_LOGGER_ERROR(nullptr,"GetNotDownloadFilechunk without shared_ptr");
         return nullptr;
     }
     auto pchunk=std::make_shared<file_chunk_t>();
@@ -173,7 +277,7 @@ bool FDownloadFile::Open()
             std::filesystem::create_directories(Path.parent_path());
         }
         if (FileStream.Open((const char*)Path.u8string().c_str(), UTIL_OPEN_ALWAYS, Size)!= ERR_SUCCESS) {
-            LOG_ERROR("open file failed path:{}", Path.string());
+            SIMPLELOG_LOGGER_ERROR(nullptr, "open file failed path:{}", Path.string());
             return false;
         };
     }
@@ -186,7 +290,7 @@ bool FDownloadBuf::InsertInBuf(std::shared_ptr < file_chunk_t> pchunk) {
         my = shared_from_this();
     }
     catch (std::bad_weak_ptr& e) {
-        LOG_ERROR("InsertInBuf without shared_ptr");
+        SIMPLELOG_LOGGER_ERROR(nullptr, "InsertInBuf without shared_ptr");
         return false;
     }
     auto range = pchunk->GetRange();
@@ -226,13 +330,13 @@ bool FDownloadBuf::RemoveChunk(std::shared_ptr<file_chunk_t> pchunk)
 FDownloader::FDownloader(){
 }
 
-DownloadTaskHandle FDownloader::AddTask(FDownloadFile* file)
+DownloadTaskHandle_t FDownloader::AddTask(FDownloadFile* file)
 {
-    auto respair=Files.emplace(DownloadTaskHandle::task_count, file);
+    auto respair=Files.emplace(DownloadTaskHandle_t::task_count, file);
     if (respair.second) {
         return respair.first->first;
     }
-    return DownloadTaskHandle();
+    return DownloadTaskHandle_t();
 }
 
 void FDownloader::TransferBuf()
@@ -315,18 +419,18 @@ FDownloader::~FDownloader()
 //    return AddTask(df);
 //}
 
-DownloadTaskHandle FDownloader::AddTask(std::string url, std::string* content)
+DownloadTaskHandle_t FDownloader::AddTask(std::string url, std::string* content)
 {
     FDownloadFile* df = new FDownloadFile(url, content);
     return AddTask(df);
 }
-DownloadTaskHandle FDownloader::AddTask(std::string url, std::filesystem::path folder)
+DownloadTaskHandle_t FDownloader::AddTask(std::string url, std::filesystem::path folder)
 {
     FDownloadFile* df = new FDownloadFile(url, folder.u8string().c_str());
     return AddTask(df);
 }
 
-void FDownloader::RemoveTask(DownloadTaskHandle handle)
+void FDownloader::RemoveTask(DownloadTaskHandle_t handle)
 {
     auto itr = Files.find(handle);
     if (itr == Files.end()) {
@@ -335,7 +439,7 @@ void FDownloader::RemoveTask(DownloadTaskHandle handle)
     RequireRemoveFiles.insert(itr->first);
 }
 
-bool FDownloader::RegisterDownloadProgressDelegate(DownloadTaskHandle handle, FDownloadProgressDelegate Delegate)
+bool FDownloader::RegisterDownloadProgressDelegate(DownloadTaskHandle_t handle, FDownloadProgressDelegate Delegate)
 {
     auto itr = Files.find(handle);
     if (itr == Files.end()) {
@@ -345,7 +449,7 @@ bool FDownloader::RegisterDownloadProgressDelegate(DownloadTaskHandle handle, FD
     return true;
 }
 
-bool FDownloader::RegisterDownloadFinishedDelegate(DownloadTaskHandle handle, FDownloadFinishedDelegate Delegate)
+bool FDownloader::RegisterDownloadFinishedDelegate(DownloadTaskHandle_t handle, FDownloadFinishedDelegate Delegate)
 {
     auto itr = Files.find(handle);
     if (itr == Files.end()) {
@@ -355,7 +459,7 @@ bool FDownloader::RegisterDownloadFinishedDelegate(DownloadTaskHandle handle, FD
     return true;
 }
 
-bool FDownloader::RegisterGetFileInfoDelegate(DownloadTaskHandle handle, FGetFileInfoDelegate Delegate)
+bool FDownloader::RegisterGetFileInfoDelegate(DownloadTaskHandle_t handle, FGetFileInfoDelegate Delegate)
 {
     auto itr = Files.find(handle);
     if (itr == Files.end()) {
@@ -365,7 +469,7 @@ bool FDownloader::RegisterGetFileInfoDelegate(DownloadTaskHandle handle, FGetFil
     return true;
 }
 
-std::optional<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle handle) {
+std::optional<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle_t handle) {
     auto itr = Files.find(handle);
     if (itr == Files.end()) {
         return std::nullopt;
@@ -423,7 +527,7 @@ void FDownloader::Tick(float delSec)
                     if (!pfile->Content && std::filesystem::is_directory(pfile->Path)) {
                         auto str = std::string(rep->GetHeader("Content-Disposition"));
                         if (str.empty()) {
-                            LOG_ERROR("FDownloader cant get file name");
+                            SIMPLELOG_LOGGER_ERROR(nullptr, "FDownloader cant get file name");
                             pfile->Status = EFileTaskStatus::Finished;
                             pfile->Code = EDownloadCode::SERVER_ERROR;
                             return;
@@ -436,14 +540,14 @@ void FDownloader::Tick(float delSec)
                             std::smatch match_result;
                             /*url.assign( R"###(localhost.com/path\?hue\=br\#cool)###");*/
                             if (!std::regex_match(str, match_result, filename_reg)) {
-                                LOG_ERROR("FDownloader cant get file name");
+                                SIMPLELOG_LOGGER_ERROR(nullptr, "FDownloader cant get file name");
                                 pfile->Finish(EDownloadCode::SERVER_ERROR, "FDownloader cant get file name");
                                 return;
                             }
                             pfile->Path /= match_result[1].str();
                         }
                         catch (std::exception& ex) {
-                            LOG_ERROR("{}", ex.what());
+                            SIMPLELOG_LOGGER_ERROR(nullptr, "{}", ex.what());
                             pfile->Finish(EDownloadCode::SERVER_ERROR, "regex exception");
                             return;
                         }
@@ -479,7 +583,7 @@ void FDownloader::Tick(float delSec)
                 }
                 auto pchunk = pfile->GetNotDownloadFilechunk();
                 if (!pchunk) {
-                    LOG_ERROR("Downloader GetNotDownloadFilechunk Error");
+                    SIMPLELOG_LOGGER_ERROR(nullptr, "Downloader GetNotDownloadFilechunk Error");
                     break;
                 }
 
@@ -526,7 +630,7 @@ void FDownloader::Tick(float delSec)
                     if (resp->GetContentBytesRead() != pchunk->GetChunkSize()) {
                         pchunk->File->RevertDownloadFilechunk(pchunk->ChunkIndex);
                         pchunk->Buf->RemoveChunk(pchunk);
-                        LOG_ERROR("Downloaded size not equal range");
+                        SIMPLELOG_LOGGER_ERROR(nullptr, "Downloaded size not equal range");
                         return;
                     }
                     req->OnRequestProgress() = nullptr;

@@ -7,6 +7,7 @@
 #include <string>
 #include <string_buffer.h>
 #include "delegate_macros.h"
+#include "rpc_parser_common.h"
 #pragma warning(push)
 #pragma warning(disable:4251)
 
@@ -18,7 +19,7 @@ enum class ERPCParseError {
 };
 
 
-class RPCRequest {
+class RPC_PARSER_EXPORT RPCRequest {
 public:
     virtual ~RPCRequest() = default;
     virtual CharBuffer ToBytes() = 0;
@@ -27,12 +28,12 @@ public:
     std::string Method;
     std::string Params;
 };
-class RPCResponse {
+class RPC_PARSER_EXPORT RPCResponse {
 public:
     virtual ~RPCResponse() = default;
     virtual CharBuffer ToBytes() = 0;
     std::optional<uint32_t> ID;
-    double ErrorCode;
+    double ErrorCode{ 0 };
     std::string ErrorMsg;
     std::string ErrorData;
     std::string Result;

@@ -8,7 +8,7 @@
 #include <vector>
 
 #ifdef WIN32
-#include <Windows.h>
+#include <simple_os_defs.h>
 #include <Strsafe.h>
 #else
 #include <fcntl.h>

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
 
@@ -10,8 +11,8 @@
 #include <future>
 #include <functional>
 #include <stdexcept>
-
-class ThreadPool {
+#include "simple_export_ppdefs.h"
+class SIMPLE_UTIL_EXPORT ThreadPool {
 public:
     ThreadPool(size_t);
     template<class F, class... Args>

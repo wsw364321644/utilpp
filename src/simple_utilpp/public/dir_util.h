@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-
+#include "simple_export_ppdefs.h"
 
 struct DirEntry
 {
@@ -17,7 +17,7 @@ struct DirEntry
     bool dir;
 };
 
-class DirUtil
+class SIMPLE_UTIL_EXPORT DirUtil
 {
 public:
     DirUtil();

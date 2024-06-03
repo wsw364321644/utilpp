@@ -30,7 +30,7 @@ CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
     //int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
     //uv_fs_req_cleanup(&req);
     //if (res <= 0) {
-    //    LOG_ERROR("uv_fs_open error: {}\n", uv_strerror(res));
+    //    SIMPLELOG_LOGGER_ERROR(nullptr,"uv_fs_open error: {}\n", uv_strerror(res));
     //    return out;
     //}
     //out = req.result;
@@ -66,7 +66,7 @@ CommonHandle_t* OpenSharedMemory(const char* name) {
     //int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
     //uv_fs_req_cleanup(&req);
     //if (res <= 0) {
-    //    LOG_ERROR("uv_fs_open error: {}\n", uv_strerror(res));
+    //    SIMPLELOG_LOGGER_ERROR(nullptr,"uv_fs_open error: {}\n", uv_strerror(res));
     //    return out;
     //}
     //out = req.result;
@@ -132,7 +132,7 @@ bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t len)
     //int res = uv_fs_write(uv_default_loop(), &write_req, handle.ID, &buf, 1, 0, NULL);
     //uv_fs_req_cleanup(&write_req);
     //if (res != *len) {
-    //    LOG_ERROR("uv_fs_write error: {}\n", uv_strerror(res));
+    //    SIMPLELOG_LOGGER_ERROR(nullptr,"uv_fs_write error: {}\n", uv_strerror(res));
     //}
     //*len = write_req.result;
     
@@ -174,7 +174,7 @@ bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
     //int res = uv_fs_read(uv_default_loop(), &read_req, handle.ID, &buf, 1, 0, NULL);
     //uv_fs_req_cleanup(&read_req);
     //if (res) {
-    //    LOG_ERROR("uv_fs_write error: {}\n", uv_strerror(res));
+    //    SIMPLELOG_LOGGER_ERROR(nullptr,"uv_fs_write error: {}\n", uv_strerror(res));
     //}
     //*len = read_req.result;
     WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);

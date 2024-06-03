@@ -3,9 +3,9 @@
  */
 #pragma once
 #include <stdint.h>
+#include "simple_export_ppdefs.h"
 
-
-class CharBuffer
+class SIMPLE_UTIL_EXPORT CharBuffer
 {
 public:
     CharBuffer();

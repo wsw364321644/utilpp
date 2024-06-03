@@ -1,5 +1,5 @@
 #pragma once
-#include <graphics_info.h>
+#include "graphics_info.h"
 
 #define HOOK_VER_MAJOR 0
 #define HOOK_VER_MINOR 1

@@ -1,7 +1,7 @@
 #include "ChildProcessManager.h"
 #include <uv.h>
 #include <mutex>
-#include <logger.h>
+#include <LoggerHelper.h>
 #include <string_buffer.h>
 
 typedef struct UVProcess_t {
@@ -215,13 +215,13 @@ void FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     };
 
     if (r = uv_spawn(ploop, &p.process, &p.options)) {
-        LOG_ERROR("{}", uv_strerror(r));
+        SIMPLELOG_LOGGER_ERROR(nullptr,"{}", uv_strerror(r));
         return;
     }
 
     if ((r = uv_read_start((uv_stream_t*)&p.pipe, alloc_buffer, on_read))) {
         uv_close((uv_handle_t*)&pp->process, nullptr);
-        LOG_ERROR("{}", uv_strerror(r));
+        SIMPLELOG_LOGGER_ERROR(nullptr,"{}", uv_strerror(r));
         return;
     }
 }

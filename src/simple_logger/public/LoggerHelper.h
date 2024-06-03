@@ -2,8 +2,8 @@
 #include <string>
 #include <memory>
 #include <vector>
-
 #include <spdlog/spdlog.h>
+#include "logger_export_defs.h"
 struct BaseLoggerInfo_t{
     virtual ~BaseLoggerInfo_t() {}
 };
@@ -79,12 +79,12 @@ public:
 
     std::shared_ptr<spdlog::logger> Logger;
 };
-std::shared_ptr<FLoggerWrapper> CreateAsyncLogger(const LoggerSetting_t& setting);
-std::shared_ptr<FLoggerWrapper> GetLogger(std::string name = "");
-std::shared_ptr<FLoggerWrapper> GetLogger(std::nullptr_t ptr);
+SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> CreateAsyncLogger(const LoggerSetting_t& setting);
+SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> GetLogger(std::string name = "");
+SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> GetLogger(std::nullptr_t ptr);
 
 #define SIMPLELOG_LOGGER_TRACE(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::trace, __VA_ARGS__)
-#define SIMPLELOG_LOGGER_DEGUB(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::debug, __VA_ARGS__)
+#define SIMPLELOG_LOGGER_DEBUG(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::debug, __VA_ARGS__)
 #define SIMPLELOG_LOGGER_INFO(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::info, __VA_ARGS__)
 #define SIMPLELOG_LOGGER_WARN(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::warn, __VA_ARGS__)
 #define SIMPLELOG_LOGGER_ERROR(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::err, __VA_ARGS__)

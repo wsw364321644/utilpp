@@ -2,8 +2,9 @@
 #include "IHttpRequest.h"
 #include <functional>
 #include <unordered_map>
+#include "net_export_defs.h"
 typedef std::shared_ptr<class FHttpManager> HttpManagerPtr;
-class FHttpManager {
+class SIMPLE_NET_EXPORT FHttpManager {
 
 public:
 

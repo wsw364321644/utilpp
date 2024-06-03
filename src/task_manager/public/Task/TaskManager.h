@@ -12,13 +12,13 @@
 #include <shared_mutex>
 #include <handle.h>
 #include <TimeRecorder.h>
-
+#include "task_manager_export_defs.h"
 constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)) / 60);
 
 
 
 
-typedef struct CommonTaskHandle_t : CommonHandle_t
+typedef struct TASK_MANAGER_EXPORT CommonTaskHandle_t : CommonHandle_t
 {
     CommonTaskHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
     CommonTaskHandle_t() :CommonHandle_t(TaskCount) {}
@@ -26,7 +26,7 @@ typedef struct CommonTaskHandle_t : CommonHandle_t
     static std::atomic_uint32_t TaskCount;
 }CommonTaskHandle_t;
 
-typedef struct WorkflowHandle_t : CommonHandle_t
+typedef struct TASK_MANAGER_EXPORT WorkflowHandle_t : CommonHandle_t
 {
     WorkflowHandle_t(NullCommonHandle_t h) :CommonHandle_t(h) {}
     WorkflowHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
@@ -66,7 +66,7 @@ typedef struct TaskWorkflow_t {
     std::set<CommonTaskHandle_t> Tasks;
 }TaskWorkflow_t;
 
-class FTaskManager {
+class TASK_MANAGER_EXPORT FTaskManager {
 public:
     static FTaskManager* Get();
     ~FTaskManager();

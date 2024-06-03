@@ -1,6 +1,6 @@
 #include "RPC/message_client.h"
 #include "message_internal.h"
-#include "logger.h"
+#include <LoggerHelper.h>
 #include <uv.h>
 #include <uri.h>
 
@@ -112,7 +112,7 @@ void MessageClientUV::Disconnect()
 {
     EMessageConnectionState expected = EMessageConnectionState::Connected;
     if (!state.compare_exchange_strong(expected, EMessageConnectionState::Closing)) {
-        LOG_ERROR("Disconnect state error {}", (uint8_t)expected);
+        SIMPLELOG_LOGGER_ERROR(nullptr,"Disconnect state error {}", (uint8_t)expected);
     }
 
     switch (messageConnectionType) {
@@ -166,18 +166,18 @@ void MessageClientUV::Tick(float delSec)
 void MessageClientUV::UVOnConnect(uv_connect_t* req, int status)
 {
     if (status < 0) {
-        LOG_INFO("MessageClientUV failed to connect status:{}", status);
+        SIMPLELOG_LOGGER_INFO(nullptr,"MessageClientUV failed to connect status:{}", status);
         TriggerOnDisconnectDelegates(this);
         EMessageConnectionState expected = EMessageConnectionState::Connecting;
         if (!state.compare_exchange_strong(expected, EMessageConnectionState::Idle)) {
-            LOG_ERROR("OnConnection state error {}", (uint8_t)expected);
+            SIMPLELOG_LOGGER_ERROR(nullptr,"OnConnection state error {}", (uint8_t)expected);
             return;
         }
         return;
     }
     EMessageConnectionState expected = EMessageConnectionState::Connecting;
     if (!state.compare_exchange_strong(expected, EMessageConnectionState::Connected)) {
-        LOG_ERROR("OnConnection state error {}", (uint8_t)expected);
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnConnection state error {}", (uint8_t)expected);
         return;
     }
     uv_stream_t* stream = req->handle;
@@ -190,7 +190,7 @@ void MessageClientUV::UVOnClose(uv_handle_t* handle)
 {
     EMessageConnectionState expected = EMessageConnectionState::Closing;
     if (!state.compare_exchange_strong(expected, EMessageConnectionState::Idle)) {
-        LOG_ERROR("OnClose state error {}", (uint8_t)expected);
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnClose state error {}", (uint8_t)expected);
     }
     TriggerOnDisconnectDelegates(this);
 }
@@ -198,7 +198,7 @@ void MessageClientUV::UVOnShutdown(uv_shutdown_t* req, int status)
 {
     auto curstate = state.load();
     if (curstate != EMessageConnectionState::Closing) {
-        LOG_ERROR("OnShutdown state error {}", (uint8_t)curstate);
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnShutdown state error {}", (uint8_t)curstate);
     }
     switch (messageConnectionType) {
     case EMessageConnectionType::EMCT_IPC: {
@@ -226,7 +226,7 @@ void MessageClientUV::UVOnRead(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* 
 {
     if (nread < 0) {
         if (nread != UV_EOF) {
-            LOG_WARNING("{}, Read from remote error: {}", Log_Server, nread);
+            SIMPLELOG_LOGGER_WARN(nullptr,"{}, Read from remote error: {}", "UVOnRead", nread);
         }
         Disconnect();
         return;
@@ -246,7 +246,7 @@ void MessageClientUV::OnWrite(MessageSendRequestUV* msreq, uv_write_t* req, int 
     //    return &inreq.sendReq.SendReq == req;
     //    });
     if (itr == writeRequests.end()) {
-        LOG_ERROR("OnWrite req error");
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnWrite req error");
         return;
     }
     writeRequests.erase(itr);
@@ -281,7 +281,7 @@ void MessageClientUV::UVOnDNSResolved(uv_getaddrinfo_t* resolver, int status, ad
         uv_udp_recv_start(udpHandle, UVCallBack::UVOnAlloc, UVCallBack::template UVOnUDPRecv<MessageClientUV>);
         EMessageConnectionState expected = EMessageConnectionState::Connecting;
         if (!state.compare_exchange_strong(expected, EMessageConnectionState::Connected)) {
-            LOG_ERROR("udp connnect state error {}", (uint8_t)expected);
+            SIMPLELOG_LOGGER_ERROR(nullptr,"udp connnect state error {}", (uint8_t)expected);
         }
         TriggerOnConnectDelegates(this);
         break;
@@ -295,7 +295,7 @@ void MessageClientUV::UVOnUDPRecv(uv_udp_t* handle, ssize_t nread, const uv_buf_
     if (nread < 0) {
         // log and quit
         if (nread != UV_EOF) {
-            LOG_WARNING("{}, Read from remote error: {}", Log_Server, nread);
+            SIMPLELOG_LOGGER_WARN(nullptr,"{}, Read from remote error: {}", "UVOnUDPRecv", nread);
         }
         Disconnect();
         return;
@@ -315,7 +315,7 @@ void MessageClientUV::OnUDPSend(MessageSendRequestUV* msreq, uv_udp_send_t* req,
     //    return &inreq.sendReq.UDPSendReq == req;
     //    });
     if (itr == writeRequests.end()) {
-        LOG_ERROR("OnUDPSend req error");
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnUDPSend req error");
         return;
     }
     writeRequests.erase(itr);

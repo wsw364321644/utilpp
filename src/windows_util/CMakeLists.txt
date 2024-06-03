@@ -8,9 +8,6 @@ function(add_windows_util TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES C_STANDARD 23)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 
-    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:LIBCMT.LIB")
-    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:LIBCMTD.LIB")
-
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
 

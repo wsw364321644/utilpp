@@ -1,14 +1,11 @@
-/**
- *  raw_file.h
- */
-
 #pragma once
 
 #include <simple_os_defs.h>
 #include <memory>
 #include <string>
+#include "simple_export_ppdefs.h"
 
-class CRawFile
+class SIMPLE_UTIL_EXPORT CRawFile
 {
 public:
     CRawFile();

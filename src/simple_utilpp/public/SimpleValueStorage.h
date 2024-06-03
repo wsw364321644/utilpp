@@ -1,9 +1,10 @@
 #pragma once
-#include "simple_export_ppdefs.h"
+
 #include <handle.h>
 #include <string_view>
 #include <functional>
 #include <type_traits>
+#include "simple_export_ppdefs.h"
 typedef struct SimpleValueHandle_t : CommonHandle_t
 {
     constexpr SimpleValueHandle_t(NullCommonHandle_t nhandle) :CommonHandle_t(nhandle) { }

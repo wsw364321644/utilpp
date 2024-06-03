@@ -44,7 +44,7 @@ int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_siz
     if (!DirUtil::SetWritable(file_name))
     {
         err = GetLastError();
-        LOG_WARNING("Failed to set writable, file: {}, error: {}", file_name, err);
+        SIMPLELOG_LOGGER_WARN(nullptr,"Failed to set writable, file: {}, error: {}", file_name, err);
         return ERR_FILE;
     }
     auto uncw = U8ToU16(unc.c_str());
@@ -76,21 +76,21 @@ int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_siz
                 if (handle_ == INVALID_HANDLE_VALUE)
                 {
                     err = GetLastError();
-                    LOG_WARNING("Can't open the file after create directory: {}. ErrorCode is {}", file_name, err);
+                    SIMPLELOG_LOGGER_WARN(nullptr,"Can't open the file after create directory: {}. ErrorCode is {}", file_name, err);
                     return ERR_FILE;
                 }
             }
             else
             {
                 err = GetLastError();
-                LOG_WARNING("Failed to create the directory: {}. ErrorCode is {}", (const char *)base_path.u8string().c_str(), err);
+                SIMPLELOG_LOGGER_WARN(nullptr,"Failed to create the directory: {}. ErrorCode is {}", (const char *)base_path.u8string().c_str(), err);
                 return ERR_FILE;
             }
         }
         else
         {
             err = GetLastError();
-            LOG_WARNING("Can't open the file: {}. ErrorCode is {}", file_name, err);
+            SIMPLELOG_LOGGER_WARN(nullptr,"Can't open the file: {}. ErrorCode is {}", file_name, err);
             return ERR_FILE;
         }
     }
@@ -101,7 +101,7 @@ int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_siz
 
     if (low == 0xffffffff && (err = GetLastError()) != NO_ERROR)
     {
-        LOG_WARNING("Can't get the size of file: {}. ErrorCode is {}", file_name, err);
+        SIMPLELOG_LOGGER_WARN(nullptr,"Can't get the size of file: {}. ErrorCode is {}", file_name, err);
         CloseHandle(handle_);
         handle_ = INVALID_HANDLE_VALUE;
         return ERR_FILE;
@@ -118,7 +118,7 @@ int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_siz
             if (ERR_SUCCESS != Write(&uDummy, 1))
             {
                 err = GetLastError();
-                LOG_WARNING("Can't create the file: {} with size:{}, ErrorCode is {}", file_name, expect_size, err);
+                SIMPLELOG_LOGGER_WARN(nullptr,"Can't create the file: {} with size:{}, ErrorCode is {}", file_name, expect_size, err);
                 CloseHandle(handle_);
                 handle_ = INVALID_HANDLE_VALUE;
                 return ERR_FILE;
@@ -148,7 +148,7 @@ int32_t CRawFile::Read(void *buf, uint32_t size)
     BOOL res = ReadFile(handle_, buf, size, &readed, NULL);
     if (FALSE == res || readed != size)
     {
-        LOG_WARNING("Read file: {} error ...", name_);
+        SIMPLELOG_LOGGER_WARN(nullptr,"Read file: {} error ...", name_);
         return ERR_FILE;
     }
 
@@ -166,7 +166,7 @@ int32_t CRawFile::Write(const void *buf, uint32_t size)
     BOOL res = WriteFile(handle_, buf, size, &written, NULL);
     if (FALSE == res || written != size)
     {
-        LOG_WARNING("Write file: {} error ...", name_);
+        SIMPLELOG_LOGGER_WARN(nullptr,"Write file: {} error ...", name_);
         return ERR_FILE;
     }
 
@@ -184,7 +184,7 @@ int32_t CRawFile::Delete()
     handle_ = INVALID_HANDLE_VALUE;
     if (!DirUtil::Delete(name_))
     {
-        LOG_WARNING("Can't delete the file : {}", name_);
+        SIMPLELOG_LOGGER_WARN(nullptr,"Can't delete the file : {}", name_);
         return ERR_FILE;
     }
 
@@ -213,7 +213,7 @@ int32_t CRawFile::Seek(uint64_t pos)
 
     if (iPos < 0 && pos > file_size_)
     {
-        LOG_WARNING("Wrong position({}/{}) to seek.", pos, file_size_);
+        SIMPLELOG_LOGGER_WARN(nullptr,"Wrong position({}/{}) to seek.", pos, file_size_);
         return ERR_ARGUMENT;
     }
 
@@ -221,7 +221,7 @@ int32_t CRawFile::Seek(uint64_t pos)
     LONG high = iPos >> 32;
     if (INVALID_SET_FILE_POINTER == SetFilePointer(handle_, low, &high, FILE_BEGIN))
     {
-        LOG_WARNING("Seek the file {} error ... error code: {}", name_, GetLastError());
+        SIMPLELOG_LOGGER_WARN(nullptr,"Seek the file {} error ... error code: {}", name_, GetLastError());
         return ERR_FILE;
     }
 
@@ -239,7 +239,7 @@ uint64_t CRawFile::Tell()
     uint32_t low = SetFilePointer(handle_, 0, &high, FILE_CURRENT);
     if (INVALID_SET_FILE_POINTER == low)
     {
-        LOG_WARNING("Tell the file {} error ... error code: {}", name_, GetLastError());
+        SIMPLELOG_LOGGER_WARN(nullptr,"Tell the file {} error ... error code: {}", name_, GetLastError());
         return ERR_FILE;
     }
 
@@ -256,7 +256,7 @@ void CRawFile::Flush()
     BOOL res = FlushFileBuffers(handle_);
     if (res == FALSE)
     {
-        LOG_WARNING("Can't flush file buffer, error code: {}", GetLastError());
+        SIMPLELOG_LOGGER_WARN(nullptr,"Can't flush file buffer, error code: {}", GetLastError());
     }
 }
 
@@ -344,7 +344,7 @@ int32_t CRawFile::Open(const char *lpFileName, uint32_t uOpenFlag, uint64_t uExp
         // make file as desized size
         if (-1 == truncate(lpFileName, uExpectSize))
         {
-            LOG_ERROR(fmt::format("failed to set file size, file:{}, size:{}, error:{}", lpFileName, uExpectSize, errno));
+            SIMPLELOG_LOGGER_ERROR(nullptr,fmt::format("failed to set file size, file:{}, size:{}, error:{}", lpFileName, uExpectSize, errno));
             return ERR_FILE;
         }
         file_size_ = uExpectSize;
@@ -368,7 +368,7 @@ int32_t CRawFile::Read(void *pBuf, uint32_t size)
     auto readed = read(handle_, pBuf, size);
     if (readed < 0 or readed != size)
     {
-        LOG_WARNING(fmt::format("Read file: {} error ...", name_));
+        SIMPLELOG_LOGGER_WARN(nullptr,fmt::format("Read file: {} error ...", name_));
         return ERR_FILE;
     }
 
@@ -428,7 +428,7 @@ int32_t CRawFile::Seek(uint64_t uPos)
 
     if (uPos > file_size_)
     {
-        LOG_WARNING(fmt::format("Wrong position({}/{}) to seek.", uPos, file_size_));
+        SIMPLELOG_LOGGER_WARN(nullptr,fmt::format("Wrong position({}/{}) to seek.", uPos, file_size_));
         return ERR_ARGUMENT;
     }
 

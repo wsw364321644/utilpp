@@ -2,12 +2,14 @@
 #include <handle.h>
 #include <filesystem>
 #include <vector>
-typedef struct DownloadTaskHandle : CommonHandle_t
+#include "net_export_defs.h"
+
+typedef struct SIMPLE_NET_EXPORT DownloadTaskHandle : CommonHandle_t
 {
     DownloadTaskHandle() :CommonHandle_t() {}
     DownloadTaskHandle(CommonHandle_t h) :CommonHandle_t(h) {}
     static std::atomic_uint32_t task_count;
-}DownloadTaskHandle_t;
+}DownloadTaskHandle_t ;
 
 enum class EDownloadCode {
     OK,
@@ -36,9 +38,9 @@ typedef struct TaskStatus_s {
     std::vector<std::byte> ChunksCompleteFlag;
 }TaskStatus_t;
 
-typedef std::function< void(DownloadTaskHandle, std::shared_ptr<DownloadFileInfo_t>)> FGetFileInfoDelegate;
-typedef std::function< void(DownloadTaskHandle, std::shared_ptr <TaskStatus_t>)>  FDownloadProgressDelegate;
-typedef std::function< void(DownloadTaskHandle, EDownloadCode)> FDownloadFinishedDelegate;
+typedef std::function< void(DownloadTaskHandle_t, std::shared_ptr<DownloadFileInfo_t>)> FGetFileInfoDelegate;
+typedef std::function< void(DownloadTaskHandle_t, std::shared_ptr <TaskStatus_t>)>  FDownloadProgressDelegate;
+typedef std::function< void(DownloadTaskHandle_t, EDownloadCode)> FDownloadFinishedDelegate;
 
 enum class EFileTaskStatus {
     Idle,

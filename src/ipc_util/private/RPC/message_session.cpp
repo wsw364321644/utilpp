@@ -1,7 +1,7 @@
 #include "RPC/message_session.h"
 #include "RPC/message_server.h"
 #include "message_internal.h"
-#include <logger.h>
+#include <LoggerHelper.h>
 #include <module_util.h>
 
 
@@ -121,7 +121,7 @@ void MessageSessionUV::UVOnRead(uv_stream_t* stream, ssize_t nread, const uv_buf
     if (nread <= 0) {
         // log and quit
         if (nread != UV_EOF) {
-            LOG_WARNING("{}, Read from remote error: {}", Log_Server, nread);
+            SIMPLELOG_LOGGER_WARN(nullptr,"{}, Read from remote error: {}", "UVOnRead", nread);
         }
         Disconnect();
         return;
@@ -139,7 +139,7 @@ void MessageSessionUV::OnWrite(MessageSendRequestUV* mreq, uv_write_t* req, int 
     writeMtx.lock();
     auto itr = writeRequests.find(mreq->Handle);
     if (itr == writeRequests.end()) {
-        LOG_ERROR("OnWrite req error");
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnWrite req error");
     }
     else {
         writeRequests.erase(itr);
@@ -153,7 +153,7 @@ void MessageSessionUV::OnUDPSend(MessageSendRequestUV* mreq, uv_udp_send_t* req,
     writeMtx.lock();
     auto itr = writeRequests.find(mreq->Handle);
     if (itr == writeRequests.end()) {
-        LOG_ERROR("OnUDPSend req error");
+        SIMPLELOG_LOGGER_ERROR(nullptr,"OnUDPSend req error");
     }
     else {
         writeRequests.erase(itr);

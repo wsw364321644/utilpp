@@ -5,7 +5,7 @@
 #include <list>
 #include <unordered_map>
 #include <mutex>
-
+#include "net_export_defs.h"
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
 typedef struct {
     FCurlHttpRequest* HttpReq;
@@ -13,7 +13,7 @@ typedef struct {
     int64_t NewSize;
 }CurlDownloadProgress_t;
 //typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
-class FCurlHttpManager :public FHttpManager {
+class SIMPLE_NET_EXPORT FCurlHttpManager :public FHttpManager {
 
 public:
     enum ECurlState {
