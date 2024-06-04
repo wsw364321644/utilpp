@@ -56,4 +56,5 @@ private:
     std::unique_ptr<IRPCPaser> rpcParserInterface;
     std::unordered_map<RPCHandle_t, std::shared_ptr<RPCRequest>> requestMap;
     std::mutex requestMapMutex;
+    CommonHandle_t OnPacketRecvHandle{NullHandle};
 };

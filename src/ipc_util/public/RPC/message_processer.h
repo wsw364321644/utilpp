@@ -83,6 +83,7 @@ private:
 private:
 
     IMessageSession* session;
+    CommonHandle_t MessageSessionOnReadHandle{NullHandle};
     std::vector<char> readBuf;
     std::vector<std::list<std::shared_ptr<MessagePacket_t>>> messageQueues;
     std::shared_mutex messageQueuesMutex;

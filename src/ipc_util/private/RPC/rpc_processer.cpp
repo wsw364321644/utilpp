@@ -25,10 +25,13 @@ RPCProcesser::RPCProcesser(MessageProcesser* inp) :msgprocesser(inp)
         }
     }
     rpcParserInterface.reset(new JRPCPaser);
-    inp->AddOnPacketRecvDelegate(std::bind(&RPCProcesser::OnRecevPacket, this, std::placeholders::_1));
+    OnPacketRecvHandle= msgprocesser->AddOnPacketRecvDelegate(std::bind(&RPCProcesser::OnRecevPacket, this, std::placeholders::_1));
 }
 RPCProcesser::~RPCProcesser()
 {
+    if (OnPacketRecvHandle.IsValid()) {
+        msgprocesser->ClearOnPacketRecvDelegate(OnPacketRecvHandle);
+    }
 }
 
 std::shared_ptr<IGroupRPC> RPCProcesser::GetInterfaceByMethodName(const char* name)

@@ -27,6 +27,9 @@ MessageProcesser::MessageProcesser(IMessageSession* mif) : MessageProcesser() {
 }
 MessageProcesser::~MessageProcesser()
 {
+    if (MessageSessionOnReadHandle.IsValid()) {
+        session->ClearOnReadDelegate(MessageSessionOnReadHandle);
+    }
 }
 bool MessageProcesser::Init(IMessageSession* insession)
 {
@@ -36,7 +39,7 @@ bool MessageProcesser::Init(IMessageSession* insession)
     session = insession;
     ConnectionType = session->GetConnectionType();
 
-    session->AddOnReadDelegate(std::bind(&MessageProcesser::OnRead, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    MessageSessionOnReadHandle = session->AddOnReadDelegate(std::bind(&MessageProcesser::OnRead, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     /*if (ConnectionType == EMessageConnectionType::EMCT_UDP) {
         sendChannels.resize(std::numeric_limits<uint8_t>::max(), 0);
         recvChannels.resize(std::numeric_limits<uint8_t>::max(), 0);
