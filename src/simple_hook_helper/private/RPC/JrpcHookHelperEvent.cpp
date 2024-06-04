@@ -22,7 +22,7 @@ bool JRPCHookHelperEventAPI::HotkeyListUpdate(HotKeyList_t& HotKeyListNode)
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
     req->Method = HotkeyListUpdateName;
     nlohmann::json obj = nlohmann::json::array();
-    std::function<void(nlohmann::json& ,const HotKeyList_t& )> fn = [fn](nlohmann::json& list,const HotKeyList_t& HotKeyListNode) {
+    std::function<void(nlohmann::json& ,const HotKeyList_t& )> fn = [&fn](nlohmann::json& list,const HotKeyList_t& HotKeyListNode) {
         for (auto& node : HotKeyListNode) {
             nlohmann::json obj;
             obj["mod"] = node.HotKey.mod;
@@ -54,19 +54,18 @@ void JRPCHookHelperEventAPI::OnHotkeyListUpdateRequestRecv(std::shared_ptr<RPCRe
     if (!recvHotkeyListUpdateDelegate) {
         return;
     }
-    std::function<void(nlohmann::json&, HotKeyList_t&)> fn = [fn](nlohmann::json& list, HotKeyList_t& HotKeyList) {
+    std::function<void(nlohmann::json&, HotKeyList_t&)> fn = [&fn](nlohmann::json& list, HotKeyList_t& HotKeyList) {
         for (auto it = list.begin(); it != list.end(); it++) {
-            for (auto hotkeyNode : it.value()) {
-                key_with_modifier_t key{ .key_code = (SDL_Keycode)hotkeyNode["keyCode"].get_ref<nlohmann::json::number_integer_t&>(),
-                    .mod = (Uint16)hotkeyNode["mod"].get_ref<nlohmann::json::number_integer_t&>() };
-                if (hotkeyNode.contains("name")) {
-                    HotKeyList.emplace(std::move(key), hotkeyNode["name"].get_ref<nlohmann::json::string_t&>());
-                }
-                else {
-                    HotKeyList_t children;
-                    fn(hotkeyNode["children"], children);
-                    HotKeyList.emplace(key,std::move(children));
-                }
+            auto hotkeyNode = it.value();
+            key_with_modifier_t key{ .key_code = (SDL_Keycode)hotkeyNode["keyCode"].get_ref<nlohmann::json::number_integer_t&>(),
+                .mod = (Uint16)hotkeyNode["mod"].get_ref<nlohmann::json::number_integer_t&>() };
+            if (hotkeyNode.contains("name")) {
+                HotKeyList.emplace(std::move(key), hotkeyNode["name"].get_ref<nlohmann::json::string_t&>());
+            }
+            else {
+                HotKeyList_t children;
+                fn(hotkeyNode["children"], children);
+                HotKeyList.emplace(key, std::move(children));
             }
         }
         };
