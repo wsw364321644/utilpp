@@ -20,10 +20,10 @@ DEFINE_REQUEST_RPC(JRPCCommandAPI, HeartBeat);
 RPCHandle_t JRPCCommandAPI::HeartBeat(THeartBeatDelegate inDelegate,TRPCErrorDelegate errDelegate)
 {
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = HeartBeatName;
+    req->SetMethod(HeartBeatName);
     auto handle = processer->SendRequest(req);
     if (handle.IsValid()) {
-        AddHeartBeatSendDelagate(req->ID.value(), inDelegate, errDelegate);
+        AddHeartBeatSendDelagate(req->GetID(), inDelegate, errDelegate);
     }
     return handle;
 }
@@ -36,15 +36,15 @@ bool JRPCCommandAPI::RespondHeartBeat(RPCHandle_t handle)
 }
 void JRPCCommandAPI::OnHeartBeatRequestRecv(std::shared_ptr<RPCRequest> req)
 {
-    recvHeartBeatDelegate(RPCHandle_t(req->ID.value()));
+    recvHeartBeatDelegate(RPCHandle_t(req->GetID()));
 }
 void JRPCCommandAPI::OnHeartBeatResponseRecv(std::shared_ptr<RPCResponse> resp, std::shared_ptr<RPCRequest>req)
 {
-    auto res = HeartBeatDelegates.find(req->ID.value());
+    auto res = HeartBeatDelegates.find(req->GetID());
     if (res == HeartBeatDelegates.end()) {
         return;
     }
-    res->second(RPCHandle_t(req->ID.value()));
+    res->second(RPCHandle_t(req->GetID()));
 }
 
 
@@ -53,16 +53,16 @@ DEFINE_REQUEST_RPC(JRPCCommandAPI, SetChannel);
 RPCHandle_t JRPCCommandAPI::SetChannel(uint8_t index, EMessagePolicy policy, TSetChannelDelegate inDelegate, TRPCErrorDelegate errDelegate)
 {
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = SetChannelName;
+    req->SetMethod (SetChannelName);
 
     nlohmann::json doc(nlohmann::json::value_t::object);
     doc["index"] = index;
     doc["policy"] = EMessagePolicyInfo::ToString(policy);
-    req->Params = doc.dump();
+    req->SetParams (doc.dump());
 
     auto handle = processer->SendRequest(req);
     if (handle.IsValid()) {
-        AddSetChannelSendDelagate(req->ID.value(), inDelegate, errDelegate);
+        AddSetChannelSendDelagate(req->GetID(), inDelegate, errDelegate);
     }
     return handle;
 }

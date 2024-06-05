@@ -21,7 +21,7 @@ bool ClassName::OnRequestRecv(std::shared_ptr<RPCRequest> req)                  
         return false;                                                                                        \
     }                                                                                                        \
                                                                                                              \
-    auto opt = RPCInfoData<ClassName>::GetMethodInfo(req->Method.c_str());                                   \
+    auto opt = RPCInfoData<ClassName>::GetMethodInfo(req->GetMethod().data());                                   \
     if (!opt.has_value()) {                                                                                  \
         return false;                                                                                        \
     }                                                                                                        \
@@ -35,10 +35,10 @@ bool ClassName::OnResponseRecv(std::shared_ptr<RPCResponse> resp, std::shared_pt
     if (!jresp) {                                                                                            \
         return false;                                                                                        \
     }                                                                                                        \
-    if (jresp->CheckResult(req->Method.c_str()) != ERPCParseError::OK) {                                     \
+    if (jresp->CheckResult(req->GetMethod().data()) != ERPCParseError::OK) {                                     \
         return false;                                                                                        \
     }                                                                                                        \
-    auto opt = RPCInfoData<ClassName>::GetMethodInfo(req->Method.c_str());                                   \
+    auto opt = RPCInfoData<ClassName>::GetMethodInfo(req->GetMethod().data());                                   \
     if (!opt.has_value()) {                                                                                  \
         return false;                                                                                        \
     }                                                                                                        \

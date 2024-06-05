@@ -244,9 +244,9 @@ std::shared_ptr<RPCRequest> ClassName::CancelRPCRequest(RPCHandle_t handle) {   
     if (!req) {                                                                                        \
         return req;                                                                                    \
     }                                                                                                  \
-    auto RPCMethodInfoOpt = RPCInfoData<ClassName>::GetMethodInfo(req->Method.c_str());                \
+    auto RPCMethodInfoOpt = RPCInfoData<ClassName>::GetMethodInfo(req->GetMethod().data());            \
     assert(RPCMethodInfoOpt.has_value());                                                              \
-    RPCMethodInfoOpt.value().RemoveSendDelagateMethod(this, req->ID.value());                          \
+    RPCMethodInfoOpt.value().RemoveSendDelagateMethod(this, req->GetID());                          \
     return req;                                                                                        \
 }
 

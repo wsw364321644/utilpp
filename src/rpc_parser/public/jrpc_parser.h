@@ -6,6 +6,8 @@
 #include <nlohmann/json.hpp>
 #include "rpc_definition.h"
 
+#define GetParamsNlohmannJson(Request) nlohmann::json::parse((Request).GetParams().data(), nullptr, false)
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 
@@ -41,10 +43,6 @@ public:
         return *this;
     }
     ERPCParseError CheckParams()const;
-
-    inline nlohmann::json GetParamsNlohmannJson()const {
-        return nlohmann::json::parse(Params.c_str(), nullptr, false);
-    }
     virtual CharBuffer ToBytes() override;
 
 };

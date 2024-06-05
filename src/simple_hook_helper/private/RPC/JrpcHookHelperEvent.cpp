@@ -20,7 +20,7 @@ DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, HotkeyListUpdate);
 bool JRPCHookHelperEventAPI::HotkeyListUpdate(HotKeyList_t& HotKeyListNode)
 {
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = HotkeyListUpdateName;
+    req->SetMethod (HotkeyListUpdateName);
     nlohmann::json obj = nlohmann::json::array();
     std::function<void(nlohmann::json& ,const HotKeyList_t& )> fn = [&fn](nlohmann::json& list,const HotKeyList_t& HotKeyListNode) {
         for (auto& node : HotKeyListNode) {
@@ -42,14 +42,14 @@ bool JRPCHookHelperEventAPI::HotkeyListUpdate(HotKeyList_t& HotKeyListNode)
         };
     fn(obj,HotKeyListNode);
 
-    req->Params = obj.dump();
+    req->SetParams(obj.dump());
     return  processer->SendEvent(req);
 }
 
 void JRPCHookHelperEventAPI::OnHotkeyListUpdateRequestRecv(std::shared_ptr<RPCRequest> req)
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
-    auto doc = jreq->GetParamsNlohmannJson();
+    auto doc = GetParamsNlohmannJson(*jreq);
     HotKeyList_t HotKeyList;
     if (!recvHotkeyListUpdateDelegate) {
         return;
@@ -88,18 +88,18 @@ bool JRPCHookHelperEventAPI::OverlayMouseWheelEvent(uint64_t windowId, mouse_whe
     base64buf[olen] = 0;
 
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = OverlayMouseWheelEventName;
+    req->SetMethod(OverlayMouseWheelEventName);
     nlohmann::json obj = nlohmann::json::object();
     obj["windowId"] = windowId;
     obj["event"] = base64buf;
-    req->Params = obj.dump();
+    req->SetParams(obj.dump());
     return  processer->SendEvent(req);
 }
 
 void JRPCHookHelperEventAPI::OnOverlayMouseWheelEventRequestRecv(std::shared_ptr<RPCRequest> req)
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
-    auto doc = jreq->GetParamsNlohmannJson();
+    auto doc = GetParamsNlohmannJson(*jreq);
     if (!recvOverlayMouseWheelEventDelegate) {
         return;
     }
@@ -128,20 +128,20 @@ bool JRPCHookHelperEventAPI::OverlayMouseButtonEvent(uint64_t windowId, mouse_bu
     base64buf[olen] = 0;
 
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = OverlayMouseButtonEventName;
+    req->SetMethod(OverlayMouseButtonEventName);
     nlohmann::json obj = nlohmann::json::object();
     obj["windowId"] = windowId;
     obj["event"] = base64buf;
 
 
-    req->Params = obj.dump();
+    req->SetParams(obj.dump());
     return  processer->SendEvent(req);
 }
 
 void JRPCHookHelperEventAPI::OnOverlayMouseButtonEventRequestRecv(std::shared_ptr<RPCRequest> req)
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
-    auto doc = jreq->GetParamsNlohmannJson();
+    auto doc = GetParamsNlohmannJson(*jreq);
     if (!recvOverlayMouseButtonEventDelegate) {
         return;
     }
@@ -169,20 +169,20 @@ bool JRPCHookHelperEventAPI::OverlayMouseMotionEvent(uint64_t windowId, mouse_mo
     base64buf[olen] = 0;
 
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = OverlayMouseMotionEventName;
+    req->SetMethod( OverlayMouseMotionEventName);
     nlohmann::json obj = nlohmann::json::object();
     obj["windowId"] = windowId;
     obj["event"] = base64buf;
 
 
-    req->Params = obj.dump();
+    req->SetParams(obj.dump());
     return  processer->SendEvent(req);
 }
 
 void JRPCHookHelperEventAPI::OnOverlayMouseMotionEventRequestRecv(std::shared_ptr<RPCRequest> req)
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
-    auto doc = jreq->GetParamsNlohmannJson();
+    auto doc = GetParamsNlohmannJson(*jreq);
     if (!recvOverlayMouseMotionEventDelegate) {
         return;
     }
@@ -211,20 +211,20 @@ bool JRPCHookHelperEventAPI::OverlayKeyboardEvent(uint64_t windowId, keyboard_ev
     base64buf[olen] = 0;
 
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = OverlayKeyboardEventName;
+    req->SetMethod(OverlayKeyboardEventName);
     nlohmann::json obj = nlohmann::json::object();
     obj["windowId"] = windowId;
     obj["event"] = base64buf;
 
 
-    req->Params = obj.dump();
+    req->SetParams(obj.dump());
     return  processer->SendEvent(req);
 }
 
 void JRPCHookHelperEventAPI::OnOverlayKeyboardEventRequestRecv(std::shared_ptr<RPCRequest> req)
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
-    auto doc = jreq->GetParamsNlohmannJson();
+    auto doc = GetParamsNlohmannJson(*jreq);
     if (!recvOverlayKeyboardEventDelegate) {
         return;
     }

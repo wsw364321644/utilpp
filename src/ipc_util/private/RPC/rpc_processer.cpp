@@ -66,7 +66,7 @@ void RPCProcesser::OnRecevRPC(const char* str, uint32_t len)
                 rpcReq = result->second;
                 requestMap.erase(result);
             }
-            auto rpcInterface = GetInterfaceByMethodName(rpcReq->Method.c_str());
+            auto rpcInterface = GetInterfaceByMethodName(rpcReq->GetMethod().data());
             if (rpcInterface) {
                 rpcInterface->OnResponseRecv(response, rpcReq);
             }
@@ -76,14 +76,14 @@ void RPCProcesser::OnRecevRPC(const char* str, uint32_t len)
     auto pRequest = std::get_if<std::shared_ptr<RPCRequest>>(&parseResult);
     if (pRequest) {
         auto request = *pRequest;
-        auto rpcInterface = GetInterfaceByMethodName(request->Method.c_str());
+        auto rpcInterface = GetInterfaceByMethodName(request->GetMethod().data());
         if (rpcInterface) {
             if (!rpcInterface->OnRequestRecv(request)) {
                 TriggerOnRPCConsumedErrorDelegates(request);
             }
         }
         else {
-            auto buf = rpcParserInterface->GetMethodNotFoundResponse(request->ID)->ToBytes();
+            auto buf = rpcParserInterface->GetMethodNotFoundResponse(request->GetID())->ToBytes();
             msgprocesser->SendContent(buf.CStr(), buf.Length());
             TriggerOnMethoedNotFoundDelegates(request);
         }
@@ -108,7 +108,7 @@ RPCHandle_t RPCProcesser::SendRequest(std::shared_ptr<RPCRequest> request)
     lock.unlock();
     if (res.second) {
         auto handle = res.first->first;
-        request->ID = handle.ID;
+        request->SetID( handle.ID);
         const auto& str = request->ToBytes();
         if (msgprocesser->SendContent(str.CStr(), (uint32_t)str.Length())) {
             return handle;

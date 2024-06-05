@@ -20,10 +20,40 @@ enum class ERPCParseError {
 
 
 class RPC_PARSER_EXPORT RPCRequest {
+    friend class JRPCPaser;
 public:
     virtual ~RPCRequest() = default;
     virtual CharBuffer ToBytes() = 0;
+    void SetParams(const std::string& str) {
+        Params = str;
+    }
+    void SetParams(const char* cstr) {
+        Params.assign(cstr);
+    }
+    std::string_view GetParams()const {
+        return Params;
+    }
 
+    void SetMethod(const std::string& str) {
+        Method = str;
+    }
+    void SetMethod(const char* cstr) {
+        Method.assign(cstr);
+    }
+    std::string_view GetMethod()const {
+        return Method;
+    }
+
+    bool HasID() const{
+        return ID.has_value();
+    }
+    uint32_t GetID() const {
+        return ID.value();
+    }
+    void SetID(uint32_t InID) {
+        ID = InID;
+    }
+protected:
     std::optional<uint32_t> ID;
     std::string Method;
     std::string Params;

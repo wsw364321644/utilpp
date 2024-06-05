@@ -18,16 +18,16 @@ DEFINE_REQUEST_RPC(JRPCHookHelperAPI, ConnectToHost);
 RPCHandle_t JRPCHookHelperAPI::ConnectToHost(uint64_t processId, const char* commandline, TConnectToHostDelegate inDelegate, TRPCErrorDelegate errDelegate)
 {
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
-    req->Method = ConnectToHostName;
+    req->SetMethod(ConnectToHostName);
 
     nlohmann::json obj = nlohmann::json::object();
     obj["processId"] = processId;
     obj["commandline"] = commandline;
-    req->Params = obj.dump();
+    req->SetParams(obj.dump());
 
     auto handle = processer->SendRequest(req);
     if (handle.IsValid()) {
-        AddConnectToHostSendDelagate(req->ID.value(), inDelegate, errDelegate);
+        AddConnectToHostSendDelagate(req->GetID(), inDelegate, errDelegate);
     }
     return handle;
 }
@@ -45,14 +45,14 @@ bool JRPCHookHelperAPI::RespondConnectToHost(RPCHandle_t handle)
 void JRPCHookHelperAPI::OnConnectToHostRequestRecv(std::shared_ptr<RPCRequest> req)
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
-    auto doc = jreq->GetParamsNlohmannJson();
+    auto doc = GetParamsNlohmannJson(*jreq);
 
-    recvConnectToHostDelegate(RPCHandle_t(req->ID.value()), doc["processId"].get_ref<nlohmann::json::number_integer_t&>(), doc["commandline"].get_ref<nlohmann::json::string_t&>().c_str());
+    recvConnectToHostDelegate(RPCHandle_t(req->GetID()), doc["processId"].get_ref<nlohmann::json::number_integer_t&>(), doc["commandline"].get_ref<nlohmann::json::string_t&>().c_str());
 }
 
 void JRPCHookHelperAPI::OnConnectToHostResponseRecv(std::shared_ptr<RPCResponse>resp, std::shared_ptr<RPCRequest>req)
 {
-    auto id = req->ID.value();
+    auto id = req->GetID();
     if (!HasConnectToHostSendDelagate(id)) {
         return;
     }

@@ -167,7 +167,7 @@ ERPCParseError JsonRPCRequest::CheckParams()const
         SIMPLELOG_LOGGER_ERROR(nullptr, "Validation of {} Params failed, here is why: {}", Method, e.what());
         return  ERPCParseError::InternalError;;
     }
-    validator.validate(GetParamsNlohmannJson(), err);
+    validator.validate(GetParamsNlohmannJson(*this), err);
     if (err) {
         return  ERPCParseError::ParseError;
     }
@@ -343,7 +343,7 @@ CharBuffer JRPCPaser::ToByte(const JsonRPCRequest& req)
     CharBuffer buffer;
     nlohmann::json doc(nlohmann::json::value_t::object);
     doc[MethodFieldStr] = req.Method;
-    auto Paramsnode=req.GetParamsNlohmannJson();
+    auto Paramsnode=GetParamsNlohmannJson(req);
     if (!Paramsnode.empty()) {
         doc[ParamsFieldStr] = Paramsnode;
     }
