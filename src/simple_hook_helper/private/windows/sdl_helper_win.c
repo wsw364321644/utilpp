@@ -231,52 +231,54 @@ SDL_Scancode WindowsScanCodeToSDLScanCode(LPARAM lParam, WPARAM wParam)
     return code;
 }
 
-static bool WindowsCheckModifierLRSub(Uint16 mod, SDL_Keymod lmodekey, SDL_Keymod rmodekey, uint32_t lvkcode, uint32_t rvkcode) {
+static bool WindowsCheckModifierLRSub(Uint16 mod, SDL_Keymod lmodekey, SDL_Keymod rmodekey, uint32_t lvkcode, uint32_t rvkcode, GetKeyState_t fn) {
     if (mod & lmodekey) {
         if (mod & rmodekey) {
-            if (!(GetKeyState(lvkcode) & 0x8000)&& !(GetKeyState(rvkcode) & 0x8000)) {
+            if (!(fn(lvkcode) & 0x8000)&& !(fn(rvkcode) & 0x8000)) {
                 return false;
             }
         }
         else {
-            if (!(GetKeyState(lvkcode) & 0x8000)) {
+            if (!(fn(lvkcode) & 0x8000)) {
                 return false;
             }
         }
-    }
-    if (mod & rmodekey) {
-        if (!(GetKeyState(rvkcode) & 0x8000)) {
+    }else if (mod & rmodekey) {
+        if (!(fn(rvkcode) & 0x8000)) {
             return false;
         }
     }
     return true;
 }
-bool WindowsCheckModifier(Uint16 mod)
+bool WindowsCheckModifier(Uint16 mod, GetKeyState_t fn)
 {
-    if (!WindowsCheckModifierLRSub(mod,KMOD_LSHIFT, KMOD_RSHIFT,  VK_LSHIFT, VK_RSHIFT)) {
+    if (fn == NULL) {
+        fn = GetKeyState;
+    }
+    if (!WindowsCheckModifierLRSub(mod,KMOD_LSHIFT, KMOD_RSHIFT,  VK_LSHIFT, VK_RSHIFT, fn)) {
        return false;
     }
-    if (!WindowsCheckModifierLRSub(mod, KMOD_LCTRL, KMOD_RCTRL,  VK_LCONTROL, VK_RCONTROL)) {
+    if (!WindowsCheckModifierLRSub(mod, KMOD_LCTRL, KMOD_RCTRL,  VK_LCONTROL, VK_RCONTROL, fn)) {
         return false;
     }
-    if (!WindowsCheckModifierLRSub(mod, KMOD_LALT, KMOD_RALT,  VK_LMENU, VK_RMENU)) {
+    if (!WindowsCheckModifierLRSub(mod, KMOD_LALT, KMOD_RALT,  VK_LMENU, VK_RMENU, fn)) {
         return false;
     }
-    if (!WindowsCheckModifierLRSub(mod, KMOD_LGUI, KMOD_RGUI,  VK_LWIN, VK_RWIN)) {
+    if (!WindowsCheckModifierLRSub(mod, KMOD_LGUI, KMOD_RGUI,  VK_LWIN, VK_RWIN, fn)) {
         return false;
     }
     if (mod & KMOD_NUM) {
-        if (!(GetKeyState(VK_NUMLOCK) & 0x0001)) {
+        if (!(fn(VK_NUMLOCK) & 0x0001)) {
             return false;
         }
     }
     if (mod & KMOD_CAPS) {
-        if (!(GetKeyState(VK_CAPITAL) & 0x0001)) {
+        if (!(fn(VK_CAPITAL) & 0x0001)) {
             return false;
         }
     }
     if (mod & KMOD_SCROLL) {
-        if (!(GetKeyState(VK_SCROLL) & 0x0001)) {
+        if (!(fn(VK_SCROLL) & 0x0001)) {
             return false;
         }
     }
