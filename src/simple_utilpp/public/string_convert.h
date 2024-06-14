@@ -1,7 +1,3 @@
-/**
- *  misc.h
- */
-
 #pragma once
 
 #include <string>

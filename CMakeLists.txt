@@ -88,7 +88,7 @@ add_subdirectory(src/rapidjson)
 add_subdirectory(src/better-enums)
 add_subdirectory(src/task_manager)
 add_subdirectory(src/rpc_parser)
-
+add_subdirectory(src/graphic_subsystem)
 if(WIN32)
   add_subdirectory(src/windows_util)
 endif()
