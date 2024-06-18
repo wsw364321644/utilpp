@@ -11,39 +11,39 @@ class FCurlHttpResponse;
 class FCurlHttpRequest :public IHttpRequest {
 
 public:
-    virtual ~FCurlHttpRequest();
-    virtual std::string_view GetURL() override;
-    virtual std::string_view GetURLParameter(const std::string_view ParameterName) override;
-    virtual std::string_view GetHeader(const std::string_view HeaderName) override;
-    virtual std::vector<std::string> GetAllHeaders() override;
-    virtual std::string_view GetContentType() override;
-    virtual int64_t GetContentLength() override;
-    virtual const std::vector<uint8_t>& GetContent() override;
-    virtual std::vector<MimePart_t> GetAllMime() override;
+    ~FCurlHttpRequest() override;
+    std::string_view GetURL() override;
+    std::string_view GetURLParameter(const std::string_view ParameterName) override;
+    std::string_view GetHeader(const std::string_view HeaderName) override;
+    std::vector<std::string> GetAllHeaders() override;
+    std::string_view GetContentType() override;
+    int64_t GetContentLength() override;
+    const std::vector<uint8_t>& GetContent() override;
+    std::vector<MimePart_t> GetAllMime() override;
 
-    virtual std::string_view GetVerb() override;
-    virtual void SetVerb(const std::string_view Verb) override;
-    virtual void SetURL(const std::string_view URL) override;
-    virtual void SetHost(const std::string_view) override;
-    virtual void SetPath(const std::string_view Path) override;
-    virtual void SetScheme(const std::string_view Scheme) override;
-    virtual void SetPortNum(uint32_t Port) override;
-    virtual void SetQuery(const std::string_view QueryName, const std::string_view QueryValue) override;
-    virtual void SetContent(const std::vector<uint8_t>& ContentPayload) override;
-    virtual void SetContentAsString(const std::string_view ContentString) override;
+    std::string_view GetVerb() override;
+    void SetVerb(const std::string_view Verb) override;
+    void SetURL(const std::string_view URL) override;
+    void SetHost(const std::string_view) override;
+    void SetPath(const std::string_view Path) override;
+    void SetScheme(const std::string_view Scheme) override;
+    void SetPortNum(uint32_t Port) override;
+    void SetQuery(const std::string_view QueryName, const std::string_view QueryValue) override;
+    void SetContent(const std::vector<uint8_t>& ContentPayload) override;
+    void SetContentAsString(const std::string_view ContentString) override;
 
-    virtual void SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue) override;
-    virtual void AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue) override;
-    virtual void SetMimePart(const MimePart_t part)override;
-    virtual void SetRange(uint64_t begin, uint64_t end)override;
-    virtual bool ProcessRequest() override;
-    virtual HttpRequestCompleteDelegateType& OnProcessRequestComplete() override;
-    virtual HttpRequestProgressDelegateType& OnRequestProgress() override;
-    virtual void CancelRequest() override;
-    virtual EHttpRequestStatus GetStatus() override;
-    virtual const HttpResponsePtr GetResponse() const override;
-    virtual void Tick(float DeltaSeconds) override;
-    virtual float GetElapsedTime() override;
+    void SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue) override;
+    void AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue) override;
+    void SetMimePart(const MimePart_t part)override;
+    void SetRange(uint64_t begin, uint64_t end)override;
+    bool ProcessRequest() override;
+    HttpRequestCompleteDelegateType& OnProcessRequestComplete() override;
+    HttpRequestProgressDelegateType& OnRequestProgress() override;
+    void CancelRequest() override;
+    EHttpRequestStatus GetStatus() override;
+    const HttpResponsePtr GetResponse() const override;
+    void Tick(float DeltaSeconds) override;
+    float GetElapsedTime() override;
     friend class FCurlHttpManager;
 private:
     FCurlHttpRequest(FCurlHttpManager* inManager);
@@ -88,20 +88,20 @@ class FCurlHttpResponse :public IHttpResponse {
 public:
 
     FCurlHttpResponse(FCurlHttpRequest* inCurlRequest) :CurlRequest(inCurlRequest) {};
-    virtual ~FCurlHttpResponse() {};
-    virtual std::string_view GetURL()override { return ""; };
-    virtual std::string_view GetURLParameter(const std::string_view ParameterName)override { return ""; };
-    virtual std::string_view GetHeader(const std::string_view HeaderName)override;
-    virtual std::vector<std::string> GetAllHeaders()override;
-    virtual std::vector<MimePart_t> GetAllMime() override;
-    virtual std::string_view GetContentType();
-    virtual int64_t GetContentLength() { return ContentLength; };
-    virtual const std::vector<uint8_t>& GetContent();
+    ~FCurlHttpResponse() override {};
+    std::string_view GetURL()override { return ""; };
+    std::string_view GetURLParameter(const std::string_view ParameterName)override { return ""; }
+    std::string_view GetHeader(const std::string_view HeaderName)override;
+    std::vector<std::string> GetAllHeaders()override;
+    std::vector<MimePart_t> GetAllMime() override;
+    std::string_view GetContentType() override;
+    int64_t GetContentLength() override { return ContentLength; }
+    const std::vector<uint8_t>& GetContent() override;
     FCurlHttpRequest* GetRequest() { return CurlRequest; }
-    virtual void SetContentBuf(void* Ptr, int64_t Len) override;
-    virtual int32_t GetResponseCode() { return HttpCode; };
-    virtual int64_t GetContentBytesRead() { return TotalBytesRead; };
-    virtual std::string_view GetContentAsString();
+    void SetContentBuf(void* Ptr, int64_t Len) override;
+    int32_t GetResponseCode() override { return HttpCode; }
+    int64_t GetContentBytesRead() override { return TotalBytesRead; }
+    std::string_view GetContentAsString() override;
 
     void ContentAppend(char* Data, size_t Len);
     friend class FCurlHttpManager;

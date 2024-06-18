@@ -23,7 +23,7 @@ struct RPCInfo_t {
 class RPC_PARSER_EXPORT  JsonRPCRequest :public RPCRequest {
 public:
     JsonRPCRequest() = default;
-    virtual ~JsonRPCRequest() override = default;
+    ~JsonRPCRequest() override = default;
     JsonRPCRequest(const JsonRPCRequest& rhs) {
         *this = rhs;
     }
@@ -43,7 +43,7 @@ public:
         return *this;
     }
     ERPCParseError CheckParams()const;
-    virtual CharBuffer ToBytes() override;
+    CharBuffer ToBytes() override;
 
 };
 class RPC_PARSER_EXPORT JsonRPCResponse :public RPCResponse {
@@ -52,7 +52,7 @@ public:
         return  OptError.has_value();
     };
     JsonRPCResponse() = default;
-    virtual  ~JsonRPCResponse() override = default;
+    ~JsonRPCResponse() override = default;
     JsonRPCResponse(const JsonRPCResponse& rhs) {
         *this = rhs;
     }
@@ -76,7 +76,7 @@ public:
         return nlohmann::json::parse(Result.c_str(), nullptr, false);
     }
     ERPCParseError CheckResult(const char* Method) const;
-    virtual CharBuffer ToBytes() override;
+    CharBuffer ToBytes() override;
     bool IsError()const {
         return OptError.has_value()? OptError.value():true;
     }
@@ -94,9 +94,9 @@ public:
     ~JRPCPaser() = default;
     //typedef std::variant<EMessageError,JsonRPCRequest, JsonRPCResponse> ParseResult;
     static bool Init();
-    virtual ParseResult Parse(const char* data, int len) override;
-    virtual std::shared_ptr<RPCResponse> GetMethodNotFoundResponse(std::optional<uint32_t> id) override;
-    virtual std::shared_ptr<RPCResponse> GetErrorParseResponse(ERPCParseError error) override;
+    ParseResult Parse(const char* data, int len) override;
+    std::shared_ptr<RPCResponse> GetMethodNotFoundResponse(std::optional<uint32_t> id) override;
+    std::shared_ptr<RPCResponse> GetErrorParseResponse(ERPCParseError error) override;
     static ParseResult StaticParse(const char* data, int len);
     static CharBuffer ToByte(const JsonRPCRequest&);
     static CharBuffer ToByte(const JsonRPCResponse&);

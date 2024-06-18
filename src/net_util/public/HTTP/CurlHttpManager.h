@@ -23,9 +23,9 @@ public:
     FCurlHttpManager();
 
 
-    virtual HttpRequestPtr NewRequest() override;
-    virtual bool ProcessRequest(HttpRequestPtr);
-    virtual void Tick(float delSec);
+    HttpRequestPtr NewRequest() override;
+    bool ProcessRequest(HttpRequestPtr) override;
+    void Tick(float delSec) override;
 
     void HttpThreadTick(float delSec);
 

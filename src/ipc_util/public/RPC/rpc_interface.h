@@ -201,15 +201,15 @@ typedef std::function<void(RPCHandle_t,double,const char*, const char*)> TRPCErr
 
 #define DECLARE_RPC_OVERRIDE_FUNCTION(ClassName)                                                              \
 public:                                                                                                       \
-    friend struct RPCMethodInfo<ClassName>;                                                                          \
+    friend struct RPCMethodInfo<ClassName>;                                                                   \
     ClassName(RPCProcesser*);                                                                                 \
     virtual ~ClassName();                                                                                     \
     static std::unique_ptr<IGroupRPC> Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew);             \
     static const char* GetGroupName();                                                                        \
-    virtual const char* GetName() override;                                                                   \
-    virtual bool OnRequestRecv(std::shared_ptr<RPCRequest>)override;                                          \
-    virtual bool OnResponseRecv(std::shared_ptr<RPCResponse>, std::shared_ptr<RPCRequest>)override;           \
-    virtual std::shared_ptr<RPCRequest> CancelRPCRequest(RPCHandle_t handle) override;       
+    const char* GetName() override;                                                                           \
+    bool OnRequestRecv(std::shared_ptr<RPCRequest>)override;                                                  \
+    bool OnResponseRecv(std::shared_ptr<RPCResponse>, std::shared_ptr<RPCRequest>)override;                   \
+    std::shared_ptr<RPCRequest> CancelRPCRequest(RPCHandle_t handle) override;       
 
 #define DEFINE_RPC_OVERRIDE_FUNCTION_BASE(ClassName,GroupName)                                             \
 static bool RegisteredInRPCFactory##ClassName= RegisteredInRPCFactory<ClassName>::s_bRegistered;           \

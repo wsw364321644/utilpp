@@ -141,8 +141,8 @@ class FGraphicSubsystemDX11Texture2D :public FGraphicSubsystemDXGITexture {
 public:
 	FGraphicSubsystemDX11Texture2D(FGraphicSubsystemDX11Device* device, uint32_t handle, bool ntHandle=false);
 
-	virtual uint32_t GetWidth() override { return Texture2DDesc.Width; }
-	virtual	uint32_t GetHeight() override { return Texture2DDesc.Height; }
+	uint32_t GetWidth() override { return Texture2DDesc.Width; }
+	uint32_t GetHeight() override { return Texture2DDesc.Height; }
 	D3D11_TEXTURE2D_DESC Texture2DDesc{};
 	ComPtr<ID3D11Texture2D> Texture;
 	ComPtr<ID3D11ShaderResourceView> ShaderRes;

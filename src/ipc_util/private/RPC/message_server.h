@@ -25,13 +25,13 @@ public:
     virtual ~MessageServerUV();
 
 public:
-    virtual bool OpenServer(EMessageConnectionType, const std::string& url) override;
-    virtual void Tick(float delSec) override;
-    virtual void Run() override;
-    virtual void Stop() override;
-    virtual void CloseConnection(IMessageSession*) override;
+    bool OpenServer(EMessageConnectionType, const std::string& url) override;
+    void Tick(float delSec) override;
+    void Run() override;
+    void Stop() override;
+    void CloseConnection(IMessageSession*) override;
 
-    virtual EMessageConnectionType GetServerType() const  override {
+    EMessageConnectionType GetServerType() const  override {
         return messageConnectionType;
     }
 private:

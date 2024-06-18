@@ -21,14 +21,14 @@ public:
 
 public:
 
-    virtual bool Connect(EMessageConnectionType, const std::string& url) override;
-    virtual CommonHandle_t Write(const char* data, int len) override;
-    virtual void Disconnect()override;
-    virtual void Tick(float delSec) override;
-    virtual EMessageConnectionType GetConnectionType()const override {
+    bool Connect(EMessageConnectionType, const std::string& url) override;
+    CommonHandle_t Write(const char* data, int len) override;
+    void Disconnect()override;
+    void Tick(float delSec) override;
+    EMessageConnectionType GetConnectionType()const override {
         return messageConnectionType;
     }
-    virtual EMessageConnectionState GetConnectionState()const override {
+    EMessageConnectionState GetConnectionState()const override {
         return state.load();
     }
 

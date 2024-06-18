@@ -19,22 +19,22 @@ class IPC_EXPORT MessageSessionUV : public IMessageSession, public std::enable_s
 public:
 
     MessageSessionUV(MessageServerUV* server);
-    ~MessageSessionUV();
+    virtual ~MessageSessionUV();
 
     bool operator ==(MessageSessionUV& session) {
         return server == session.GetServer() && ID == session.ID;
     }
 
-    virtual EMessageConnectionType GetConnectionType()const override;
-    virtual EMessageConnectionState GetConnectionState()const override;
+    EMessageConnectionType GetConnectionType()const override;
+    EMessageConnectionState GetConnectionState()const override;
     MessageServerUV* GetServer() {
         return server;
     }
 
-    virtual void Disconnect()override;
-    virtual CommonHandle_t Write(const char* data, int len)override;
+    void Disconnect()override;
+    CommonHandle_t Write(const char* data, int len)override;
 public:
-    virtual uint64_t GetPID() const override;
+    uint64_t GetPID() const override;
 
     void UVOnRead(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf);
     void OnWrite(MessageSendRequestUV*, uv_write_t* req, int status);
