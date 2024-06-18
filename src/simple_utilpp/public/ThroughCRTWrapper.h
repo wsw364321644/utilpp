@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <type_traits>
+#include <memory>
+#include "simple_export_ppdefs.h"
 template<class value_type>
 class ThroughCRTWrapper {
 public:
@@ -15,11 +18,16 @@ public:
     ~ThroughCRTWrapper() {
         Reset();
     }
+
     ThroughCRTWrapper& operator =(ThroughCRTWrapper&& other) {
         std::swap(freeFunc, other.freeFunc);
         std::swap(Value, other.Value);
         return *this;
     }
+    ThroughCRTWrapper& operator=(value_type&& value) {
+        SetValue(std::forward<value_type>(value));
+    }
+
     template <class... _Types>
     void SetValue(_Types&&... _Args) {
         Reset();
@@ -41,7 +49,133 @@ public:
     const value_type& GetValue() const {
         return *Value;
     }
+
 private:
     DeconstructFn_t freeFunc{ nullptr };
     value_type* Value{ nullptr };
 };
+
+
+
+//template<class value_type, std::enable_if_t<std::is_pointer<value_type>::value, bool> = true>
+
+template<class T>
+class ThroughCRTWrapper<std::shared_ptr<T>> {
+public:
+    typedef void(*DeconstructFn_t)(std::shared_ptr<T>);
+    using test_type = ThroughCRTWrapper;
+    ThroughCRTWrapper() {}
+    ThroughCRTWrapper(std::nullptr_t ptr) {
+    }
+
+    ThroughCRTWrapper(ThroughCRTWrapper&& other) {
+        *this = std::forward<ThroughCRTWrapper>(other);
+    }
+    ThroughCRTWrapper(const ThroughCRTWrapper& other) {
+        *this = other;
+    }
+    ThroughCRTWrapper(std::shared_ptr<T> && ptr) {
+        SetValue(std::forward<std::shared_ptr<T>>(ptr));
+    }
+    ThroughCRTWrapper(const std::shared_ptr<T> & ptr) {
+        SetValue(ptr);
+    }
+    ~ThroughCRTWrapper() {
+        Reset();
+    }
+
+    ThroughCRTWrapper& operator =(const ThroughCRTWrapper& other) {
+        freeFunc= other.freeFunc;
+        Value= other.Value;
+        return *this;
+    }
+    ThroughCRTWrapper& operator =(ThroughCRTWrapper&& other) {
+        std::swap(freeFunc, other.freeFunc);
+        std::swap(Value, other.Value);
+        return *this;
+    }
+    template<class _T , std::enable_if_t<std::is_same_v<std::decay_t<_T>, std::shared_ptr<T>>,int> = 0>
+    ThroughCRTWrapper& operator=(const _T&& value) {
+        SetValue(std::forward<std::shared_ptr<T>>(value));
+    }
+
+    template<class _T, std::enable_if_t<std::is_same_v<std::decay_t<_T>, std::shared_ptr<T>>, int> = 0>
+    void SetValue(_T && ptr) {
+        Reset();
+        Value = ptr;
+        freeFunc = [](std::shared_ptr<T> value) {
+            value.reset();
+            };
+    }
+
+    void Reset() {
+        if (freeFunc) {
+            freeFunc(std::move(Value));
+            freeFunc = nullptr;
+            Value = nullptr;
+        }
+    }
+    const T& GetValue() const {
+        return *Value;
+    }
+private:
+    DeconstructFn_t freeFunc{ nullptr };
+    std::shared_ptr<T> Value{ nullptr };
+};
+
+
+template<class T>
+class ThroughCRTWrapper<std::weak_ptr<T>> {
+public:
+    typedef void(*DeconstructFn_t)(std::weak_ptr<T>);
+    ThroughCRTWrapper() {}
+    ThroughCRTWrapper(ThroughCRTWrapper&) = delete;
+    ThroughCRTWrapper(ThroughCRTWrapper&& other) {
+        *this = std::forward<ThroughCRTWrapper&&>(other);
+    }
+    template<class _T = std::weak_ptr<T>>
+    ThroughCRTWrapper(_T&& ptr) {
+        SetValue(std::forward<std::weak_ptr<T>>(ptr));
+    }
+    ~ThroughCRTWrapper() {
+        Reset();
+    }
+
+
+    ThroughCRTWrapper& operator =(ThroughCRTWrapper&& other) {
+        std::swap(freeFunc, other.freeFunc);
+        std::swap(Value, other.Value);
+        return *this;
+    }
+    template<class _T = std::weak_ptr<T>>
+    ThroughCRTWrapper& operator=(_T&& value) {
+        SetValue(std::forward<std::weak_ptr<T>>(value));
+    }
+
+    void SetValue(std::weak_ptr<T>&& ptr) {
+        Reset();
+        Value = ptr;
+        freeFunc = [](std::shared_ptr<T> value) {
+            value.reset();
+            };
+    }
+
+    void Reset() {
+        if (freeFunc) {
+            freeFunc(std::move(Value));
+            freeFunc = nullptr;
+            Value = nullptr;
+        }
+    }
+    const T* GetValue() const {
+        auto pValue= Value.lock();
+        return pValue.get();
+    }
+private:
+    DeconstructFn_t freeFunc{ nullptr };
+    std::weak_ptr<T> Value{ nullptr };
+};
+
+
+#include <string>
+SIMPLE_UTIL_EXPORT ThroughCRTWrapper<std::shared_ptr<std::string>> TestGetString();
