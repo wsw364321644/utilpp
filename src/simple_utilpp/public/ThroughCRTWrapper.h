@@ -115,8 +115,8 @@ public:
             Value = nullptr;
         }
     }
-    const T& GetValue() const {
-        return *Value;
+    const T* GetValue() const {
+        return Value.get();
     }
 private:
     DeconstructFn_t freeFunc{ nullptr };
