@@ -36,7 +36,7 @@ bool JRPCCommandAPI::RespondHeartBeat(RPCHandle_t handle)
 }
 void JRPCCommandAPI::OnHeartBeatRequestRecv(std::shared_ptr<RPCRequest> req)
 {
-    recvHeartBeatDelegate(RPCHandle_t(req->GetID()));
+    RecvHeartBeatDelegate(RPCHandle_t(req->GetID()));
 }
 void JRPCCommandAPI::OnHeartBeatResponseRecv(std::shared_ptr<RPCResponse> resp, std::shared_ptr<RPCRequest>req)
 {

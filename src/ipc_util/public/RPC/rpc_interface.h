@@ -246,7 +246,7 @@ std::shared_ptr<RPCRequest> ClassName::CancelRPCRequest(RPCHandle_t handle) {   
     }                                                                                                  \
     auto RPCMethodInfoOpt = RPCInfoData<ClassName>::GetMethodInfo(req->GetMethod().data());            \
     assert(RPCMethodInfoOpt.has_value());                                                              \
-    RPCMethodInfoOpt.value().RemoveSendDelagateMethod(this, req->GetID());                          \
+    RPCMethodInfoOpt.value().RemoveSendDelagateMethod(this, req->GetID());                             \
     return req;                                                                                        \
 }
 
@@ -267,6 +267,14 @@ private:                                                                        
             void Add##Name##SendDelagate(uint32_t id, T##Name##Delegate Delegate, TRPCErrorDelegate ErrDelegate) {                       \
                 Name##Delegates.emplace(id, Delegate);                                                                                   \
                 Name##ErrorDelegates.emplace(id, ErrDelegate);                                                                           \
+            }                                                                                                                            \
+            template <class ..._Types>                                                                                                   \
+            void Trigger##Name##SendDelegate(uint32_t id, _Types&&... args) {                                                            \
+                Name##Delegates[id](RPCHandle_t(id), std::forward<_Types>(args)...);                                                     \
+            }                                                                                                                            \
+                                                                                                                                         \
+            void Trigger##Name##SendErrorDelegate(uint32_t id, double code, const char* errMsg, const char* errData) {                   \
+                Name##ErrorDelegates[id](RPCHandle_t(id), code, errMsg, errData);                                                        \
             }                                                                                                                            \
 public:                                                                                                                                  \
             void Remove##Name##SendDelagate(uint32_t id) {                                                                               \
@@ -291,14 +299,14 @@ public:  \
             void On##APIName##RequestRecv(std::shared_ptr<RPCRequest>); \
             static const char APIName##Name[]; \
 private: \
-            TRecv##APIName##Delegate recv##APIName##Delegate; \
+            TRecv##APIName##Delegate Recv##APIName##Delegate; \
 public:
 
 
 #define DEFINE_REQUEST_RPC_BASIC(ClassName,Name) \
 void ClassName::Register##Name##(TRecv##Name##Delegate indelegate) \
 { \
-    recv##Name##Delegate = indelegate; \
+    Recv##Name##Delegate = indelegate; \
 }
 
 
