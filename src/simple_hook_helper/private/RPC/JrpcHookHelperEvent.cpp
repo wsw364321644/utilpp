@@ -51,7 +51,7 @@ void JRPCHookHelperEventAPI::OnHotkeyListUpdateRequestRecv(std::shared_ptr<RPCRe
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
     auto doc = GetParamsNlohmannJson(*jreq);
     HotKeyList_t HotKeyList;
-    if (!recvHotkeyListUpdateDelegate) {
+    if (!RecvHotkeyListUpdateDelegate) {
         return;
     }
     std::function<void(nlohmann::json&, HotKeyList_t&)> fn = [&fn](nlohmann::json& list, HotKeyList_t& HotKeyList) {
@@ -70,9 +70,32 @@ void JRPCHookHelperEventAPI::OnHotkeyListUpdateRequestRecv(std::shared_ptr<RPCRe
         }
         };
     fn(doc,HotKeyList);
-    recvHotkeyListUpdateDelegate(HotKeyList);
+    RecvHotkeyListUpdateDelegate(HotKeyList);
 }
 
+REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, ClientSizeUpdate);
+DEFINE_REQUEST_RPC_EVENT(JRPCHookHelperEventAPI, ClientSizeUpdate);
+bool JRPCHookHelperEventAPI::ClientSizeUpdate(uint16_t width, uint16_t height)
+{
+    std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
+    req->SetMethod(ClientSizeUpdateName);
+    nlohmann::json obj = nlohmann::json::object();
+    obj["width"] = width;
+    obj["height"] = height;
+    req->SetParams(obj.dump());
+    return  processer->SendEvent(req);
+}
+
+void JRPCHookHelperEventAPI::OnClientSizeUpdateRequestRecv(std::shared_ptr<RPCRequest> req)
+{
+    std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
+    if (!RecvClientSizeUpdateDelegate) {
+        return;
+    }
+    auto doc = GetParamsNlohmannJson(*jreq);
+    RecvClientSizeUpdateDelegate(doc["width"].get_ref<nlohmann::json::number_integer_t&>(),
+        doc["height"].get_ref<nlohmann::json::number_integer_t&>());
+}
 
 
 REGISTER_RPC_EVENT_API_AUTO(JRPCHookHelperEventAPI, OverlayMouseWheelEvent);
@@ -100,7 +123,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseWheelEventRequestRecv(std::shared_ptr
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
     auto doc = GetParamsNlohmannJson(*jreq);
-    if (!recvOverlayMouseWheelEventDelegate) {
+    if (!RecvOverlayMouseWheelEventDelegate) {
         return;
     }
     mouse_wheel_event_t outEvent;
@@ -110,7 +133,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseWheelEventRequestRecv(std::shared_ptr
     if (res != 0) {
         return;
     }
-    recvOverlayMouseWheelEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
+    RecvOverlayMouseWheelEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
 }
 
 
@@ -142,7 +165,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseButtonEventRequestRecv(std::shared_pt
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
     auto doc = GetParamsNlohmannJson(*jreq);
-    if (!recvOverlayMouseButtonEventDelegate) {
+    if (!RecvOverlayMouseButtonEventDelegate) {
         return;
     }
     mouse_button_event_t outEvent;
@@ -152,7 +175,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseButtonEventRequestRecv(std::shared_pt
     if (res != 0) {
         return;
     }
-    recvOverlayMouseButtonEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
+    RecvOverlayMouseButtonEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
 }
 
 
@@ -183,7 +206,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseMotionEventRequestRecv(std::shared_pt
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
     auto doc = GetParamsNlohmannJson(*jreq);
-    if (!recvOverlayMouseMotionEventDelegate) {
+    if (!RecvOverlayMouseMotionEventDelegate) {
         return;
     }
     mouse_motion_event_t outEvent;
@@ -193,7 +216,7 @@ void JRPCHookHelperEventAPI::OnOverlayMouseMotionEventRequestRecv(std::shared_pt
     if (res != 0) {
         return;
     }
-    recvOverlayMouseMotionEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
+    RecvOverlayMouseMotionEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
 }
 
 
@@ -225,7 +248,7 @@ void JRPCHookHelperEventAPI::OnOverlayKeyboardEventRequestRecv(std::shared_ptr<R
 {
     std::shared_ptr<JsonRPCRequest> jreq = std::dynamic_pointer_cast<JsonRPCRequest>(req);
     auto doc = GetParamsNlohmannJson(*jreq);
-    if (!recvOverlayKeyboardEventDelegate) {
+    if (!RecvOverlayKeyboardEventDelegate) {
         return;
     }
     keyboard_event_t outEvent;
@@ -235,5 +258,5 @@ void JRPCHookHelperEventAPI::OnOverlayKeyboardEventRequestRecv(std::shared_ptr<R
     if (res != 0) {
         return;
     }
-    recvOverlayKeyboardEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
+    RecvOverlayKeyboardEventDelegate(doc["windowId"].get_ref<nlohmann::json::number_integer_t&>(), outEvent);
 }

@@ -1,8 +1,12 @@
+///about sharing resource https://learn.microsoft.com/en-us/windows/win32/direct3darticles/surface-sharing-between-windows-graphics-apis
+
 #pragma once
 #include <cstdint>
+#include <bitset>
+#include <std_ext.h>
 #include "graphic_subsystem_exports.h"
 
-enum class EGraphicSubsystemColorFormat {
+enum class EGraphicSubsystemColorFormat:uint16_t {
 	UNKNOWN,
 	A8,
 	R8,
@@ -50,15 +54,74 @@ enum class EGraphicSubsystemTextureType
 	TEXTURE_2D_ARRAY,
 	TEXTURE_3D,
 };
-class FGraphicSubsystemTexture {
+
+typedef enum ETextureFlag
+{
+	BIND_VERTEX_BUFFER,
+	BIND_INDEX_BUFFER,
+	BIND_CONSTANT_BUFFE,
+	BIND_SHADER_RESOURCE,
+	BIND_STREAM_OUTPUT,
+	BIND_RENDER_TARGET,
+	BIND_DEPTH_STENCIL,
+	BIND_UNORDERED_ACCESS,
+	BIND_DECODER,
+	BIND_VIDEO_ENCODER,
+	MISC_GENERATE_MIPS,
+	MISC_SHARED,
+	MISC_TEXTURECUBE,
+	MISC_DRAWINDIRECT_ARGS,
+	MISC_BUFFER_ALLOW_RAW_VIEWS,
+	MISC_BUFFER_STRUCTURED,
+	MISC_RESOURCE_CLAMP,
+	MISC_SHARED_KEYEDMUTEX,
+	MISC_GDI_COMPATIBLE,
+	MISC_SHARED_NTHANDLE,
+	MISC_RESTRICTED_CONTENT,
+	MISC_RESTRICT_SHARED_RESOURCE,
+	MISC_RESTRICT_SHARED_RESOURCE_DRIVER,
+	MISC_GUARDED,
+	MISC_TILE_POOL,
+	MISC_TILED,
+	MISC_HW_PROTECTED,
+	MISC_SHARED_DISPLAYABLE,
+	MISC_SHARED_EXCLUSIVE_WRITER,
+	TWO_PLANE,
+	CPU_ACCESS_WRITE,
+	CPU_ACCESS_READ,
+	COUNT
+}ETextureFlag;
+typedef std::bitset<std::to_underlying(ETextureFlag::COUNT)> TextureFlag_t;
+
+class FGraphicSubsystemDevice;
+
+class FGraphicSubsystemObj {
 public:
-	virtual uint32_t GetWidth() = 0;
-	virtual	uint32_t GetHeight() = 0;
+	FGraphicSubsystemObj(FGraphicSubsystemDevice* device) :Device(device) {}
+	virtual ~FGraphicSubsystemObj() = default;
+protected:
+	FGraphicSubsystemDevice* Device;
 };
 
-class FGraphicSubsystemDevice {
+class FGraphicSubsystemTexture :public FGraphicSubsystemObj {
 public:
-	virtual ~FGraphicSubsystemDevice() {}
+	FGraphicSubsystemTexture(FGraphicSubsystemDevice* device) :FGraphicSubsystemObj(device) {}
+	virtual ~FGraphicSubsystemTexture() = default;
+	virtual uint32_t GetWidth() const = 0;
+	virtual	uint32_t GetHeight() const = 0;
+	virtual	uint32_t GetByteSize() const = 0;
+	virtual	EGraphicSubsystemTextureType GetType() const = 0;
+	virtual	EGraphicSubsystemColorFormat GetColorFormat() const = 0;
+	virtual bool IsShared() const = 0;
+	virtual uint64_t GetSharedHandle() const = 0;
+protected:
+	bool bAcquired{false};
+};
+
+class FGraphicSubsystemDevice :public FGraphicSubsystemObj {
+public:
+	FGraphicSubsystemDevice() :FGraphicSubsystemObj(this) {}
+	virtual ~FGraphicSubsystemDevice() = default;
 };
 
 
@@ -82,10 +145,11 @@ public:
 //		uint32_t* y);
 //	uint32_t(*device_get_width)(const gs_device_t* device);
 //	uint32_t(*device_get_height)(const gs_device_t* device);
-//	gs_texture_t* (*device_texture_create)(
-//		gs_device_t* device, uint32_t width, uint32_t height,
-//		enum gs_color_format color_format, uint32_t levels,
-//		const uint8_t** data, uint32_t flags);
+
+	virtual FGraphicSubsystemTexture* DeviceTextureCreate(
+		FGraphicSubsystemDevice* device, uint32_t width, uint32_t height,
+		enum EGraphicSubsystemColorFormat color_format, uint32_t levels,
+		const uint8_t** data, TextureFlag_t flags)=0;
 //	gs_texture_t* (*device_cubetexture_create)(
 //		gs_device_t* device, uint32_t size,
 //		enum gs_color_format color_format, uint32_t levels,
@@ -152,13 +216,11 @@ public:
 //	void (*device_enable_framebuffer_srgb)(gs_device_t* device,
 //		bool enable);
 //	bool (*device_framebuffer_srgb_enabled)(gs_device_t* device);
-//	void (*device_copy_texture)(gs_device_t* device, gs_texture_t* dst,
-//		gs_texture_t* src);
-//	void (*device_copy_texture_region)(gs_device_t* device,
-//		gs_texture_t* dst, uint32_t dst_x,
-//		uint32_t dst_y, gs_texture_t* src,
-//		uint32_t src_x, uint32_t src_y,
-//		uint32_t src_w, uint32_t src_h);
+	virtual void DeviceCopyTexture(FGraphicSubsystemDevice* device, FGraphicSubsystemTexture* dst, FGraphicSubsystemTexture* src) {
+		DeviceCopyTextureRegion(device, dst, 0, 0, src, 0, 0, 0, 0);
+	}
+	virtual void DeviceCopyTextureRegion(FGraphicSubsystemDevice* device,FGraphicSubsystemTexture* dst, uint32_t dst_x,uint32_t dst_y, 
+		FGraphicSubsystemTexture* src,uint32_t src_x, uint32_t src_y,uint32_t src_w, uint32_t src_h) =0;
 //	void (*device_stage_texture)(gs_device_t* device, gs_stagesurf_t* dst,
 //		gs_texture_t* src);
 //	void (*device_begin_frame)(gs_device_t* device);
@@ -224,9 +286,9 @@ public:
 //	uint32_t(*gs_texture_get_height)(const gs_texture_t* tex);
 //	enum gs_color_format(*gs_texture_get_color_format)(
 //		const gs_texture_t* tex);
-//	bool (*gs_texture_map)(gs_texture_t* tex, uint8_t** ptr,
-//		uint32_t* linesize);
-//	void (*gs_texture_unmap)(gs_texture_t* tex);
+virtual bool TextureMap(FGraphicSubsystemTexture* tex, uint8_t** ptr, uint32_t* linesize) = 0;
+virtual bool TextureUnmap(FGraphicSubsystemTexture* tex) = 0;
+
 //	bool (*gs_texture_is_rect)(const gs_texture_t* tex);
 //	void* (*gs_texture_get_obj)(const gs_texture_t* tex);
 //
@@ -406,3 +468,53 @@ public:
 };
 
 GRAPHIC_SUBSYSTEM_EXPORT FGraphicSubsystem* GetGraphicSubsystem(EGraphicSubsystem);
+
+static inline uint32_t GetColorFormatBitPerPixel(enum EGraphicSubsystemColorFormat format)
+{
+	switch (format) {
+	case EGraphicSubsystemColorFormat::DXT1:
+		return 4;
+	case EGraphicSubsystemColorFormat::A8:
+	case EGraphicSubsystemColorFormat::R8:
+	case EGraphicSubsystemColorFormat::DXT3:
+	case EGraphicSubsystemColorFormat::DXT5:
+		return 8;
+	case EGraphicSubsystemColorFormat::R16:
+	case EGraphicSubsystemColorFormat::R16F:
+	case EGraphicSubsystemColorFormat::R8G8:
+		return 16;
+	case EGraphicSubsystemColorFormat::RGBA:
+	case EGraphicSubsystemColorFormat::BGRX:
+	case EGraphicSubsystemColorFormat::BGRA:
+	case EGraphicSubsystemColorFormat::R10G10B10A2:
+	case EGraphicSubsystemColorFormat::RG16F:
+	case EGraphicSubsystemColorFormat::R32F:
+	case EGraphicSubsystemColorFormat::RGBA_UNORM:
+	case EGraphicSubsystemColorFormat::BGRX_UNORM:
+	case EGraphicSubsystemColorFormat::BGRA_UNORM:
+	case EGraphicSubsystemColorFormat::RG16:
+		return 32;
+	case EGraphicSubsystemColorFormat::RGBA16:
+	case EGraphicSubsystemColorFormat::RGBA16F:
+	case EGraphicSubsystemColorFormat::RG32F:
+		return 64;
+	case EGraphicSubsystemColorFormat::RGBA32F:
+		return 128;
+	case EGraphicSubsystemColorFormat::UNKNOWN:
+		return 0;
+	}
+
+	return 0;
+}
+
+static inline uint32_t GetTotalLevels(uint32_t width, uint32_t height,uint32_t depth)
+{
+	uint32_t size = width > height ? width : height;
+	size = size > depth ? size : depth;
+	uint32_t num_levels = 1;
+	while (size > 1) {
+		size /= 2;
+		num_levels++;
+	}
+	return num_levels;
+}

@@ -14,14 +14,18 @@ public:
 
 class FGraphicSubsystemDXGITexture :public FGraphicSubsystemTexture {
 public:
-	FGraphicSubsystemDXGITexture(EGraphicSubsystemTextureType type) :TextureType(type) {}
-
+	FGraphicSubsystemDXGITexture(FGraphicSubsystemDevice* device,EGraphicSubsystemTextureType type) :FGraphicSubsystemTexture(device),TextureType(type) {}
+	virtual bool IsNTShared()const = 0;
+	uint32_t GetByteSize() const override;
+	virtual uint64_t GetSharedHandle() const {
+		return (uint64_t)SharedHandle;
+	};
 	DXGI_FORMAT DXGIFormatResource{ DXGI_FORMAT_UNKNOWN };
 	DXGI_FORMAT DXGIFormatView{ DXGI_FORMAT_UNKNOWN };
 	DXGI_FORMAT DXGIFormatViewLinear{ DXGI_FORMAT_UNKNOWN };
 	uint32_t Levels{0};
+	HANDLE SharedHandle{NULL};
 	EGraphicSubsystemTextureType TextureType{ EGraphicSubsystemTextureType ::TEXTURE_1D};
-	EGraphicSubsystemColorFormat ColorFormat{ EGraphicSubsystemColorFormat ::UNKNOWN};
 };
 
 class FGraphicSubsystemDXGI :public FGraphicSubsystem {

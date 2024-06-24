@@ -407,4 +407,8 @@ EGraphicSubsystemError FGraphicSubsystemDXGI::DeviceEnumAdapters(bool(*callback)
 	}
 }
 
-
+uint32_t FGraphicSubsystemDXGITexture::GetByteSize() const
+{
+	uint32_t bbp = GetColorFormatBitPerPixel(GetColorFormat());
+	return   bbp * GetWidth() * GetHeight() / 8;
+}

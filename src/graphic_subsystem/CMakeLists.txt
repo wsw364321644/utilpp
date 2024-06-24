@@ -25,7 +25,7 @@ endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(APPEND SourceFiles
-        ${CMAKE_CURRENT_SOURCE_DIR}/private/Graphic/GraphicSubsystemDXGI.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/public/Graphic/GraphicSubsystemDXGI.h
         ${CMAKE_CURRENT_SOURCE_DIR}/private/Graphic/GraphicSubsystemDXGI.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/private/Graphic/GraphicSubsystemDX9.h
         ${CMAKE_CURRENT_SOURCE_DIR}/private/Graphic/GraphicSubsystemDX9.cpp

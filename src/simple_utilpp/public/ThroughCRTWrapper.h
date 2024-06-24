@@ -2,6 +2,11 @@
 #include <type_traits>
 #include <memory>
 #include "simple_export_ppdefs.h"
+
+/// @details ThroughCRTWrapper help free value use same crt
+/// https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries
+/// Be careful with ThroughCRTWrapper wrap a template class or ThroughCRTWrapper wrap a type come from a static library. 
+/// Triggering their dynamic alloc memory is an error.
 template<class value_type>
 class ThroughCRTWrapper {
 public:
@@ -46,7 +51,7 @@ public:
             Value = nullptr;
         }
     }
-    const value_type& GetValue() const {
+    value_type& GetValue() const {
         return *Value;
     }
 
@@ -115,7 +120,7 @@ public:
             Value = nullptr;
         }
     }
-    const T* GetValue() const {
+    T* GetValue() const {
         return Value.get();
     }
 private:

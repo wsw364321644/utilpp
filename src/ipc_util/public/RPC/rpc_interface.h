@@ -104,12 +104,8 @@ public:
 protected:
     static std::unordered_map<std::string, RPCMethodInfo<T>> MethodInfos;
 };
-/// <summary>
-/// static value in rpc api 
-/// 
-/// </summary>
-/// <typeparam name="T"></typeparam>
-///
+
+/// @details static value in rpc api 
 template <typename T>
 class RPCInfoRegister
 {
@@ -120,13 +116,12 @@ public:
     }
 };
 
-/// <summary>
-/// inherit RegisteredInRPCFactory and  achieve
+
+/// @details inherit RegisteredInRPCFactory and  achieve
 /// static std::unique_ptr<IGroupRPC> Create()
 /// static bool CheckMethod(const std::string& )
 /// static std::string GetGroupName()
-/// </summary>
-/// <typeparam name="T"></typeparam>
+
 template <typename T>
 class RegisteredInRPCFactory
 {

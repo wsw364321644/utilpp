@@ -52,7 +52,7 @@ template <class _Type, template <class...> class _Template>
 struct is_specialization : std::bool_constant<is_specialization_v<_Type, _Template>> {};
 
 #ifdef _MSVC_LANG
-#if _MSVC_LANG <= 202002L and _MSVC_LANG >= 201112L
+#if _MSVC_LANG <= 202002L && _MSVC_LANG >= 201112L
 #include <type_traits>
 namespace std {
     template <class _Ty>

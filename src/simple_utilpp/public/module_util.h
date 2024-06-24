@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include "simple_export_defs.h"
 
-    /// DEPRECATED
+/// DEPRECATED
 SIMPLE_UTIL_API int util_dll_path(char* path, size_t* size);
- /// DEPRECATED
+/// DEPRECATED
 SIMPLE_UTIL_API int util_exe_path(char* path, size_t* size);
 SIMPLE_UTIL_API int util_exe_wpath(wchar_t* path, size_t* size);
 SIMPLE_UTIL_API int util_dll_wpath(wchar_t* path, size_t* size);

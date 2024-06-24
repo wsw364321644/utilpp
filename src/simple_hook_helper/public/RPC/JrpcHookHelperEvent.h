@@ -49,6 +49,7 @@ public:
 
     
     DECLARE_REQUEST_RPC_EVENT_ONE_PARAM(HotkeyListUpdate, HotKeyList_t&);
+    DECLARE_REQUEST_RPC_EVENT_TWO_PARAM(ClientSizeUpdate, uint16_t, uint16_t);
     DECLARE_REQUEST_RPC_EVENT_TWO_PARAM(OverlayMouseWheelEvent, uint64_t, mouse_wheel_event_t&);
     DECLARE_REQUEST_RPC_EVENT_TWO_PARAM(OverlayMouseButtonEvent, uint64_t, mouse_button_event_t&);
     DECLARE_REQUEST_RPC_EVENT_TWO_PARAM(OverlayMouseMotionEvent, uint64_t, mouse_motion_event_t&);
