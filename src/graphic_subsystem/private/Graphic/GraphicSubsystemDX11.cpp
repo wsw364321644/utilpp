@@ -60,8 +60,7 @@ public:
 	EGraphicSubsystemColorFormat GetColorFormat() const override { return ConvertDXGITextureFormat(Texture2DDesc.Format); }
 
 	bool IsNTShared()const override {
-		return Texture2DDesc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX ||
-			Texture2DDesc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+		return Texture2DDesc.MiscFlags & D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
 	}
 	bool IsShared()const override {
 		return IsNTShared() ||
@@ -168,8 +167,7 @@ void FGraphicSubsystemDX11Device::InitDevice()
 
 	hr = D3D11CreateDevice(Adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, NULL,
 		createFlags, featureLevels,
-		sizeof(featureLevels) /
-		sizeof(D3D_FEATURE_LEVEL),
+		sizeof(featureLevels) /sizeof(D3D_FEATURE_LEVEL),
 		D3D11_SDK_VERSION, &Device, &levelUsed,
 		&Context);
 	if (FAILED(hr))
@@ -404,7 +402,7 @@ void FGraphicSubsystemDX11Texture2D::InitTexture(EGraphicSubsystemColorFormat co
 		}
 		else {
 			hr=dxgi_res->CreateSharedHandle(NULL,
-				DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE,
+				DXGI_SHARED_RESOURCE_READ,
 				NULL,
 				&SharedHandle);
 			if (FAILED(hr)) {

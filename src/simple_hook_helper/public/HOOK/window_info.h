@@ -19,5 +19,6 @@ typedef struct hook_window_info_t {
 	uint16_t width{ 0 };
 	uint16_t x{ 0 };
 	uint16_t y{ 0 };
+	bool bNT_shared{ false };
 	EHookWindowType hook_window_type{ EHookWindowType::Window };
 }hook_window_info_t;
