@@ -2,7 +2,7 @@
 #include "dump_helper.h"
 #include "string_convert.h"
 #include "handle.h"
-#include <windows.h>
+#include <simple_os_defs.h>
 #include <DbgHelp.h>
 #include <stdlib.h>
 #include <iostream>

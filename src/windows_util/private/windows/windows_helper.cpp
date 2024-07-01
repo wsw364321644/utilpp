@@ -1,5 +1,5 @@
 #include "windows_helper.h"
-#include <Windows.h>
+#include <simple_os_defs.h>
 #include <psapi.h>
 #include <sddl.h>
 #include <string_convert.h>

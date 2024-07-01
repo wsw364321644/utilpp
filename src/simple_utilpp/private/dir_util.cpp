@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <filesystem>
 #ifdef WIN32
-#include <Windows.h>
+#include <simple_os_defs.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>

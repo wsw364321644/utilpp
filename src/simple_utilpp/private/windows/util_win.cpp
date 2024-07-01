@@ -5,7 +5,7 @@
 #include "module_util.h"
 #include "string_convert.h"
 #include <stdlib.h>
-#include <Windows.h>
+#include <simple_os_defs.h>
 #include <TlHelp32.h>
 #define threadtimeout 1000
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;

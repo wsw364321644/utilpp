@@ -1,6 +1,5 @@
 #include "simple_time.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <simple_os_defs.h>
 
 static inline uint64_t get_clockfreq(void)
 {

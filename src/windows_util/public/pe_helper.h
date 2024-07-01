@@ -1,5 +1,5 @@
 #pragma once
-#include <Windows.h>
+#include <simple_os_defs.h>
 #include <winnt.h>
 #include <winternl.h>
 #include <iostream>

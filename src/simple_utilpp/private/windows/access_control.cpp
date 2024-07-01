@@ -1,11 +1,12 @@
 #include"access_control.h"
-#include <windows.h>
+#include <simple_os_defs.h>
 #include <stdio.h>
 #include <aclapi.h>
 #include <tchar.h>
 #include <strsafe.h>
 #include <authz.h>
 #include <Sddl.h> 
+#include <stdlib.h>
 #define SECURITY_WIN32 
 #include <security.h> 
 #pragma comment(lib, "advapi32.lib")
