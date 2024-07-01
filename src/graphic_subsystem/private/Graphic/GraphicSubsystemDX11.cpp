@@ -50,7 +50,7 @@ class FGraphicSubsystemDX11Device;
 
 class FGraphicSubsystemDX11Texture2D :public FGraphicSubsystemDXGITexture {
 public:
-	FGraphicSubsystemDX11Texture2D(FGraphicSubsystemDX11Device* device, uint32_t handle, bool ntHandle = false);
+	FGraphicSubsystemDX11Texture2D(FGraphicSubsystemDX11Device* device, uint64_t handle, bool ntHandle = false);
 	FGraphicSubsystemDX11Texture2D(FGraphicSubsystemDX11Device* device, uint32_t width, uint32_t height,
 		EGraphicSubsystemColorFormat color_format, uint32_t levels, const uint8_t** data, TextureFlag_t flags, EGraphicSubsystemTextureType type);
 	FGraphicSubsystemDX11Device* GetDX11Device();
@@ -219,7 +219,7 @@ bool FGraphicSubsystemDX11Device::HasBadNV12Output()
 
 
 
-FGraphicSubsystemDX11Texture2D::FGraphicSubsystemDX11Texture2D(FGraphicSubsystemDX11Device* device, uint32_t handle, bool ntHandle)
+FGraphicSubsystemDX11Texture2D::FGraphicSubsystemDX11Texture2D(FGraphicSubsystemDX11Device* device, uint64_t handle, bool ntHandle)
 	:FGraphicSubsystemDXGITexture(device,EGraphicSubsystemTextureType::TEXTURE_2D)
 {
 	SharedHandle = (HANDLE)handle;
