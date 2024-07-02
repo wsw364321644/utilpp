@@ -17,6 +17,9 @@ SIMPLE_UTIL_API const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif // !WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <Windows.h>
 
 #define F_HANDLE  void *
