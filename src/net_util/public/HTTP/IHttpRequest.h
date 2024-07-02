@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <memory>
+
 #define InfiniteRange std::numeric_limits<uint64_t>::max()
 typedef std::shared_ptr<class IHttpRequest> HttpRequestPtr;
 typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;

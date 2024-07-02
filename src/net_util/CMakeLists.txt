@@ -7,6 +7,7 @@ source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 function(add_lib TARGET_NAME)
     AddTargetInclude(${TARGET_NAME})
 
+    target_compile_definitions(${TARGET_NAME} PRIVATE -DNOMINMAX)
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 
