@@ -62,7 +62,7 @@ class RPC_PARSER_EXPORT RPCResponse {
 public:
     virtual ~RPCResponse() = default;
     virtual CharBuffer ToBytes() = 0;
-    virtual bool IsError()const;
+    virtual bool IsError()const=0;
     std::string_view GetResult()const {
         return Result;
     }

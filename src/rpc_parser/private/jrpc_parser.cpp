@@ -135,7 +135,7 @@ ERPCParseError JsonRPCResponse::CheckResult(const char* Method) const
         SIMPLELOG_LOGGER_ERROR(nullptr,"Validation of {} Result failed, here is why: {}", Method, e.what());
         return  ERPCParseError::InternalError;;
     }
-    validator.validate(GetResultNlohmannJson(), err);
+    validator.validate(GetResultNlohmannJson(*this), err);
     if (err) {
         return  ERPCParseError::ParseError;
     }
@@ -381,7 +381,7 @@ CharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
         doc[ErrorFieldStr] = errNode;
     }
     else {
-        auto resNode = res.GetResultNlohmannJson();
+        auto resNode = GetResultNlohmannJson(res);
         doc[ResultFieldStr]= resNode;
     }
     auto str = doc.dump();
