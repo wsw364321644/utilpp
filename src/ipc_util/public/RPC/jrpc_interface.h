@@ -7,7 +7,7 @@ class IPC_EXPORT IGroupJRPC :public IGroupRPC
 {
 public:
     IGroupJRPC(RPCProcesser* inprocesser) :IGroupRPC(inprocesser) {}
-    bool RespondError(RPCHandle_t handle, double errorCode, const char* errorMsg=nullptr, const char* errorData = nullptr);
+    bool RespondError(RPCHandle_t handle, int64_t errorCode, const char* errorMsg=nullptr, const char* errorData = nullptr);
 };
 
 #define DEFINE_JRPC_OVERRIDE_FUNCTION(ClassName)                                                             \

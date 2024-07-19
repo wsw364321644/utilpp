@@ -67,7 +67,7 @@ public:
         return Result;
     }
     std::optional<uint32_t> ID;
-    double ErrorCode{ 0 };
+    int64_t ErrorCode{ 0 };
     std::string ErrorMsg;
     std::string ErrorData;
     std::string Result;
