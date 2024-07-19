@@ -170,7 +170,7 @@ namespace std {
 }
 #pragma warning(pop)
 
-typedef std::function<void(RPCHandle_t,double,const char*, const char*)> TRPCErrorDelegate;
+typedef std::function<void(RPCHandle_t,int64_t,const char*, const char*)> TRPCErrorDelegate;
 
 
 
