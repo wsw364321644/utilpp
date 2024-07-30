@@ -49,6 +49,7 @@ FetchContent_Declare(
 )
 
 set(JSON_VALIDATOR_INSTALL TRUE)
+set(nlohmann_json_schema_validator_SHARED_LIBS OFF)
 FetchContent_Declare(
   json-schema-validator
   GIT_REPOSITORY git@ssh.github.com:pboettch/json-schema-validator.git
