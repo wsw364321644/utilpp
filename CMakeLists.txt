@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 include(FetchContent)
 
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil" "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil/Modules" "${CMAKE_CURRENT_SOURCE_DIR}/deps/OCmakeUtil/Projects")
-# list(REMOVE_DUPLICATES CMAKE_MODULE_PATH)
-# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "CMAKE_MODULE_PATH")
-# include(ProjectDefinition)
-# include(ProjectImport)
 set(VERSION "0.0.1")
 project(utilpp VERSION ${VERSION})
 enable_language(C CXX ASM)
@@ -14,21 +9,21 @@ option(UTILPP_STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
 option(UTILPP_WITH_STATIC_LIBUV "USE UV_a." OFF)
 
 # option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
-if(UTILPP_STATIC_CRT)
-  if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-  endif()
+if(PROJECT_IS_TOP_LEVEL)
+  if(UTILPP_STATIC_CRT)
+    if(MSVC)
+      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+      add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    endif()
 
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
+  endif()
 endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-
 
 FetchContent_Declare(
   OCmakeUtil
@@ -39,6 +34,8 @@ FetchContent_Declare(
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
 set(SPDLOG_INSTALL ON CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   spdlog
@@ -54,6 +51,7 @@ FetchContent_Declare(
 )
 
 set(JSON_VALIDATOR_INSTALL TRUE)
+set(nlohmann_json_schema_validator_SHARED_LIBS OFF)
 FetchContent_Declare(
   json-schema-validator
   GIT_REPOSITORY git@ssh.github.com:pboettch/json-schema-validator.git
@@ -78,8 +76,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(taskflow)
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem)
-
-
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp)

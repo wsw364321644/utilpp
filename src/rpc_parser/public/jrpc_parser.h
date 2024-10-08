@@ -7,6 +7,7 @@
 #include "rpc_definition.h"
 
 #define GetParamsNlohmannJson(Request) nlohmann::json::parse((Request).GetParams().data(), nullptr, false)
+#define GetResultNlohmannJson(Response) nlohmann::json::parse((Response).GetResult().data(), nullptr, false)
 
 #pragma warning(push)
 #pragma warning(disable:4251)
@@ -72,12 +73,10 @@ public:
         Result = std::move(rhs.Result);
         return *this;
     }
-    inline nlohmann::json GetResultNlohmannJson()const {
-        return nlohmann::json::parse(Result.c_str(), nullptr, false);
-    }
+
     ERPCParseError CheckResult(const char* Method) const;
     CharBuffer ToBytes() override;
-    bool IsError()const {
+    bool IsError()const override{
         return OptError.has_value()? OptError.value():true;
     }
     std::optional<bool> OptError;

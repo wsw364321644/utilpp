@@ -12,7 +12,7 @@ function(add_lib TARGET_NAME)
     AddTargetInclude(${TARGET_NAME})
 
     target_link_libraries(${TARGET_NAME} PUBLIC nlohmann_json::nlohmann_json)
-    target_link_libraries(${TARGET_NAME} PRIVATE nlohmann_json_schema_validator)
+    target_link_libraries(${TARGET_NAME} PRIVATE nlohmann_json_schema_validator::validator)
 
     install(TARGETS ${TARGET_NAME}
         EXPORT ${TARGET_NAME}Targets

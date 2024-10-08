@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-
+#include <cuchar>
 #ifdef WIN32
 #include <simple_os_defs.h>
 #include <Strsafe.h>
@@ -171,5 +171,64 @@ inline std::u16string U8ToU16(const char *u8Str)
     result.append((char16_t *)dest_str, (sizeof(dest_str) - outbytes) / 2);
     iconv_close(conv);
     return result;
+#endif
+}
+
+
+inline std::u32string U8ToU32(const char* u8Str) {
+#ifdef WIN32
+    std::u32string out;
+    std::mbstate_t state{};
+    char32_t c32;
+    const char* u8cursor = u8Str;
+    const char* u8end = u8Str + strlen(u8Str);
+
+    while (std::size_t rc = std::mbrtoc32(&c32, u8cursor, u8end - u8cursor, &state))
+    {
+        if (rc == (std::size_t)-1)
+            break;
+        if (rc == (std::size_t)-2)
+            break;
+        if (rc == (std::size_t)-3)
+            break;
+        out.append(1, c32);
+        u8cursor += rc;
+    }
+    return out;
+#else
+#endif
+}
+
+inline std::string U32ToU8(const char32_t* u32Str) {
+#ifdef WIN32
+    std::string out;
+    std::mbstate_t state{};
+    char buf[MB_LEN_MAX]{};
+    for (int i = 0; u32Str[i] != 0; i++) {
+        std::size_t rc = std::c32rtomb(buf, u32Str[i], &state);
+        if (rc == (std::size_t)-1) {
+            continue;
+        }
+        out.append(buf, rc);
+    }
+    return out;
+#else
+#endif
+}
+
+inline std::string U32ToU8(const char32_t* u32Str,size_t num) {
+#ifdef WIN32
+    std::string out;
+    std::mbstate_t state{};
+    char buf[MB_LEN_MAX]{};
+    for (int i = 0; i< num; i++) {
+        std::size_t rc = std::c32rtomb(buf, u32Str[i], &state);
+        if (rc == (std::size_t)-1) {
+            continue;
+        }
+        out.append(buf, rc);
+    }
+    return out;
+#else
 #endif
 }

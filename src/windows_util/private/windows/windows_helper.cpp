@@ -238,25 +238,70 @@ HWND find_window_by_title(const char* name)
     return data.handle;
 }
 
-
-DWORD  get_process_file_name(DWORD process_id, LPSTR  file_path, DWORD  size) {
+WINDOWS_UTIL_API HMODULE get_process_module(DWORD process_id, LPSTR file_name)
+{
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
         PROCESS_VM_READ,
         FALSE, process_id);
-    DWORD res=get_process_file_name_by_handle(hProcess, file_path, size);
+    auto res = get_process_module_from_hanlde(hProcess, file_name);
     CloseHandle(hProcess);
     return res;
 }
 
-DWORD  get_process_file_name_by_handle(HANDLE  hProcess, LPSTR  file_path, DWORD  size) {
-    return GetProcessImageFileNameA(hProcess, file_path, size);
-    //HMODULE hMod;
-    //DWORD cbNeeded;
-    //if (EnumProcessModules(hProcess, &hMod, sizeof(hMod),
-    //    &cbNeeded))
-    //{
-    //    GetModuleFileNameExA(hProcess, hMod, file_path,size);
-    //}
+WINDOWS_UTIL_API HMODULE get_process_module_from_hanlde(HANDLE hProcess, LPSTR file_name)
+{
+    HMODULE* hModList{NULL};
+    HMODULE retMod{ NULL };
+    DWORD cbNeeded, cbNewNeeded;
+    char moduleName[MAX_PATH] = "<unknown>";
+    if (EnumProcessModules(hProcess, NULL, 0, &cbNeeded)==0) {
+        return NULL;
+    }
+    hModList = new HMODULE[cbNeeded];
+    EnumProcessModules(hProcess, hModList, cbNeeded, &cbNewNeeded);
+    int i = 0;
+    for (; i < cbNeeded; i++) {
+        get_process_file_base_name_by_handle(hProcess, hModList[i], moduleName, MAX_PATH);
+        auto res=strstr(moduleName, file_name);
+        if (res != nullptr) {
+            break;
+        }
+    }
+    if (i < cbNeeded) {
+        retMod = hModList[i];
+    }
+    delete[] hModList;
+    return retMod;
+}
+
+
+DWORD  get_process_file_name(DWORD process_id, HMODULE hMod, LPSTR  file_path, DWORD  size) {
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
+        PROCESS_VM_READ,
+        FALSE, process_id);
+    DWORD res=get_process_file_name_by_handle(hProcess, hMod,file_path, size);
+    CloseHandle(hProcess);
+    return res;
+}
+
+DWORD  get_process_file_name_by_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_path, DWORD  size) {
+    return GetModuleFileNameExA(hProcess, hMod, file_path, size);
+    //return GetProcessImageFileNameA(hProcess, file_path, size);
+}
+
+WINDOWS_UTIL_API DWORD get_process_file_base_name(DWORD process_id, HMODULE hMod, LPSTR file_name, DWORD nSize)
+{
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
+        PROCESS_VM_READ,
+        FALSE, process_id);
+    DWORD res = get_process_file_base_name_by_handle(hProcess, hMod, file_name, nSize);
+    CloseHandle(hProcess);
+    return res;
+}
+
+WINDOWS_UTIL_API DWORD get_process_file_base_name_by_handle(HANDLE hProcess, HMODULE hMod, LPSTR file_name, DWORD nSize)
+{
+    return  GetModuleBaseNameA(GetCurrentProcess(), hMod, file_name,nSize);
 }
 
 

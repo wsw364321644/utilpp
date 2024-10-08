@@ -1,7 +1,7 @@
 #include "RPC/jrpc_interface.h"
 #include <jrpc_parser.h>
 
-bool IGroupJRPC::RespondError(RPCHandle_t handle, double errorCode, const char* errorMsg,const char* errorData)
+bool IGroupJRPC::RespondError(RPCHandle_t handle, int64_t errorCode, const char* errorMsg,const char* errorData)
 {
     std::shared_ptr<JsonRPCResponse> response = std::make_shared< JsonRPCResponse>();
     response->OptError = true;
