@@ -82,19 +82,13 @@ public:
 
     CommonTaskHandle_t AddTick(WorkflowHandle_t, FTickTask task);
     CommonTaskHandle_t AddTimer(WorkflowHandle_t, FTimerTask task, uint64_t repeat, uint64_t timeout = 0);
+
     // pass a task to excuse
     template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
-    std::tuple<CommonTaskHandle_t,std::future<R>> AddTask(WorkflowHandle_t handle, F&& task) {
+    std::tuple<CommonTaskHandle_t,std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle, F&& task) {
         const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
-        std::shared_lock TaskWorkflowRLock{ TaskWorkflowMutex, std::defer_lock };
-        std::unique_lock TaskLock{ TaskMutex, std::defer_lock };
-        std::scoped_lock lock(TaskWorkflowRLock, TaskLock);
-        auto itr = TaskWorkflowDatas.find(handle);
-        if (itr == TaskWorkflowDatas.end()) {
-            return { NullHandle, task_promise->get_future() };
-        }
-        auto res = Tasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared < CommonTaskData_t>(handle, 
-            [task = std::forward<F>(task),task_promise]() {
+        auto handle=AddTaskInternal(WorkflowHandle,
+            [task = std::forward<F>(task), task_promise]() {
                 try
                 {
                     if constexpr (std::is_void_v<R>)
@@ -118,21 +112,13 @@ public:
                     }
                 }
             }
-        ));
-        if (!res.second) {
-            return { NullHandle, task_promise->get_future() };
-        }
-        auto setres = itr->second->Tasks.emplace(res.first->first);
-        if (!setres.second) {
-            Tasks.erase(res.first->first);
-            return { NullHandle, task_promise->get_future() };
-        }
-        return { res.first->first, task_promise->get_future() };
-
+        );
+        return { handle, task_promise->get_future() };  
     }
     void RemoveTask(CommonTaskHandle_t);
 
 private:
+    CommonTaskHandle_t AddTaskInternal(WorkflowHandle_t handle, FCommonTask task);
     void TickTaskWorkflow(WorkflowHandle_t handle);
     void TickRandonTaskWorkflow();
     FTaskManager();

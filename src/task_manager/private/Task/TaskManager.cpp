@@ -332,7 +332,25 @@ CommonTaskHandle_t FTaskManager::AddTimer(WorkflowHandle_t handle, FTimerTask ta
     return res.first->first;
 }
 
-
+CommonTaskHandle_t FTaskManager::AddTaskInternal(WorkflowHandle_t handle, FCommonTask task) {
+    std::shared_lock TaskWorkflowRLock{ TaskWorkflowMutex, std::defer_lock };
+    std::unique_lock TaskLock{ TaskMutex, std::defer_lock };
+    std::scoped_lock lock(TaskWorkflowRLock, TaskLock);
+    auto itr = TaskWorkflowDatas.find(handle);
+    if (itr == TaskWorkflowDatas.end()) {
+        return NullHandle;
+    }
+    auto res = Tasks.emplace(CommonTaskHandle_t::TaskCount, std::make_shared < CommonTaskData_t>(handle,task));
+    if (!res.second) {
+        return NullHandle;
+    }
+    auto setres = itr->second->Tasks.emplace(res.first->first);
+    if (!setres.second) {
+        Tasks.erase(res.first->first);
+        return NullHandle;
+    }
+    return res.first->first;
+}
 
 void FTaskManager::RemoveTask(CommonTaskHandle_t handle)
 {
