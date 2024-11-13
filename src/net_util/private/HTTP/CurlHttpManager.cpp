@@ -218,7 +218,7 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
             Header = std::regex_replace(Header, std::regex(R"(\n)"), "");
             Header = std::regex_replace(Header, std::regex(R"(\r)"), "");
 
-            SIMPLELOG_LOGGER_ERROR(nullptr, "ReceiveResponseHeaderCallback {}: Received response header '{}'.", (void*)cresp.get(), Header);
+            SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseHeaderCallback {}: Received response header '{}'.", (void*)cresp.get(), Header);
             std::string HeaderKey, HeaderValue;
             auto i = Header.find(":");
             if (i != std::string::npos)
@@ -418,9 +418,9 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         creq->Verb = "GET";
     }
 
-    SIMPLELOG_LOGGER_ERROR(nullptr, "{}: URL='{}'", (void*)creq.get(), creq->GetURL());
-    SIMPLELOG_LOGGER_ERROR(nullptr, "{}: Verb='{}'", (void*)creq.get(), creq->GetVerb());
-    SIMPLELOG_LOGGER_ERROR(nullptr, "{}: Payload size= {}", (void*)creq.get(), creq->GetContentLength());
+    SIMPLELOG_LOGGER_INFO(nullptr, "{}: URL='{}'", (void*)creq.get(), creq->GetURL());
+    SIMPLELOG_LOGGER_INFO(nullptr, "{}: Verb='{}'", (void*)creq.get(), creq->GetVerb());
+    SIMPLELOG_LOGGER_INFO(nullptr, "{}: Payload size= {}", (void*)creq.get(), creq->GetContentLength());
 
 
     if (creq->URL.empty())

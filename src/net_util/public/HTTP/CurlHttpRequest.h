@@ -34,7 +34,7 @@ public:
 
     void SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue) override;
     void AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue) override;
-    void SetMimePart(const MimePart_t part)override;
+    void SetMimePart(InMimePart_t part)override;
     void SetRange(uint64_t begin, uint64_t end)override;
     bool ProcessRequest() override;
     HttpRequestCompleteDelegateType& OnProcessRequestComplete() override;

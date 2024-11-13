@@ -28,6 +28,13 @@ typedef struct MimePart {
 
 }MimePart_t;
 
+typedef struct InMimePart {
+    std::string_view Name;
+    std::string_view Data;
+    std::string_view FileName;
+    std::string_view FileData;
+}InMimePart_t;
+
 
 class IHttpBase
 {
@@ -175,7 +182,7 @@ public:
     /**
     * Set Mime Data(ie form-data)
     */
-    virtual void SetMimePart(const MimePart_t part) = 0;
+    virtual void SetMimePart(InMimePart_t part) = 0;
     /**
      * Called to begin processing the request.
      * OnProcessRequestComplete delegate is always called when the request completes or on error if it is bound.
