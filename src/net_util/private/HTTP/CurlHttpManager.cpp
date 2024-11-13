@@ -268,7 +268,7 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 
         int64_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
 
-        SIMPLELOG_LOGGER_ERROR(nullptr, "ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
+        SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
             (void*)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
             SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
         );
