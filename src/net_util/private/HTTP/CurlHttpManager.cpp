@@ -67,12 +67,12 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 
     // Response object to handle data that comes back after starting this request
     Reqs.push_back(creq);
-    SIMPLELOG_LOGGER_ERROR(nullptr, "{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
+    SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
     {
         std::scoped_lock lock(ReqMutex);
         RunningRequests.push_back(ThreadedRequest);
     }
-    SIMPLELOG_LOGGER_ERROR(nullptr, "{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
+    SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
     return true;
 }
 
@@ -440,7 +440,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
             for (int32_t Idx = 0; Idx < NumAllMime; ++Idx)
             {
                 curl_mimepart* part;
-                SIMPLELOG_LOGGER_ERROR(nullptr, "{}: MineName='{}'", (void*)creq.get(), AllMime[Idx].Name);
+                SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: MineName='{}'", (void*)creq.get(), AllMime[Idx].Name);
 
                 part = curl_mime_addpart(creq->Mime);
                 curl_mime_name(part, AllMime[Idx].Name.c_str());
@@ -524,7 +524,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     const int32_t NumAllHeaders = AllHeaders.size();
     for (int32_t Idx = 0; Idx < NumAllHeaders; ++Idx)
     {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "{}: Header='{}'", (void*)creq.get(), AllHeaders[Idx]);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Header='{}'", (void*)creq.get(), AllHeaders[Idx]);
 
         creq->HeaderList = curl_slist_append(creq->HeaderList, AllHeaders[Idx].c_str());
     }
