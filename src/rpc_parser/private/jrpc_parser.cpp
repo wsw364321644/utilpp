@@ -256,10 +256,10 @@ std::shared_ptr<RPCResponse> JRPCPaser::GetMethodNotFoundResponse(std::optional<
 {
     auto presponse = std::make_shared<JsonRPCResponse>();
     auto& response = *presponse;
-    response.ID = id;
+    response.SetID(id);
     response.ErrorCode = std::to_underlying( EJsonRPCError::MethodNotFound);
-    response.ErrorMsg = ToString(EJsonRPCError::MethodNotFound);
-    response.OptError = true;
+    response.SetErrorMsg(ToString(EJsonRPCError::MethodNotFound));
+    response.SetError( true);
     return  presponse;
 }
 
@@ -267,20 +267,20 @@ std::shared_ptr<RPCResponse> JRPCPaser::GetErrorParseResponse(ERPCParseError err
 {
     auto presponse = std::make_shared<JsonRPCResponse>();
     auto& response = *presponse;
-    response.OptError = true;
+    response.SetError(true);
     switch (error)
     {
     case ERPCParseError::ParseError:
         response.ErrorCode = std::to_underlying(EJsonRPCError::ParseError);
-        response.ErrorMsg = ToString(EJsonRPCError::ParseError);
+        response.SetErrorMsg(ToString(EJsonRPCError::ParseError));
         break;
     case ERPCParseError::InternalError:
         response.ErrorCode = std::to_underlying(EJsonRPCError::InternalError);
-        response.ErrorMsg = ToString(EJsonRPCError::InternalError);
+        response.SetErrorMsg(ToString(EJsonRPCError::InternalError));
         break;
     case ERPCParseError::InvalidRequest:
         response.ErrorCode = std::to_underlying(EJsonRPCError::InvalidRequest);
-        response.ErrorMsg = ToString(EJsonRPCError::InvalidRequest);
+        response.SetErrorMsg(ToString(EJsonRPCError::InvalidRequest));
         break;
     default:
         return nullptr;
@@ -318,19 +318,19 @@ JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
         auto presponse = std::make_shared<JsonRPCResponse>();
         auto& response = *presponse;
         if (doc[IDFieldStr].is_number()) {
-            response.ID = (uint32_t)doc[IDFieldStr].get_ref<nlohmann::json::number_unsigned_t&>();
+            response.SetID( (uint32_t)doc[IDFieldStr].get_ref<nlohmann::json::number_unsigned_t&>());
         }
 
         if (doc.find(ResultFieldStr)!=doc.end()) {
-            response.OptError = false;
-            response.Result = doc[ResultFieldStr].dump();
+            response.SetError( false);
+            response.SetResult( doc[ResultFieldStr].dump());
         }
         else {
-            response.OptError = true;;
+            response.SetError(true);
             response.ErrorCode = doc[ErrorFieldStr][ErrorCodeFieldStr].get_ref<nlohmann::json::number_integer_t&>();
-            response.ErrorMsg = doc[ErrorFieldStr][ErrorMsgFieldStr].get_ref<nlohmann::json::string_t&>();
+            response.SetErrorMsg(doc[ErrorFieldStr][ErrorMsgFieldStr].get_ref<nlohmann::json::string_t&>());
             if (doc[ErrorFieldStr].find(ErrorDataFieldStr)!= doc[ErrorFieldStr].end()) {
-                response.ErrorData= doc[ErrorFieldStr][ErrorDataFieldStr].get_ref<nlohmann::json::string_t&>();
+                response.SetErrorData(doc[ErrorFieldStr][ErrorDataFieldStr].get_ref<nlohmann::json::string_t&>());
             }
         }
         return presponse;
@@ -365,8 +365,8 @@ CharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
     if (!res.IsValiad()) {
         return buffer;
     }
-    if (res.ID.has_value()) {
-        doc[IDFieldStr] = res.ID.value();
+    if (res.HasID()) {
+        doc[IDFieldStr] = res.GetID();
     }
     else {
         doc[IDFieldStr] = nlohmann::json(nlohmann::json::value_t::null);
@@ -374,9 +374,9 @@ CharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
     if (res.IsError()) {
         nlohmann::json errNode(nlohmann::json::value_t::object);
         errNode[ErrorCodeFieldStr] = res.ErrorCode;
-        errNode[ErrorMsgFieldStr]=res.ErrorMsg;
-        if (!res.ErrorData.empty()) {
-            errNode[ErrorDataFieldStr]= res.ErrorData;
+        errNode[ErrorMsgFieldStr]=res.GetErrorMsg();
+        if (!res.GetErrorData().empty()) {
+            errNode[ErrorDataFieldStr]= res.GetErrorData();
         }
         doc[ErrorFieldStr] = errNode;
     }

@@ -63,11 +63,54 @@ public:
     virtual ~RPCResponse() = default;
     virtual CharBuffer ToBytes() = 0;
     virtual bool IsError()const=0;
+
+    void SetResult(const std::string& str) {
+        Result = str;
+    }
+    void SetResult(const char* cstr) {
+        Result.assign(cstr);
+    }
     std::string_view GetResult()const {
         return Result;
     }
-    std::optional<uint32_t> ID;
+
+    void SetErrorMsg(const std::string& str) {
+        ErrorMsg = str;
+    }
+    void SetErrorMsg(const char* cstr) {
+        ErrorMsg.assign(cstr);
+    }
+    std::string_view GetErrorMsg()const {
+        return ErrorMsg;
+    }
+
+    void SetErrorData(const std::string& str) {
+        ErrorData = str;
+    }
+    void SetErrorData(const char* cstr) {
+        ErrorData.assign(cstr);
+    }
+    std::string_view GetErrorData()const {
+        return ErrorData;
+    }
+
+    bool HasID() const {
+        return ID.has_value();
+    }
+    uint32_t GetID() const {
+        return ID.value();
+    }
+    void SetID(uint32_t InID) {
+        ID = InID;
+    }
+    void SetID(const std::optional<uint32_t>& InID) {
+        ID = InID;
+    }
+
     int64_t ErrorCode{ 0 };
+protected:
+    std::optional<uint32_t> ID;
+    
     std::string ErrorMsg;
     std::string ErrorData;
     std::string Result;

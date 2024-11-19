@@ -4,16 +4,16 @@
 bool IGroupJRPC::RespondError(RPCHandle_t handle, int64_t errorCode, const char* errorMsg,const char* errorData)
 {
     std::shared_ptr<JsonRPCResponse> response = std::make_shared< JsonRPCResponse>();
-    response->OptError = true;
+    response->SetError( true);
     response->ErrorCode = errorCode;
     if (errorMsg) {
-        response->ErrorMsg = errorMsg;
+        response->SetErrorMsg(errorMsg);
     }
     else {
-        response->ErrorMsg = "";
+        response->SetErrorMsg ("");
     }
     if (errorData) {
-        response->ErrorData = errorData;
+        response->SetErrorData (errorData);
     }
     return SendRPCResponse(handle, response);
 }

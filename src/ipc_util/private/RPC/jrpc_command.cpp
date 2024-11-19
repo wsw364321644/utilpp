@@ -31,7 +31,7 @@ bool JRPCCommandAPI::RespondHeartBeat(RPCHandle_t handle)
 {
 
     std::shared_ptr<JsonRPCResponse> response = std::make_shared< JsonRPCResponse>();
-    response->OptError = false;
+    response->SetError(false);
     return processer->SendResponse(handle, response);
 }
 void JRPCCommandAPI::OnHeartBeatRequestRecv(std::shared_ptr<RPCRequest> req)

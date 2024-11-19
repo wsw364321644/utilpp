@@ -52,11 +52,11 @@ void RPCProcesser::OnRecevRPC(const char* str, uint32_t len)
     if (pResponse) {
         std::shared_ptr<RPCRequest> rpcReq;
         auto response = *pResponse;
-        if (!response->ID.has_value()) {
+        if (!response->HasID()) {
             TriggerOnRequestErrorRespondDelegates(response);
         }
         else {
-            auto id = response->ID.value();
+            auto id = response->GetID();
             {
                 std::scoped_lock sl(requestMapMutex);
                 auto result = requestMap.find(RPCHandle_t(id));
@@ -148,7 +148,7 @@ bool RPCProcesser::SendEvent(std::shared_ptr<RPCRequest> request)
 }
 bool RPCProcesser::SendResponse(RPCHandle_t handle, std::shared_ptr<RPCResponse> response)
 {
-    response->ID = handle.ID;
+    response->SetID(handle.ID);
     const auto str = response->ToBytes();
     return msgprocesser->SendContent(str.CStr(), (uint32_t)str.Length());
 }

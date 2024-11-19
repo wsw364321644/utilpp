@@ -79,6 +79,13 @@ public:
     bool IsError()const override{
         return OptError.has_value()? OptError.value():true;
     }
+    void SetError(bool InErr) {
+        OptError = InErr;
+    }
+    void SetError(const std::optional<bool>& InErr) {
+        OptError = InErr;
+    }
+private:
     std::optional<bool> OptError;
 };
 class RPC_PARSER_EXPORT JRPCPaser :public IRPCPaser
