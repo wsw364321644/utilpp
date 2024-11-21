@@ -39,55 +39,25 @@ typedef std::function<void()> FCommonTask;
 typedef std::function<void(CommonTaskHandle_t)> FTimerTask;
 typedef std::function<void(float)> FTickTask;
 
-typedef struct TimerTaskData_t {
-    WorkflowHandle_t Workflow;
-    FTimerTask Task;
-    std::chrono::nanoseconds Repeat;
-    std::chrono::nanoseconds Timeout;
-}TimerTaskData_t;
 
-typedef struct CommonTaskData_t {
-    WorkflowHandle_t Workflow;
-    FCommonTask Task;
-}CommonTaskData_t;
-
-typedef struct TickTaskData_t {
-    WorkflowHandle_t Workflow;
-    FTickTask Task;
-}TickTaskData_t;
-
-typedef struct TaskWorkflow_t {
-    std::chrono::nanoseconds RepeatTime{ DEFAULT_REPEAT_TIME };
-    std::chrono::nanoseconds Timeout{ 0 };
-    FTimeRecorder TimeRecorder;
-    std::optional<std::future<void>> OptFuture;
-    std::vector<CommonTaskHandle_t> TimerTasks;
-    std::vector<CommonTaskHandle_t> TickTasks;
-    std::set<CommonTaskHandle_t> Tasks;
-}TaskWorkflow_t;
-
-class TASK_MANAGER_EXPORT FTaskManager {
+class  ITaskManager {
 public:
-    static FTaskManager* Get();
-    ~FTaskManager();
-
-    WorkflowHandle_t NewWorkflow();
+    virtual WorkflowHandle_t NewWorkflow() = 0;
     // get MainThread handle
-    WorkflowHandle_t GetMainThread();
-    void ReleaseWorkflow(WorkflowHandle_t);
-    void Run();
-    void Tick();
-    
-    void Stop();
+    virtual WorkflowHandle_t GetMainThread() = 0;
+    virtual void ReleaseWorkflow(WorkflowHandle_t) = 0;
+    virtual void Run() = 0;
+    virtual void Tick() = 0;
+    virtual void Stop() = 0;
 
-    CommonTaskHandle_t AddTick(WorkflowHandle_t, FTickTask task);
-    CommonTaskHandle_t AddTimer(WorkflowHandle_t, FTimerTask task, uint64_t repeat, uint64_t timeout = 0);
-
+    virtual CommonTaskHandle_t AddTick(WorkflowHandle_t, FTickTask task) = 0;
+    virtual CommonTaskHandle_t AddTimer(WorkflowHandle_t, FTimerTask task, uint64_t repeat, uint64_t timeout = 0) = 0;
+    virtual CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, FCommonTask task) = 0;
     // pass a task to excuse
     template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
-    std::tuple<CommonTaskHandle_t,std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle, F&& task) {
+    std::tuple<CommonTaskHandle_t, std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle, F&& task) {
         const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
-        auto handle=AddTaskInternal(WorkflowHandle,
+        auto handle = AddTaskNoReturn(WorkflowHandle,
             [task = std::forward<F>(task), task_promise]() {
                 try
                 {
@@ -113,27 +83,10 @@ public:
                 }
             }
         );
-        return { handle, task_promise->get_future() };  
+        return { handle, task_promise->get_future() };
     }
-    void RemoveTask(CommonTaskHandle_t);
-
-private:
-    CommonTaskHandle_t AddTaskInternal(WorkflowHandle_t handle, FCommonTask task);
-    void TickTaskWorkflow(WorkflowHandle_t handle);
-    void TickRandonTaskWorkflow();
-    FTaskManager();
-
-    std::unordered_map<CommonHandle_t, std::shared_ptr<TaskWorkflow_t>>  TaskWorkflowDatas;
-    std::shared_mutex  TaskWorkflowMutex;
-
-    std::unordered_map < CommonHandle_t, std::shared_ptr<TickTaskData_t>> TickTasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<TimerTaskData_t>> TimerTasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<CommonTaskData_t>> Tasks;
-    std::shared_mutex  TaskMutex;
-    std::shared_mutex  TickMutex;
-    std::shared_mutex  TimerMutex;
-
-    void* InterData;
-    std::atomic_bool bRequestExit{ false };
-    WorkflowHandle_t MainThread;
+    virtual void RemoveTask(CommonTaskHandle_t) = 0;
 };
+
+
+TASK_MANAGER_EXPORT ITaskManager* GetTaskManagerInstance();
