@@ -419,14 +419,14 @@ FDownloader::~FDownloader()
 //    return AddTask(df);
 //}
 
-DownloadTaskHandle_t FDownloader::AddTask(std::string url, std::string* content)
+DownloadTaskHandle_t FDownloader::AddTask(ThroughCRTWrapper<std::string> url, std::string* content)
 {
-    FDownloadFile* df = new FDownloadFile(url, content);
+    FDownloadFile* df = new FDownloadFile(url.GetValue(), content);
     return AddTask(df);
 }
-DownloadTaskHandle_t FDownloader::AddTask(std::string url, std::filesystem::path folder)
+DownloadTaskHandle_t FDownloader::AddTask(ThroughCRTWrapper<std::string> url, ThroughCRTWrapper<std::filesystem::path> folder)
 {
-    FDownloadFile* df = new FDownloadFile(url, folder.u8string().c_str());
+    FDownloadFile* df = new FDownloadFile(url.GetValue(), folder.GetValue().u8string().c_str());
     return AddTask(df);
 }
 

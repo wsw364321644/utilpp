@@ -7,6 +7,7 @@
 #include <optional>
 #include <raw_file.h>
 #include <HTTP/CurlHttpManager.h>
+#include <ThroughCRTWrapper.h>
 #include "Downloader/DownloaderDef.h"
 #include "net_export_defs.h"
 class FDownloadFile;
@@ -19,8 +20,8 @@ public:
     static FDownloader* Instance();
     ~FDownloader();
     //DownloadTaskHandle AddTask(std::string url, std::string folder);
-    DownloadTaskHandle_t AddTask(std::string url, std::string* content);
-    DownloadTaskHandle_t AddTask(std::string url, std::filesystem::path folder);
+    DownloadTaskHandle_t AddTask(ThroughCRTWrapper<std::string> url, std::string* content);
+    DownloadTaskHandle_t AddTask(ThroughCRTWrapper<std::string>  url, ThroughCRTWrapper < std::filesystem::path> folder);
    
     void RemoveTask(DownloadTaskHandle_t);
     bool RegisterDownloadProgressDelegate(DownloadTaskHandle_t, FDownloadProgressDelegate);

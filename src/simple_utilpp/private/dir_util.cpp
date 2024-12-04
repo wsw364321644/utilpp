@@ -21,9 +21,9 @@ DirUtil::DirUtil()
 {}
 DirUtil::~DirUtil()
 {}
-std::string DirUtil::Normalize(std::string path)
+std::string DirUtil::Normalize(ThroughCRTWrapper<std::string> path)
 {
-    std::filesystem::path p((char8_t*)path.c_str());
+    std::filesystem::path p((char8_t*)path.GetValue().c_str());
     return (char*)p.u8string().c_str();
     //auto pos = path.find("/");
     //while (pos != std::wstring::npos) {
@@ -35,22 +35,22 @@ std::string DirUtil::Normalize(std::string path)
 
 
 #ifdef WIN32
-std::string DirUtil::UncHelper(std::string path)
+std::string DirUtil::UncHelper(ThroughCRTWrapper<std::string> path)
 {
     std::string unc("\\\\?\\");
     // just reserve some space for short name in directory, so minus 64
-    if (path.size() > (MAX_PATH - 64) && (memcmp(path.c_str(), unc.c_str(), unc.size()) != 0))
-        return unc + path;
+    if (path.GetValue().size() > (MAX_PATH - 64) && (memcmp(path.GetValue().c_str(), unc.c_str(), unc.size()) != 0))
+        return unc + path.GetValue();
     else
-        return path;
+        return path.GetValue();
 }
 
-bool DirUtil::SetWritable(std::string path)
+bool DirUtil::SetWritable(ThroughCRTWrapper<std::string> path)
 {
-    if (!IsExist(path))
+    if (!IsExist(path.GetValue()))
         return true;
 
-    auto unc = UncHelper(path);
+    auto unc = UncHelper(path.GetValue());
 
     auto uncw=U8ToU16(unc.c_str());
     DWORD attr = GetFileAttributesW((LPCWSTR)uncw.c_str());
@@ -66,34 +66,34 @@ bool DirUtil::SetWritable(std::string path)
     }
     return true;
 }
-bool DirUtil::IsExist(std::string path)
+bool DirUtil::IsExist(ThroughCRTWrapper<std::string> path)
 {
-    auto unc = UncHelper(path);
+    auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
     DWORD attr = GetFileAttributesW((LPCWSTR)uncw.c_str());
     return (attr != INVALID_FILE_ATTRIBUTES);
 }
 
-bool DirUtil::IsDirectory(std::string path)
+bool DirUtil::IsDirectory(ThroughCRTWrapper<std::string> path)
 {
-    auto unc = UncHelper(path);
+    auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
     DWORD attr = GetFileAttributesW((LPCWSTR)uncw.c_str());
     return ((attr != INVALID_FILE_ATTRIBUTES) && (attr&FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool DirUtil::IsRegular(std::string path)
+bool DirUtil::IsRegular(ThroughCRTWrapper<std::string> path)
 {
-    auto unc = UncHelper(path);
+    auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
     DWORD attr = GetFileAttributesW((LPCWSTR)uncw.c_str());
     return ((attr != INVALID_FILE_ATTRIBUTES) && !(attr&FILE_ATTRIBUTE_DIRECTORY));
 }
 
-uint64_t DirUtil::FileSize(std::string path)
+uint64_t DirUtil::FileSize(ThroughCRTWrapper<std::string> path)
 {
     uint64_t fs = 0;
-    auto pathw = U8ToU16(path.c_str());
+    auto pathw = U8ToU16(path.GetValue().c_str());
     HANDLE fh = CreateFileW((LPCWSTR)pathw.c_str(),
         GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -112,9 +112,9 @@ uint64_t DirUtil::FileSize(std::string path)
     return fs;
 }
 
-bool DirUtil::CreateDir(std::string path)
+bool DirUtil::CreateDir(ThroughCRTWrapper<std::string> path)
 {
-    auto full = DirUtil::AbsolutePath(path);
+    auto full = DirUtil::AbsolutePath(path.GetValue());
     auto unc = UncHelper(full);
     std::stack<std::string> all;
     all.push(unc);
@@ -153,17 +153,17 @@ bool DirUtil::CreateDir(std::string path)
     //}
 }
 
-bool DirUtil::Delete(std::string path)
+bool DirUtil::Delete(ThroughCRTWrapper<std::string> path)
 {
-    auto unc = UncHelper(path);
+    auto unc = UncHelper(path.GetValue());
     auto uncw=U8ToU16(unc.c_str());
     return DeleteFileW((LPCWSTR)uncw.c_str()) == TRUE;
 }
 
-std::string DirUtil::AbsolutePath(std::string path)
+std::string DirUtil::AbsolutePath(ThroughCRTWrapper<std::string> path)
 {
     std::vector<wchar_t> buffer(32767);
-    auto unc = UncHelper(path);
+    auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
     if (0 == GetFullPathNameW((LPCWSTR)uncw.c_str(), (DWORD)buffer.size(), &buffer[0], NULL))
         return std::string();
@@ -171,22 +171,22 @@ std::string DirUtil::AbsolutePath(std::string path)
     return U16ToU8((char16_t*) &buffer[0]);
 }
 
-std::string DirUtil::BasePath(std::string path)
+std::string DirUtil::BasePath(ThroughCRTWrapper<std::string> path)
 {
-    auto pos = path.find_last_of('\\');
-    return path.substr(0, pos);
+    auto pos = path.GetValue().find_last_of('\\');
+    return path.GetValue().substr(0, pos);
 }
 
-std::string DirUtil::FileName(std::string path)
+std::string DirUtil::FileName(ThroughCRTWrapper<std::string> path)
 {
-    auto pos = path.find_last_of('\\');
-    return path.substr(pos + 1);
+    auto pos = path.GetValue().find_last_of('\\');
+    return path.GetValue().substr(pos + 1);
 }
 
-bool DirUtil::IterateDir(std::string path)
+bool DirUtil::IterateDir(ThroughCRTWrapper<std::string> path)
 {
 
-    for (auto const& dir_entry : std::filesystem::directory_iterator{ (char8_t*)path.c_str() })
+    for (auto const& dir_entry : std::filesystem::directory_iterator{ (char8_t*)path.GetValue().c_str() })
     {
         if (dir_entry.is_directory()) {
             entries_.emplace_back(DirEntry{ (char*)dir_entry.path().filename().u8string().c_str(), 0, true });
@@ -309,7 +309,7 @@ uint64_t DirUtil::FileSize(std::string path)
     return s.st_size;
 }
 
-bool DirUtil::IterateDir(std::string path)
+bool DirUtil::IterateDir(ThroughCRTWrapper<std::string> path)
 {
     for (auto const& dir_entry : std::filesystem::directory_iterator{ (char8_t*)path.c_str() })
     {

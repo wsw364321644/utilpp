@@ -53,7 +53,7 @@ public:
             Value = nullptr;
         }
     }
-    value_type& GetValue() const {
+    const value_type& GetValue() const {
         return *Value;
     }
 

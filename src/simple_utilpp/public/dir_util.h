@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <ThroughCRTWrapper.h>
 #include "simple_export_ppdefs.h"
 
 struct DirEntry
@@ -24,19 +25,19 @@ public:
     ~DirUtil();
 
 public:
-    static std::string Normalize(std::string path);
-    static std::string UncHelper(std::string path);
-    static bool IsExist(std::string path);
-    static bool IsDirectory(std::string path);
-    static bool IsRegular(std::string path);
-    static uint64_t FileSize(std::string path);
-    static bool SetWritable(std::string path);
+    static std::string Normalize(ThroughCRTWrapper<std::string> path);
+    static std::string UncHelper(ThroughCRTWrapper<std::string> path);
+    static bool IsExist(ThroughCRTWrapper<std::string> path);
+    static bool IsDirectory(ThroughCRTWrapper<std::string> path);
+    static bool IsRegular(ThroughCRTWrapper<std::string> path);
+    static uint64_t FileSize(ThroughCRTWrapper<std::string> path);
+    static bool SetWritable(ThroughCRTWrapper<std::string> path);
 
-    static bool CreateDir(std::string path);
-    static std::string AbsolutePath(std::string path);
-    static std::string BasePath(std::string path);
-    static std::string FileName(std::string path);
-    static bool Delete(std::string path);
+    static bool CreateDir(ThroughCRTWrapper<std::string> path);
+    static std::string AbsolutePath(ThroughCRTWrapper<std::string> path);
+    static std::string BasePath(ThroughCRTWrapper<std::string> path);
+    static std::string FileName(ThroughCRTWrapper<std::string> path);
+    static bool Delete(ThroughCRTWrapper<std::string> path);
     //static std::wstring Normalize(std::wstring path);
     //static std::wstring UncHelper(std::wstring path);
     //static bool IsExist(std::wstring path);
@@ -53,7 +54,7 @@ public:
 
 public:
     //bool IterateDir(std::wstring path);
-    bool IterateDir(std::string path);
+    bool IterateDir(ThroughCRTWrapper<std::string> path);
     size_t EntryCount();
     DirEntry GetEntry(size_t index);
 
