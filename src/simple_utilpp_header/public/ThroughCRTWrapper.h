@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <type_traits>
 #include <memory>
-#include "simple_export_ppdefs.h"
 
 /// @details ThroughCRTWrapper help free value use same crt
 /// https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries
@@ -182,7 +181,3 @@ private:
     DeconstructFn_t freeFunc{ nullptr };
     std::weak_ptr<T> Value{ nullptr };
 };
-
-
-#include <string>
-SIMPLE_UTIL_EXPORT ThroughCRTWrapper<std::shared_ptr<std::string>> TestGetString();
