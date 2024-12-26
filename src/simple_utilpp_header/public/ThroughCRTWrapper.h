@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <type_traits>
 #include <memory>
+#include <functional>
 
 /// @details ThroughCRTWrapper help free value use same crt
 /// https://learn.microsoft.com/en-us/cpp/c-runtime-library/potential-errors-passing-crt-objects-across-dll-boundaries
 /// Be careful with ThroughCRTWrapper wrap a template class or ThroughCRTWrapper wrap a type come from a static library. 
-/// Triggering their dynamic alloc memory is an error.
-template<class value_type>
+/// Their dynamic memory allocation operation is triggered willl cause error.
+template<class value_type, class _Alloc = std::allocator<value_type>>
 class ThroughCRTWrapper {
 public:
     typedef void(*DeconstructFn_t)(value_type*);
@@ -37,10 +38,15 @@ public:
     template <class... _Types>
     void SetValue(_Types&&... _Args) {
         Reset();
-        Value = new value_type(std::forward<_Types>(_Args)...);
-        freeFunc = [](value_type* value) {
+        _Alloc alloc;
+        //Value = new value_type(std::forward<_Types>(_Args)...);
+        Value = alloc.allocate(1);
+        new (Value)value_type(std::forward<_Types>(_Args)...);
+        freeFunc = [alloc](value_type* value)mutable {
             if (value) {
-                delete value;
+                //delete value;
+                value->~value_type();
+                alloc.deallocate(value, 1);
             }
             };
     }
@@ -57,7 +63,7 @@ public:
     }
 
 private:
-    DeconstructFn_t freeFunc{ nullptr };
+    std::function<void(value_type*)> freeFunc{ nullptr };
     value_type* Value{ nullptr };
 };
 
@@ -69,7 +75,6 @@ template<class T>
 class ThroughCRTWrapper<std::shared_ptr<T>> {
 public:
     typedef void(*DeconstructFn_t)(std::shared_ptr<T>);
-    using test_type = ThroughCRTWrapper;
     ThroughCRTWrapper() {}
     ThroughCRTWrapper(std::nullptr_t ptr) {
     }
@@ -80,10 +85,10 @@ public:
     ThroughCRTWrapper(const ThroughCRTWrapper& other) {
         *this = other;
     }
-    ThroughCRTWrapper(std::shared_ptr<T> && ptr) {
+    ThroughCRTWrapper(std::shared_ptr<T>&& ptr) {
         SetValue(std::forward<std::shared_ptr<T>>(ptr));
     }
-    ThroughCRTWrapper(const std::shared_ptr<T> & ptr) {
+    ThroughCRTWrapper(const std::shared_ptr<T>& ptr) {
         SetValue(ptr);
     }
     ~ThroughCRTWrapper() {
@@ -91,8 +96,8 @@ public:
     }
 
     ThroughCRTWrapper& operator =(const ThroughCRTWrapper& other) {
-        freeFunc= other.freeFunc;
-        Value= other.Value;
+        freeFunc = other.freeFunc;
+        Value = other.Value;
         return *this;
     }
     ThroughCRTWrapper& operator =(ThroughCRTWrapper&& other) {
@@ -100,13 +105,13 @@ public:
         std::swap(Value, other.Value);
         return *this;
     }
-    template<class _T , std::enable_if_t<std::is_same_v<std::decay_t<_T>, std::shared_ptr<T>>,int> = 0>
+    template<class _T, std::enable_if_t<std::is_same_v<std::decay_t<_T>, std::shared_ptr<T>>, int> = 0>
     ThroughCRTWrapper& operator=(const _T&& value) {
         SetValue(std::forward<std::shared_ptr<T>>(value));
     }
 
     template<class _T, std::enable_if_t<std::is_same_v<std::decay_t<_T>, std::shared_ptr<T>>, int> = 0>
-    void SetValue(_T && ptr) {
+    void SetValue(_T&& ptr) {
         Reset();
         Value = ptr;
         freeFunc = [](std::shared_ptr<T> value) {
@@ -174,7 +179,7 @@ public:
         }
     }
     const T* GetValue() const {
-        auto pValue= Value.lock();
+        auto pValue = Value.lock();
         return pValue.get();
     }
 private:
