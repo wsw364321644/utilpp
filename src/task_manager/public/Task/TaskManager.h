@@ -11,7 +11,7 @@
 #include <optional>
 #include <shared_mutex>
 #include <handle.h>
-#include <TimeRecorder.h>
+
 #include <delegate_macros.h>
 #include "task_manager_export_defs.h"
 constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)) / 60);
