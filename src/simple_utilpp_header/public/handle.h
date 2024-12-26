@@ -2,12 +2,12 @@
 #include <stdint.h>
 #include <atomic>
 #include <functional>
-#include "simple_export_ppdefs.h"
+
 struct NullCommonHandle_t {
     struct _Tag {};
     constexpr explicit NullCommonHandle_t(_Tag) {}
 };
-typedef struct SIMPLE_UTIL_EXPORT CommonHandle_t
+typedef struct CommonHandle_t
 {
     typedef  uint32_t CommonHandleID_t;
     constexpr CommonHandle_t(const NullCommonHandle_t):ID(0){ }
@@ -37,7 +37,7 @@ typedef struct SIMPLE_UTIL_EXPORT CommonHandle_t
     {
         return !IsValid();
     }
-    static std::atomic<CommonHandleID_t> atomic_count;
+    inline static std::atomic<CommonHandleID_t> atomic_count{0};
     CommonHandleID_t ID;
 } CommonHandle_t;
 
