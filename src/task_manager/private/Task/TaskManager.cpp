@@ -402,8 +402,8 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
     }
 
     if (needTick) {
-        std::unordered_map < CommonHandle_t, std::shared_ptr<TickTaskData_t>> localTickTasks;
-        std::set<CommonTaskHandle_t> localThreadTickTasks;
+        thread_local std::unordered_map < CommonHandle_t, std::shared_ptr<TickTaskData_t>> localTickTasks;
+        thread_local std::set<CommonTaskHandle_t> localThreadTickTasks;
         {
             std::scoped_lock lock(TickRLock);
             localTickTasks = TickTasks;
@@ -424,8 +424,8 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
     }
 
     {
-        std::unordered_map < CommonHandle_t, std::shared_ptr<TimerTaskData_t>> localTimerTasks;
-        std::set<CommonTaskHandle_t> localThreadTasks;
+        thread_local std::unordered_map < CommonHandle_t, std::shared_ptr<TimerTaskData_t>> localTimerTasks;
+        thread_local std::set<CommonTaskHandle_t> localThreadTasks;
         {
             std::scoped_lock lock(TimerRLock);
             localTimerTasks = TimerTasks;
@@ -452,8 +452,8 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
 
 
     if (needTick) {
-        std::set<CommonTaskHandle_t> localCancelableTasks;
-        std::unordered_map < CommonHandle_t, std::shared_ptr<CancelableTaskData_t>> localCancelableTaskDatas;
+        thread_local std::set<CommonTaskHandle_t> localCancelableTasks;
+        thread_local std::unordered_map < CommonHandle_t, std::shared_ptr<CancelableTaskData_t>> localCancelableTaskDatas;
         {
             std::scoped_lock lock(TaskRLock);
             localCancelableTasks = pTaskWorkflow->CancelableTasks;
@@ -475,10 +475,9 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
         }
     }
 
-    std::set<CommonTaskHandle_t> localTasks;
+    thread_local std::set<CommonTaskHandle_t> localTasks;
+    thread_local std::unordered_map < CommonHandle_t, std::shared_ptr<CommonTaskData_t>> localTaskDatas;
     {
-        
-        std::unordered_map < CommonHandle_t, std::shared_ptr<CommonTaskData_t>> localTaskDatas;
         {
             std::scoped_lock lock(TaskRLock);
             localTasks = pTaskWorkflow->Tasks;
