@@ -379,7 +379,8 @@ void FTaskManager::TickTaskWorkflow(WorkflowHandle_t handle)
     std::unique_lock CancelableTaskLock{ CancelableTaskMutex, std::defer_lock };
     std::shared_lock CancelableTaskRLock{ CancelableTaskMutex, std::defer_lock };
 
-    tf::Taskflow Taskflow;
+    thread_local tf::Taskflow Taskflow;
+    Taskflow.clear();
     std::shared_ptr<TaskWorkflow_t> pTaskWorkflow;
     {
         std::scoped_lock lock(TaskWorkflowLock);
