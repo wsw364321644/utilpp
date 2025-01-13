@@ -37,3 +37,17 @@ bool to_lower_hex(char* const des, const uint8_t* src, size_t insize) {
     return to_hex(des, src, insize, s_vecLower);
 }
 
+bool hex_to_bin(uint8_t* const des, const char* src, size_t insize)
+{
+    if (insize % 2 != 0) {
+        return false;
+    }
+    for (int i = 0; i < insize; i+=2) {
+        if (s_array[src[i]] == 255 || s_array[src[i + 1]] == 255) {
+            return false;
+        }
+        des[i/2] = s_array[src[i]]<<4 | s_array[src[i+1]];
+    }
+    return true;
+}
+
