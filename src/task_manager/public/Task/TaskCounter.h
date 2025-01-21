@@ -11,7 +11,7 @@ template <typename R>
 class FTaskSlotCounter {
 public:
     
-    FTaskSlotCounter(uint8_t ParallelTaskNum) :Futures(ParallelTaskNum){
+    FTaskSlotCounter(uint8_t ParallelTaskNum) :Futures(ParallelTaskNum), Handles(ParallelTaskNum){
         for (int i=0; i < ParallelTaskNum; i++) {
             FreeIndex.insert(i);
         }
