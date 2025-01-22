@@ -89,9 +89,9 @@ if(WIN32)
   add_subdirectory(src/windows_util)
 endif()
 
-find_package(LIBUV)
+find_package(libuv)
 
-if(LIBUV_FOUND)
+if(libuv_FOUND)
   add_subdirectory(src/ipc_util)
 endif()
 
