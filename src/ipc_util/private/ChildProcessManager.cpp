@@ -3,6 +3,7 @@
 #include <mutex>
 #include <LoggerHelper.h>
 #include <string_buffer.h>
+#include <cstring>
 
 typedef struct UVProcess_t {
     ~UVProcess_t() {

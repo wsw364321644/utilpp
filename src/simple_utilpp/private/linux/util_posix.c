@@ -4,7 +4,6 @@
  */
 
 #include "module_util.h"
-#include "common.h"
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>

@@ -1,4 +1,5 @@
 #include <string_buffer.h>
+#include <cstring>
 #include <string>
 #include <stdarg.h>
 #include <vector>

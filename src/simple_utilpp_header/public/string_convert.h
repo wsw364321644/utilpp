@@ -210,6 +210,7 @@ inline std::u32string U8ToU32(const char* u8Str) {
     }
     return out;
 #else
+    return std::u32string();
 #endif
 }
 
@@ -227,6 +228,7 @@ inline std::string U32ToU8(const char32_t* u32Str) {
     }
     return out;
 #else
+    return "";
 #endif
 }
 
@@ -244,5 +246,6 @@ inline std::string U32ToU8(const char32_t* u32Str,size_t num) {
     }
     return out;
 #else
+    return "";
 #endif
 }

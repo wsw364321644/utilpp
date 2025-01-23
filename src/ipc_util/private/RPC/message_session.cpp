@@ -107,10 +107,10 @@ uint64_t MessageSessionUV::GetPID() const
 {
     auto messageConnectionType = server->GetServerType();
     if (messageConnectionType != EMessageConnectionType::EMCT_IPC) {
-        return NULL;
+        return 0;
     }
     uint64_t out;
-    GetProcessIdFromPipe(ClientHandle.PipeHandle.handle, &out);
+    GetProcessIdFromPipe((void*)ClientHandle.PipeHandle.pipe_fname, &out);
     return out;
 }
 

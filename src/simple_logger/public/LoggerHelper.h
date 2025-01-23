@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <format>
 #include <spdlog/spdlog.h>
 #include "logger_export_defs.h"
 struct BaseLoggerInfo_t{
@@ -39,32 +40,32 @@ public:
     }
 
     template <typename... Args>
-    void trace(std::format_string<Args...> fmt, Args &&...args) {
+    void trace(spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->trace(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void debug(std::format_string<Args...> fmt, Args &&...args) {
+    void debug(spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->debug(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void info(std::format_string<Args...> fmt, Args &&...args) {
+    void info(spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->log(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void warn(std::format_string<Args...> fmt, Args &&...args) {
+    void warn(spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->warn(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void error(std::format_string<Args...> fmt, Args &&...args) {
+    void error(spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->error(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    void critical(std::format_string<Args...> fmt, Args &&...args) {
+    void critical(spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->critical(fmt, std::forward<Args>(args)...);
     }
 
@@ -73,7 +74,7 @@ public:
     }
 
     template <typename... Args>
-    void log(spdlog::source_loc loc, spdlog::level::level_enum lvl, std::format_string<Args...> fmt, Args &&...args) {
+    void log(spdlog::source_loc loc, spdlog::level::level_enum lvl, spdlog::format_string_t<Args...> fmt, Args &&...args) {
         Logger->log(loc,lvl,fmt, std::forward<Args>(args)...);
     }
 

@@ -10,10 +10,10 @@ function(add_lib TARGET_NAME)
     target_compile_definitions(${TARGET_NAME} PRIVATE -DNOMINMAX)
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
-
-    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:LIBCMT.LIB /NODEFAULTLIB:msvcrt")
-    set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:LIBCMTD.LIB /NODEFAULTLIB:msvcrtd")
-
+    if(WIN32)
+        set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_DEBUG "/NODEFAULTLIB:LIBCMT.LIB /NODEFAULTLIB:msvcrt")
+        set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:LIBCMTD.LIB /NODEFAULTLIB:msvcrtd")
+    endif()
     target_link_libraries(${TARGET_NAME} PRIVATE CURL::libcurl)
 
     install(TARGETS ${TARGET_NAME}

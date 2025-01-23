@@ -3,6 +3,7 @@
 #include <atomic>
 #include <list>
 #include <memory>
+#include <cstring>
 #define INCREASE_SIZE 64
 std::atomic<SimpleValueHandle_t::CommonHandleID_t> SimpleValueHandle_t::SimpleValueCount{ 0 };
 typedef struct StorageValueInfo_t {

@@ -52,11 +52,13 @@ std::shared_ptr<FLoggerWrapper> InternalCreateAsyncLogger(const LoggerSetting_t&
             sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
             continue;
         }
+        #if defined(_WIN32)
         auto pMSVCLoggerInfo = std::dynamic_pointer_cast<MSVCLoggerInfo_t>(pinfo);
         if (pMSVCLoggerInfo) {
             sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
             continue;
         }
+        #endif
         auto pRotatingLoggerInfo = std::dynamic_pointer_cast<RotatingLoggerInfo_t>(pinfo);
         if (pRotatingLoggerInfo) {
             std::filesystem::path p(pRotatingLoggerInfo->FilePath);

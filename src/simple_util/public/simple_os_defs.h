@@ -24,14 +24,20 @@ SIMPLE_UTIL_API const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 
 #define F_HANDLE  void *
 
+typedef void* (__cdecl *fnmalloc)(size_t _Size);
+typedef void(__cdecl* fnfree)(void* const block);
+
 #else
 #include <fcntl.h>
 #include <errno.h>
 #include <iconv.h>
 #include <locale.h>
 #include <langinfo.h>
-#include <cstring>
+
 #define F_HANDLE int
+
+typedef void* (*fnmalloc)(size_t _Size);
+typedef void(* fnfree)(void* const block);
 #endif
 
 #define ERR_SUCCESS			(0)		// success 
@@ -40,5 +46,3 @@ SIMPLE_UTIL_API const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 #define ERR_FILE			(-3)	// file operation related
 #define ERR_METAPARSE		(-4)	// faile to parse mf file
 
-typedef void* (__cdecl *fnmalloc)(size_t _Size);
-typedef void(__cdecl* fnfree)(void* const block);

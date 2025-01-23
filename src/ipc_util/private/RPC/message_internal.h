@@ -5,6 +5,7 @@
 #include <functional>
 #include <variant>
 #include <memory>
+#include <cstring>
 #include "delegate_macros.h"
 #include "RPC/message_common.h"
 
@@ -12,7 +13,7 @@ class UVCallBack {
 public:
     static void UVOnAlloc(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
         buf->base = (char*)malloc(size);
-        buf->len = (ULONG)size;
+        buf->len = size;
     }
 
     static void UVOnFree(const uv_buf_t* buf) {
@@ -254,7 +255,7 @@ public:
         uv_write_t SendReq;
     }SendReq{};
     std::unique_ptr<char> Data;
-    int Len{};
+    size_t Len{};
     CommonHandle_t Handle{ NullHandle };
     EMessageConnectionType  ConnectionType;
     MessageSendRequestUV(const MessageSendRequestUV&& sendhandle)noexcept : ConnectionType(sendhandle.ConnectionType) {
@@ -274,9 +275,9 @@ public:
 
     }
 
-    bool Write(uv_stream_t* handle, const char* data, int len, OnWriteCB cb);
-    bool UDPSend(uv_udp_t* handle, const char* data, int len, OnUDPSendCB cb);
-    bool UDPSend(uv_udp_t* handle, const char* data, int len, const sockaddr* addr, OnUDPSendCB cb);
+    bool Write(uv_stream_t* handle, const char* data, size_t len, OnWriteCB cb);
+    bool UDPSend(uv_udp_t* handle, const char* data, size_t len, OnUDPSendCB cb);
+    bool UDPSend(uv_udp_t* handle, const char* data, size_t len, const sockaddr* addr, OnUDPSendCB cb);
 private:
     void UVOnWrite(uv_write_t* req, int status) {
         std::get<OnWriteCB>(WriteDelegate)(this, req, status);

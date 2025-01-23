@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <ThroughCRTWrapper.h>
 #include "simple_export_ppdefs.h"
@@ -25,19 +26,19 @@ public:
     ~DirUtil();
 
 public:
-    static std::string Normalize(ThroughCRTWrapper<std::string> path);
-    static std::string UncHelper(ThroughCRTWrapper<std::string> path);
-    static bool IsExist(ThroughCRTWrapper<std::string> path);
-    static bool IsDirectory(ThroughCRTWrapper<std::string> path);
-    static bool IsRegular(ThroughCRTWrapper<std::string> path);
-    static uint64_t FileSize(ThroughCRTWrapper<std::string> path);
-    static bool SetWritable(ThroughCRTWrapper<std::string> path);
+    static std::string Normalize(std::u8string_view path);
+    static std::string UncHelper(std::u8string_view path);
+    static bool IsExist(std::u8string_view  path);
+    static bool IsDirectory(std::u8string_view  path);
+    static bool IsRegular(std::u8string_view  path);
+    static uint64_t FileSize(std::u8string_view  path);
+    static bool SetWritable(std::u8string_view  path);
 
-    static bool CreateDir(ThroughCRTWrapper<std::string> path);
-    static std::string AbsolutePath(ThroughCRTWrapper<std::string> path);
-    static std::string BasePath(ThroughCRTWrapper<std::string> path);
-    static std::string FileName(ThroughCRTWrapper<std::string> path);
-    static bool Delete(ThroughCRTWrapper<std::string> path);
+    static bool CreateDir(std::u8string_view  path);
+    static std::string AbsolutePath(std::u8string_view  path);
+    static std::string BasePath(std::u8string_view  path);
+    static std::string FileName(std::u8string_view  path);
+    static bool Delete(std::u8string_view  path);
     //static std::wstring Normalize(std::wstring path);
     //static std::wstring UncHelper(std::wstring path);
     //static bool IsExist(std::wstring path);
@@ -54,7 +55,7 @@ public:
 
 public:
     //bool IterateDir(std::wstring path);
-    bool IterateDir(ThroughCRTWrapper<std::string> path);
+    bool IterateDir(std::u8string_view  path);
     size_t EntryCount();
     DirEntry GetEntry(size_t index);
 

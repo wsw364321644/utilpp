@@ -3,6 +3,7 @@
  */
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 #include "simple_export_ppdefs.h"
 
 class SIMPLE_UTIL_EXPORT CharBuffer
@@ -63,8 +64,8 @@ public:
 private:
 
 
-    void(__cdecl *freeptr)(void *const block);
-    void *(__cdecl *mallocptr)(size_t _Size);
+    void(*freeptr)(void *const block);
+    void *(*mallocptr)(size_t _Size);
     uint32_t GetIncreasedSize()
     {
         return (bufSize == 0 ? 64 : bufSize) * 2;

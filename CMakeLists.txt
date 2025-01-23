@@ -37,10 +37,11 @@ set(SPDLOG_INSTALL ON CACHE BOOL "" FORCE)
 set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_PIC ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY git@ssh.github.com:gabime/spdlog.git
-  GIT_TAG 7c02e204c92545f869e2f04edaab1f19fe8b19fd # 1.13.0
+  GIT_TAG 8e5613379f5140fefb0b60412fbf1f5406e7c7f8 # 1.15.0
 )
 
 set(JSON_Install TRUE)
@@ -76,7 +77,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(taskflow)
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem)
-
+set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)

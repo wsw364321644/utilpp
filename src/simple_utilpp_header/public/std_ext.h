@@ -51,8 +51,8 @@ inline constexpr bool is_specialization_v<_Template<_Types...>, _Template> = tru
 template <class _Type, template <class...> class _Template>
 struct is_specialization : std::bool_constant<is_specialization_v<_Type, _Template>> {};
 
-#ifdef _MSVC_LANG
-#if _MSVC_LANG <= 202002L && _MSVC_LANG >= 201112L
+
+#if (defined(_MSVC_LANG) &&_MSVC_LANG <= 202002L && _MSVC_LANG >= 201112L) || (__cplusplus <= 202002L && __cplusplus >= 201112L)
 #include <type_traits>
 namespace std {
     template <class _Ty>
@@ -61,7 +61,6 @@ namespace std {
     }
 }
 #endif
-#endif // _MSVC_LANG
 
 
 struct string_hash

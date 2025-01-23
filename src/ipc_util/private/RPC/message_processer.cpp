@@ -2,6 +2,8 @@
 
 #include <functional>
 #include <format>
+#include <cstring>
+#include <mutex>
 
 const uint32_t MAX_CHANNAL = 16;
 const uint32_t MAX_CACHED_PACKET = 100;
@@ -151,7 +153,7 @@ MessageProcesser::ConsumeResult_t MessageProcesser::TryConsume(const char* data,
             if (packet->ContentLength > leftlen) {
                 return result;
             }
-            packet->MessageContent = new(char[packet->ContentLength]);
+            packet->MessageContent = new char[packet->ContentLength];
             memcpy(packet->MessageContent, ptr, packet->ContentLength);
             ConsumePtr(packet->ContentLength);
         }

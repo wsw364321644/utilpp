@@ -7,6 +7,7 @@
 #include "string_convert.h"
 #include "dir_util.h"
 #include <filesystem>
+#include <format>
 #include <system_error>
 #ifdef WIN32
 #else
@@ -344,7 +345,7 @@ int32_t CRawFile::Open(const char *lpFileName, uint32_t uOpenFlag, uint64_t uExp
         // make file as desized size
         if (-1 == truncate(lpFileName, uExpectSize))
         {
-            SIMPLELOG_LOGGER_ERROR(nullptr,fmt::format("failed to set file size, file:{}, size:{}, error:{}", lpFileName, uExpectSize, errno));
+            SIMPLELOG_LOGGER_ERROR(nullptr,std::format("failed to set file size, file:{}, size:{}, error:{}", lpFileName, uExpectSize, errno));
             return ERR_FILE;
         }
         file_size_ = uExpectSize;
@@ -368,7 +369,7 @@ int32_t CRawFile::Read(void *pBuf, uint32_t size)
     auto readed = read(handle_, pBuf, size);
     if (readed < 0 or readed != size)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,fmt::format("Read file: {} error ...", name_));
+        SIMPLELOG_LOGGER_WARN(nullptr,std::format("Read file: {} error ...", name_));
         return ERR_FILE;
     }
 
@@ -428,7 +429,7 @@ int32_t CRawFile::Seek(uint64_t uPos)
 
     if (uPos > file_size_)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,fmt::format("Wrong position({}/{}) to seek.", uPos, file_size_));
+        SIMPLELOG_LOGGER_WARN(nullptr,std::format("Wrong position({}/{}) to seek.", uPos, file_size_));
         return ERR_ARGUMENT;
     }
 

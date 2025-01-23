@@ -21,9 +21,9 @@ DirUtil::DirUtil()
 {}
 DirUtil::~DirUtil()
 {}
-std::string DirUtil::Normalize(ThroughCRTWrapper<std::string> path)
+std::string DirUtil::Normalize(std::u8string_view  path)
 {
-    std::filesystem::path p((char8_t*)path.GetValue().c_str());
+    std::filesystem::path p(path);
     return (char*)p.u8string().c_str();
     //auto pos = path.find("/");
     //while (pos != std::wstring::npos) {
@@ -35,7 +35,7 @@ std::string DirUtil::Normalize(ThroughCRTWrapper<std::string> path)
 
 
 #ifdef WIN32
-std::string DirUtil::UncHelper(ThroughCRTWrapper<std::string> path)
+std::string DirUtil::UncHelper(std::u8string_view  path)
 {
     std::string unc("\\\\?\\");
     // just reserve some space for short name in directory, so minus 64
@@ -45,7 +45,7 @@ std::string DirUtil::UncHelper(ThroughCRTWrapper<std::string> path)
         return path.GetValue();
 }
 
-bool DirUtil::SetWritable(ThroughCRTWrapper<std::string> path)
+bool DirUtil::SetWritable(std::u8string_view  path)
 {
     if (!IsExist(path.GetValue()))
         return true;
@@ -66,7 +66,7 @@ bool DirUtil::SetWritable(ThroughCRTWrapper<std::string> path)
     }
     return true;
 }
-bool DirUtil::IsExist(ThroughCRTWrapper<std::string> path)
+bool DirUtil::IsExist(std::u8string_view  path)
 {
     auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
@@ -74,7 +74,7 @@ bool DirUtil::IsExist(ThroughCRTWrapper<std::string> path)
     return (attr != INVALID_FILE_ATTRIBUTES);
 }
 
-bool DirUtil::IsDirectory(ThroughCRTWrapper<std::string> path)
+bool DirUtil::IsDirectory(std::u8string_view  path)
 {
     auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
@@ -82,7 +82,7 @@ bool DirUtil::IsDirectory(ThroughCRTWrapper<std::string> path)
     return ((attr != INVALID_FILE_ATTRIBUTES) && (attr&FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool DirUtil::IsRegular(ThroughCRTWrapper<std::string> path)
+bool DirUtil::IsRegular(std::u8string_view  path)
 {
     auto unc = UncHelper(path.GetValue());
     auto uncw = U8ToU16(unc.c_str());
@@ -90,7 +90,7 @@ bool DirUtil::IsRegular(ThroughCRTWrapper<std::string> path)
     return ((attr != INVALID_FILE_ATTRIBUTES) && !(attr&FILE_ATTRIBUTE_DIRECTORY));
 }
 
-uint64_t DirUtil::FileSize(ThroughCRTWrapper<std::string> path)
+uint64_t DirUtil::FileSize(std::u8string_view  path)
 {
     uint64_t fs = 0;
     auto pathw = U8ToU16(path.GetValue().c_str());
@@ -112,7 +112,7 @@ uint64_t DirUtil::FileSize(ThroughCRTWrapper<std::string> path)
     return fs;
 }
 
-bool DirUtil::CreateDir(ThroughCRTWrapper<std::string> path)
+bool DirUtil::CreateDir(std::u8string_view  path)
 {
     auto full = DirUtil::AbsolutePath(path.GetValue());
     auto unc = UncHelper(full);
@@ -153,14 +153,14 @@ bool DirUtil::CreateDir(ThroughCRTWrapper<std::string> path)
     //}
 }
 
-bool DirUtil::Delete(ThroughCRTWrapper<std::string> path)
+bool DirUtil::Delete(std::u8string_view  path)
 {
     auto unc = UncHelper(path.GetValue());
     auto uncw=U8ToU16(unc.c_str());
     return DeleteFileW((LPCWSTR)uncw.c_str()) == TRUE;
 }
 
-std::string DirUtil::AbsolutePath(ThroughCRTWrapper<std::string> path)
+std::string DirUtil::AbsolutePath(std::u8string_view  path)
 {
     std::vector<wchar_t> buffer(32767);
     auto unc = UncHelper(path.GetValue());
@@ -171,19 +171,19 @@ std::string DirUtil::AbsolutePath(ThroughCRTWrapper<std::string> path)
     return U16ToU8((char16_t*) &buffer[0]);
 }
 
-std::string DirUtil::BasePath(ThroughCRTWrapper<std::string> path)
+std::string DirUtil::BasePath(std::u8string_view  path)
 {
     auto pos = path.GetValue().find_last_of('\\');
     return path.GetValue().substr(0, pos);
 }
 
-std::string DirUtil::FileName(ThroughCRTWrapper<std::string> path)
+std::string DirUtil::FileName(std::u8string_view  path)
 {
     auto pos = path.GetValue().find_last_of('\\');
     return path.GetValue().substr(pos + 1);
 }
 
-bool DirUtil::IterateDir(ThroughCRTWrapper<std::string> path)
+bool DirUtil::IterateDir(std::u8string_view  path)
 {
 
     for (auto const& dir_entry : std::filesystem::directory_iterator{ (char8_t*)path.GetValue().c_str() })
@@ -239,36 +239,36 @@ void DirUtil::ClearDir()
 }
 #else
 
-bool DirUtil::IsExist(std::string path)
+bool DirUtil::IsExist(std::u8string_view  path)
 {
     struct stat s;
-    int err = stat(path.c_str(), &s);
+    int err = stat((const char*)path.data(), &s);
     return err == 0;
 }
 
-bool DirUtil::IsDirectory(std::string path)
+bool DirUtil::IsDirectory(std::u8string_view path)
 {
     struct stat s;
-    int err = stat(path.c_str(), &s);
+    int err = stat((const char*)path.data(), &s);
     if (err == -1)
         return false;
 
     return S_ISDIR(s.st_mode);
 }
 
-bool DirUtil::IsRegular(std::string path)
+bool DirUtil::IsRegular(std::u8string_view  path)
 {
     struct stat s;
-    int err = stat(path.c_str(), &s);
+    int err = stat((const char*)path.data(), &s);
     if (err == -1)
         return false;
 
     return S_ISREG(s.st_mode);
 }
 
-bool DirUtil::CreateDir(std::string path)
+bool DirUtil::CreateDir(std::u8string_view  path)
 {
-    const char* dir = path.c_str();
+    const char* dir = (const char*)path.data();
 
     struct stat s;
     if (stat(dir, &s) == 0 && S_ISDIR(s.st_mode)) {
@@ -279,39 +279,39 @@ bool DirUtil::CreateDir(std::string path)
     }
 }
 
-std::string DirUtil::AbsolutePath(std::string path)
+std::string DirUtil::AbsolutePath(std::u8string_view  path)
 {
     return "";
 }
 
-std::string DirUtil::BasePath(std::string path)
+std::string DirUtil::BasePath(std::u8string_view  path)
 {
     return "";
 }
 
-std::string DirUtil::FileName(std::string path)
+std::string DirUtil::FileName(std::u8string_view  path)
 {
     return "";
 }
 
-bool DirUtil::Delete(std::string path)
+bool DirUtil::Delete(std::u8string_view  path)
 {
     return false;
 }
 
-uint64_t DirUtil::FileSize(std::string path)
+uint64_t DirUtil::FileSize(std::u8string_view  path)
 {
     struct stat s;
-    int err = stat(path.c_str(), &s);
+    int err = stat((const char*)path.data(), &s);
     if (err == -1)
         return 0;
 
     return s.st_size;
 }
 
-bool DirUtil::IterateDir(ThroughCRTWrapper<std::string> path)
+bool DirUtil::IterateDir(std::u8string_view  path)
 {
-    for (auto const& dir_entry : std::filesystem::directory_iterator{ (char8_t*)path.c_str() })
+    for (auto const& dir_entry : std::filesystem::directory_iterator(path))
     {
         if (dir_entry.is_directory()) {
             entries_.emplace_back(DirEntry{ (char*)dir_entry.path().filename().u8string().c_str(), 0, true });
@@ -364,9 +364,9 @@ void DirUtil::ClearDir()
 {
     entries_.clear();
 }
-std::string DirUtil::UncHelper(std::string path)
+std::string DirUtil::UncHelper(std::u8string_view  path)
 {
-    return path;
+    return std::string((const char*)path.data());
 }
 #endif
 
