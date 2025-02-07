@@ -13,7 +13,13 @@ class UVCallBack {
 public:
     static void UVOnAlloc(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
         buf->base = (char*)malloc(size);
+#ifdef _WIN32
+        buf->len = (ULONG)size;
+#else
         buf->len = size;
+#endif // _WIN32
+
+        
     }
 
     static void UVOnFree(const uv_buf_t* buf) {

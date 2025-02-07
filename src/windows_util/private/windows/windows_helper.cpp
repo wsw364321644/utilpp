@@ -132,7 +132,7 @@ bool get_window_exe(LPSTR* const name, HWND window, fnmalloc mallocptr)
     if (!GetProcessImageFileNameW(process, wname, MAX_PATH))
         goto fail;
 
-    u8str = U16ToU8((char16_t*)wname);
+    u8str = U16ToU8((char16_t*)wname,GetStringLengthW(wname));
 
     slash = strrchr(u8str.c_str(), '\\');
     if (!slash)
@@ -167,7 +167,7 @@ void get_window_title(LPSTR* const name, HWND hwnd, fnmalloc mallocptr)
         return;
 
     if (GetWindowTextW(hwnd, temp, len + 1)) {
-        auto u8str = U16ToU8((char16_t*)temp);
+        auto u8str = U16ToU8((char16_t*)temp,GetStringLengthW(temp));
         *name = (char*)mallocptr(u8str.size() + 1);
         lstrcpyA(*name, u8str.c_str());
     }
@@ -181,7 +181,7 @@ void get_window_class(LPSTR* const name, HWND hwnd, fnmalloc mallocptr)
 
     temp[0] = 0;
     if (GetClassNameW(hwnd, temp, sizeof(temp) / sizeof(wchar_t))) {
-        auto u8str = U16ToU8((char16_t*)temp);
+        auto u8str = U16ToU8((char16_t*)temp, GetStringLengthW(temp));
         *name = (char*)mallocptr(u8str.size() + 1);
         lstrcpyA(*name, u8str.c_str());
     }
@@ -349,7 +349,7 @@ UINT get_system_module_path(WCHAR* base_path, const char* module_name) {
     }
     lstrcpyW(base_path, system_path);
     lstrcatW(base_path, L"\\");
-    auto module_name16 = U8ToU16(module_name);
+    auto module_name16 = U8ToU16(module_name, GetStringLength(module_name));
     lstrcatW(base_path, (WCHAR*)module_name16.c_str());
     return NULL;
 }

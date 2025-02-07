@@ -209,7 +209,7 @@ public:                                                                         
 #define DEFINE_RPC_OVERRIDE_FUNCTION_BASE(ClassName,GroupName)                                             \
 static bool RegisteredInRPCFactory##ClassName= RegisteredInRPCFactory<ClassName>::s_bRegistered;           \
 template <>                                                                                               \
-std::unordered_map<std::string, RPCMethodInfo<ClassName>> RPCInfoData<ClassName>::MethodInfos;            \
+std::unordered_map<std::string, RPCMethodInfo<ClassName>> RPCInfoData<ClassName>::MethodInfos{};          \
 ClassName::ClassName(RPCProcesser* inprocesser) :IGroupJRPC(inprocesser)                                  \
 {                                                                                                         \
 }                                                                                                         \

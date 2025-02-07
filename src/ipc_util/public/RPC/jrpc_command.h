@@ -19,14 +19,6 @@ public:
     DECLARE_RESPONSE_RPC(SetChannel);
     DECLARE_REQUEST_RPC_TWO_PARAM(SetChannel, uint8_t, EMessagePolicy);
 
-
-private:
-
-    //TRecvHeartBeatDelegate recvHeartBeatDelegate;
-    //std::unordered_map<uint32_t, THeartBeatDelegate> HeartBeatDelegates;
-    //TRecvSetChannelDelegate recvSetChannelDelegate;
-    //std::unordered_map<uint32_t, TSetChannelDelegate> SetChannelDelegates;
-
-    //RPCProcesser* processer;
 };
+
 #pragma warning(pop)

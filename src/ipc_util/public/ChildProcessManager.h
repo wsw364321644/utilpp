@@ -31,7 +31,7 @@ public:
     ~FChildProcessManager() {}
     static FChildProcessManager* GetInstance();
     CommonHandle_t SpawnProcess(const char* filepath,const char** args=nullptr);
-    typedef std::function< void (CommonHandle_t,const char* , size_t) > FOnReadDelegate;
+    typedef std::function< void (CommonHandle_t,const char* , ssize_t) > FOnReadDelegate;
     void RegisterOnRead(CommonHandle_t handle, FOnReadDelegate delegate);
     typedef std::function< void(CommonHandle_t,int64_t, int) > FOnExitDelegate;
     void RegisterOnExit(CommonHandle_t handle, FOnExitDelegate delegate);

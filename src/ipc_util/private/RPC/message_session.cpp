@@ -110,7 +110,11 @@ uint64_t MessageSessionUV::GetPID() const
         return 0;
     }
     uint64_t out;
+#ifdef _WIN32
+    GetProcessIdFromPipe(ClientHandle.PipeHandle.handle, &out);
+#else
     GetProcessIdFromPipe((void*)ClientHandle.PipeHandle.pipe_fname, &out);
+#endif
     return out;
 }
 

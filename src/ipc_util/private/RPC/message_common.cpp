@@ -6,12 +6,12 @@ bool MessageSendRequestUV::Write(uv_stream_t* handle, const char* data, size_t l
     Data.reset(new char[len]);
     Len = len;
     memcpy(Data.get(), data, Len);
-    uv_buf_t buffer[] = {
-        {.base = Data.get(),.len = Len}
-    };
+    uv_buf_t buffers[1];
+    buffers[0].base = Data.get(); 
+    buffers[0].len = uint32_t(Len);
     SendReq.SendReq.data = this;
     WriteDelegate = cb;
-    uv_write(&SendReq.SendReq, handle, buffer, 1, UVCallBack::template UVOnWrite<MessageSendRequestUV>);
+    uv_write(&SendReq.SendReq, handle, buffers, 1, UVCallBack::template UVOnWrite<MessageSendRequestUV>);
     return true;
 }
 bool MessageSendRequestUV::UDPSend(uv_udp_t* handle, const char* data, size_t len, OnUDPSendCB cb)
@@ -24,11 +24,11 @@ bool MessageSendRequestUV::UDPSend(uv_udp_t* handle, const char* data, size_t le
     Data.reset(new char[len]);
     Len = len;
     memcpy(Data.get(), data, Len);
-    uv_buf_t buffer[] = {
-        {.base = Data.get(),.len = Len}
-    };
+    uv_buf_t buffers[1];
+    buffers[0].base = Data.get();
+    buffers[0].len = uint32_t(Len);
     SendReq.UDPSendReq.data = this;
     WriteDelegate = cb;
-    uv_udp_send(&SendReq.UDPSendReq, handle, buffer, 1, addr, UVCallBack::template UVOnUDPSend<MessageSendRequestUV>);
+    uv_udp_send(&SendReq.UDPSendReq, handle, buffers, 1, addr, UVCallBack::template UVOnUDPSend<MessageSendRequestUV>);
     return true;
 }
