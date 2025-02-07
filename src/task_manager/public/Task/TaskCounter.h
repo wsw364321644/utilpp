@@ -48,7 +48,7 @@ public:
             }
         }
         for (auto& [id,handle ]: FinishedSlot) {
-            FreeIndex.erase(id);
+            FreeIndex.insert(id);
             UsedIndex.erase(id);
         }
     }
