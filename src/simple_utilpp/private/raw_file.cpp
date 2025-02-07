@@ -274,17 +274,17 @@ int32_t MakeDir(const char *lpPath)
     }
 }
 
-int32_t CRawFile::Open(const char *lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
+int32_t CRawFile::Open(const char8_t*lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
     if (lpFileName == NULL)
     {
         return ERR_ARGUMENT;
     }
-    name_ = lpFileName;
+    name_ = (const char*)lpFileName;
 
     int filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
-    handle_ = open(lpFileName, uOpenFlag, filePerms);
+    handle_ = open(name_.c_str(), uOpenFlag, filePerms);
     if (handle_ == -1)
     {
         if (errno != ENOENT)
@@ -292,7 +292,7 @@ int32_t CRawFile::Open(const char *lpFileName, uint32_t uOpenFlag, uint64_t uExp
         std::filesystem::path curPath(name_);
         if (ERR_SUCCESS != MakeDir((const char *)curPath.parent_path().u8string().c_str()))
             return ERR_FILE;
-        handle_ = open(lpFileName, uOpenFlag, filePerms);
+        handle_ = open(name_.c_str(), uOpenFlag, filePerms);
         if (handle_ == -1)
             return ERR_FILE;
     }
@@ -300,9 +300,9 @@ int32_t CRawFile::Open(const char *lpFileName, uint32_t uOpenFlag, uint64_t uExp
     if ((uOpenFlag == UTIL_CREATE_ALWAYS || uOpenFlag == UTIL_OPEN_ALWAYS) && (file_size_ != uExpectSize))
     {
         // make file as desized size
-        if (-1 == truncate(lpFileName, uExpectSize))
+        if (-1 == truncate(name_.c_str(), uExpectSize))
         {
-            SIMPLELOG_LOGGER_ERROR(nullptr,std::format("failed to set file size, file:{}, size:{}, error:{}", lpFileName, uExpectSize, errno));
+            SIMPLELOG_LOGGER_ERROR(nullptr,std::format("failed to set file size, file:{}, size:{}, error:{}", name_.c_str(), uExpectSize, errno));
             return ERR_FILE;
         }
         file_size_ = uExpectSize;

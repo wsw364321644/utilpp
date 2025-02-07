@@ -104,14 +104,14 @@ public:
             GetBufInternal()[PathLen++] = static_cast<char>(std::filesystem::path::preferred_separator);
         }
         memcpy(GetBufInternal() + PathLen, path, len);
-        GetBufInternal()[PathLen++] = '0';
+        GetBufInternal()[PathLen++] = '\0';
     }
     void AppendPathW(const wchar_t* path, size_t len) {
         if (GetBufInternalW()[PathLenW -1] != L'\\' && GetBufInternalW()[PathLenW -1] != L'/') {
             GetBufInternalW()[PathLenW++] = static_cast<wchar_t>(std::filesystem::path::preferred_separator);
         }
         memcpy(GetBufInternalW() + PathLenW, path, len * sizeof(wchar_t));
-        GetBufInternalW()[PathLenW++] = L'0';
+        GetBufInternalW()[PathLenW++] = L'\0';
     }
 
     bool PopPath() {
@@ -119,7 +119,7 @@ public:
         if (lastCursor == NULL) {
             return false;
         }
-        *lastCursor = '/0';
+        *lastCursor = '\0';
         PathLen = lastCursor - GetBufInternal();
         return true;
     }
@@ -128,7 +128,7 @@ public:
         if (lastCursor == NULL) {
             return false;
         }
-        *lastCursor = L'/0';
+        *lastCursor = L'\0';
         PathLenW = lastCursor - GetBufInternalW();
         return true;
     }

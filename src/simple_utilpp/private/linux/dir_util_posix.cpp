@@ -91,31 +91,31 @@ bool DirUtil::IsRegular(std::u8string_view  path)
 bool DirUtil::CreateDir(std::u8string_view  path)
 {
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* path = PathBuf.GetBufInternal();
-    return InternalCreateDir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    char* norPath = PathBuf.GetBufInternal();
+    return InternalCreateDir(norPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
 F_HANDLE DirUtil::RecursiveCreateFile(std::u8string_view  path, uint32_t flag) {
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* path = PathBuf.GetBufInternal();
+    char* norPath = PathBuf.GetBufInternal();
 
-    char* last_slash = strrchr(path, static_cast<char>(std::filesystem::path::preferred_separator));
+    char* last_slash = strrchr(norPath, static_cast<char>(std::filesystem::path::preferred_separator));
     if (last_slash == NULL) {
         return -1;
     }
-    last_slash = '\0';
-    bool res = InternalCreateDir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    last_slash = static_cast<char>(std::filesystem::path::preferred_separator);
+    *last_slash = '\0';
+    bool res = InternalCreateDir(norPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    *last_slash = static_cast<char>(std::filesystem::path::preferred_separator);
     if (!res) {
         return -1;
     }
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-    return open(path, flag, mode);
+    return open(norPath, flag, mode);
 }
 
 std::u8string_view DirUtil::AbsolutePath(std::u8string_view  path)
 {
-    return "";
+    return u8"";
 }
 
 bool DirUtil::Delete(std::u8string_view  path)
@@ -146,15 +146,15 @@ bool RecursiveIterateDir() {
             continue;
         PathBuf.AppendPath(ent->d_name, GetStringLength(ent->d_name));
         out.Name = (char8_t*)PathBuf.GetBufInternal();
-        if (IsDirectory(ent->d_name)) {
+        if ( DirUtil::IsDirectory((const char8_t*)ent->d_name)) {
             //SIMPLELOG_LOGGER_DEBUG(nullptr,"iter dir {} ", ent->d_name);
             out.bDir = true;
             cb(out);
             RecursiveIterateDir();
         }
-        else if (IsRegular(ent->d_name)) {
+        else if ( DirUtil::IsRegular((const char8_t*)ent->d_name)) {
             //SIMPLELOG_LOGGER_DEBUG(nullptr,"iter file {} ", ent->d_name);
-            out.Size = FileSize(ent->d_name);
+            out.Size =  DirUtil::FileSize((const char8_t*)ent->d_name);
             out.bDir = false;
             cb(out);
         }

@@ -50,14 +50,14 @@ inline size_t GetStringLengthW(const wchar_t* Str)
     // setlocale(LC_ALL, "");
     // char* locstr = setlocale(LC_CTYPE, NULL);
     // char* encoding = nl_langinfo(CODESET);
-    inStrLen = std::char_traits<char16_t>::length(u16Str);
+    inStrLen = std::char_traits<wchar_t>::length(Str);
 #endif
     return inStrLen;
 }
 
 inline size_t GetU16StringLength(const char16_t* Str)
 {
-    GetStringLengthW((const wchar_t*)Str);
+    return GetStringLengthW((const wchar_t*)Str);
 }
 
 inline size_t U8ToU16Buf(const char* u8Str, size_t inStrLen, wchar_t* outBuf, size_t bufLen) {
@@ -72,15 +72,17 @@ inline size_t U8ToU16Buf(const char* u8Str, size_t inStrLen, wchar_t* outBuf, si
         bufLen);
     return result;
 #else
+    char* out = (char*)outBuf;
+    char* in = (char*)u8Str;
+    size_t outbytes = bufLen*sizeof(wchar_t);
     iconv_t conv = iconv_open("UTF-16le", "UTF-8");
     if (conv == (iconv_t)-1)
     {
         return -1;
     }
-    bufLen = bufLen * sizeof(wchar_t);
-    size_t  result = iconv(conv, &(char*)u8Str, &inStrLen, &(char*)outBuf, &bufLen);
+    size_t res=iconv(conv, &in, &inStrLen, &out, &outbytes) ;
     iconv_close(conv);
-    return result;
+    return res;
 #endif
 }
 
@@ -104,16 +106,17 @@ inline size_t U16ToU8Buf(const wchar_t* u16Str, size_t inStrLen, char* outBuf, s
         NULL);
     return result;
 #else
+    char* out = outBuf;
+    char* in = (char*)u16Str;
+    size_t outbytes = bufLen;
     iconv_t conv = iconv_open("UTF-8", "utf-16le");
     if (conv == (iconv_t)-1)
     {
-        return std::string();
+        return -1;
     }
-    inStrLen = inStrLen * sizeof(wchar_t);
-    size_t  result = iconv(conv, &(char*)u16Str, &inStrLen, &outBuf, &bufLen);
-    
+    size_t res=iconv(conv, &in, &inStrLen, &out, &outbytes) ;
     iconv_close(conv);
-    return result;
+    return res;
 #endif
 }
 

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 #include <pthread.h>
 #include <unistd.h>
@@ -25,7 +26,7 @@ static void* posix_thread_func(void* arg);
 
 util_thread_t util_create_thread(void* arg, util_thread_func func)
 {
-    struct sk_thread* p = calloc(1, sizeof(struct sk_thread));
+    struct sk_thread* p = (struct sk_thread*)calloc(1, sizeof(struct sk_thread));
     p->arg = arg;
     p->func = func;
 
