@@ -9,59 +9,35 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <ThroughCRTWrapper.h>
+#include <functional>
+#include "simple_os_defs.h"
 #include "simple_export_ppdefs.h"
 
-struct DirEntry
+typedef struct DirEntry_t
 {
-    std::string name;
-    uint64_t size;
-    bool dir;
-};
+    const char8_t* Name;
+    uint64_t Size;
+    bool bDir;
+}DirEntry_t;
 
 class SIMPLE_UTIL_EXPORT DirUtil
 {
-public:
-    DirUtil();
-    ~DirUtil();
 
 public:
-    static std::string Normalize(std::u8string_view path);
-    static std::string UncHelper(std::u8string_view path);
+    static std::u8string_view  Normalize(std::u8string_view path);
     static bool IsExist(std::u8string_view  path);
     static bool IsDirectory(std::u8string_view  path);
     static bool IsRegular(std::u8string_view  path);
     static uint64_t FileSize(std::u8string_view  path);
     static bool SetWritable(std::u8string_view  path);
-
     static bool CreateDir(std::u8string_view  path);
-    static std::string AbsolutePath(std::u8string_view  path);
-    static std::string BasePath(std::u8string_view  path);
-    static std::string FileName(std::u8string_view  path);
+    static std::u8string_view AbsolutePath(std::u8string_view  path);
+    static std::u8string_view FileName(std::u8string_view  path);
     static bool Delete(std::u8string_view  path);
-    //static std::wstring Normalize(std::wstring path);
-    //static std::wstring UncHelper(std::wstring path);
-    //static bool IsExist(std::wstring path);
-    //static bool IsDirectory(std::wstring path);
-    //static bool IsRegular(std::wstring path);
-    //static uint64_t FileSize(std::wstring path);
-    //static bool SetWritable(std::wstring path);
 
-    //static bool CreateDir(std::wstring path);
-    //static std::wstring AbsolutePath(std::wstring path);
-    //static std::wstring BasePath(std::wstring path);
-    //static std::wstring FileName(std::wstring path);
-    //static bool Delete(std::wstring path);
+    static F_HANDLE RecursiveCreateFile(std::u8string_view  path, uint32_t flag);
 
-public:
-    //bool IterateDir(std::wstring path);
-    bool IterateDir(std::u8string_view  path);
-    size_t EntryCount();
-    DirEntry GetEntry(size_t index);
+    typedef std::function<void(DirEntry_t&)> IterateDirCallback;
+    static bool IterateDir(std::u8string_view  path, IterateDirCallback cb);
 
-private:
-    void ClearDir();
-
-private:
-    std::vector<DirEntry> entries_;
 };

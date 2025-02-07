@@ -32,72 +32,29 @@ CRawFile::~CRawFile()
     }
 }
 
-int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_size)
+int32_t CRawFile::Open(const char8_t*file_name, uint32_t flag, uint64_t expect_size)
 {
     if (file_name == NULL)
     {
         return ERR_ARGUMENT;
     }
-
-    auto unc = DirUtil::UncHelper(file_name);
-
     DWORD err = 0;
+    DWORD low = 0;
+    DWORD high = 0;
+
+    handle_ = DirUtil::RecursiveCreateFile(file_name, flag);
+    if (handle_ == INVALID_HANDLE_VALUE)
+    {
+        return ERR_FILE;
+    }
+
     if (!DirUtil::SetWritable(file_name))
     {
         err = GetLastError();
-        SIMPLELOG_LOGGER_WARN(nullptr,"Failed to set writable, file: {}, error: {}", file_name, err);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Failed to set writable, file: {}, error: {}", file_name, err);
         return ERR_FILE;
     }
-    auto uncw = U8ToU16(unc.c_str());
-    handle_ = CreateFileW((LPCWSTR)uncw.c_str(),
-                          GENERIC_WRITE | GENERIC_READ,
-                          FILE_SHARE_WRITE | FILE_SHARE_READ,
-                          NULL,
-                          flag,
-                          FILE_ATTRIBUTE_NORMAL,
-                          NULL);
 
-    if (handle_ == INVALID_HANDLE_VALUE)
-    {
-        err = GetLastError();
-        // Path not found? Create the directory
-        if ((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && err == ERROR_PATH_NOT_FOUND)
-        {
-            std::filesystem::path base_path = std::filesystem::path((char8_t *)file_name).parent_path();
-            std::filesystem::path base_name = std::filesystem::path((char8_t *)file_name).filename();
-            if (std::filesystem::exists(base_path) || std::filesystem::create_directories(base_path))
-            {
-                handle_ = CreateFileW((LPCWSTR)uncw.c_str(),
-                                      GENERIC_WRITE | GENERIC_READ,
-                                      FILE_SHARE_WRITE | FILE_SHARE_READ,
-                                      NULL,
-                                      flag,
-                                      FILE_ATTRIBUTE_NORMAL,
-                                      NULL);
-                if (handle_ == INVALID_HANDLE_VALUE)
-                {
-                    err = GetLastError();
-                    SIMPLELOG_LOGGER_WARN(nullptr,"Can't open the file after create directory: {}. ErrorCode is {}", file_name, err);
-                    return ERR_FILE;
-                }
-            }
-            else
-            {
-                err = GetLastError();
-                SIMPLELOG_LOGGER_WARN(nullptr,"Failed to create the directory: {}. ErrorCode is {}", (const char *)base_path.u8string().c_str(), err);
-                return ERR_FILE;
-            }
-        }
-        else
-        {
-            err = GetLastError();
-            SIMPLELOG_LOGGER_WARN(nullptr,"Can't open the file: {}. ErrorCode is {}", file_name, err);
-            return ERR_FILE;
-        }
-    }
-
-    DWORD low = 0;
-    DWORD high = 0;
     low = GetFileSize(handle_, &high);
 
     if (low == 0xffffffff && (err = GetLastError()) != NO_ERROR)
@@ -129,7 +86,7 @@ int32_t CRawFile::Open(const char *file_name, uint32_t flag, uint64_t expect_siz
         }
     }
 
-    name_ = file_name;
+    name_ = (const char*)file_name;
     return ERR_SUCCESS;
 }
 
@@ -183,7 +140,7 @@ int32_t CRawFile::Delete()
 
     CloseHandle(handle_);
     handle_ = INVALID_HANDLE_VALUE;
-    if (!DirUtil::Delete(name_))
+    if (!DirUtil::Delete({ (const char8_t*)name_.c_str(),name_.size()}))
     {
         SIMPLELOG_LOGGER_WARN(nullptr,"Can't delete the file : {}", name_);
         return ERR_FILE;

@@ -13,9 +13,9 @@ int util_dll_path(char* path, size_t* size)
 {
     wchar_t modulestr[MAX_PATH] = { 0 };
     GetModuleFileNameW((HINSTANCE)&__ImageBase, modulestr, _countof(modulestr));
-    auto u8str=U16ToU8((char16_t*)modulestr);
-    
-    memcpy(path, u8str.c_str(), u8str.size()+1);
+    auto u8str = U16ToU8((char16_t*)modulestr, GetStringLengthW(modulestr));
+
+    memcpy(path, u8str.c_str(), u8str.size() + 1);
     *size = u8str.size();
     return 0;
 }
@@ -84,10 +84,9 @@ uint64_t GetProcessParentId(uint64_t* id)
 
 int util_exe_path(char* path, size_t* size)
 {
-	
     wchar_t modulestr[MAX_PATH] = { 0 };
     GetModuleFileNameW(NULL, modulestr, _countof(modulestr));
-    auto u8str = U16ToU8((char16_t*)modulestr);
+    auto u8str = U16ToU8((char16_t*)modulestr, GetStringLengthW(modulestr));
     memcpy(path, u8str.c_str(), u8str.size() + 1);
     *size = u8str.size();
     return 0;
@@ -104,7 +103,7 @@ int util_exe_wpath(wchar_t* path, size_t* size)
         temppath = path;
     }
     else {
-        temppath =(wchar_t*) malloc(buflen * sizeof(WCHAR));
+        temppath = (wchar_t*)malloc(buflen * sizeof(WCHAR));
     }
     while (true) {
 
@@ -136,14 +135,15 @@ static DWORD WINAPI win_thread_func(void* arg);
 
 util_thread_t util_create_thread(void* arg, util_thread_func func)
 {
-    struct sk_thread* p =(struct sk_thread*) calloc(1, sizeof(struct sk_thread));
+    struct sk_thread* p = (struct sk_thread*)calloc(1, sizeof(struct sk_thread));
     p->arg = arg;
     p->func = func;
 
     p->thread = CreateThread(NULL, 0, win_thread_func, p, 0, NULL);
     if (p->thread != INVALID_HANDLE_VALUE) {
         return p;
-    } else {
+    }
+    else {
         free(p);
         return NULL;
     }
@@ -160,7 +160,7 @@ void util_thread_join(util_thread_t  thread)
 
 DWORD WINAPI  win_thread_func(void* arg)
 {
-    struct sk_thread* p = (struct sk_thread*) arg;
+    struct sk_thread* p = (struct sk_thread*)arg;
 
     p->func(p->arg);
 
@@ -171,7 +171,7 @@ DWORD WINAPI  win_thread_func(void* arg)
 
 bool GetProcessIdFromHandle(void* handle, uint64_t* id) {
     *id = GetProcessId(handle);
-    return *id!=0;
+    return *id != 0;
 }
 
 bool GetProcessIdFromPipe(void* handle, uint64_t* id)

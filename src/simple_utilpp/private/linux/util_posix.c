@@ -6,9 +6,14 @@
 #include "module_util.h"
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 #include <pthread.h>
 #include <unistd.h>
-
+#include <dirent.h>
+#include <sys/stat.h>
 struct sk_thread
 {
     pthread_t thread;
@@ -96,5 +101,59 @@ int util_exe_path(char* path, size_t* size)
 #error "Unknown platform"
 #endif
     return 0;
+}
+
+
+
+
+
+bool isProcessUsingPipe(const char* pid, const char* pipePath) {
+    std::string fdDir=std::string("/proc/")+pid+"/fd";
+    DIR* dir = opendir(fdDir.c_str());
+    if (!dir) return false;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (entry->d_type == DT_LNK) {
+            char linkPath[PATH_MAX];
+            snprintf(linkPath, sizeof(linkPath), "%s/%s", fdDir.c_str(), entry->d_name);
+
+            char target[PATH_MAX];
+            ssize_t len = readlink(linkPath, target, sizeof(target) - 1);
+            if (len != -1) {
+                target[len] = '\0';
+                if (std::string(target) == pipePath) {
+                    closedir(dir);
+                    return true;
+                }
+            }
+        }
+    }
+    closedir(dir);
+    return false;
+}
+
+
+bool GetProcessIdFromPipe(void* handle, uint64_t* id)
+{
+    DIR* procDir = opendir("/proc");
+    if (!procDir) {
+        std::cerr << "Failed to open /proc directory." << std::endl;
+        return false;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(procDir)) != nullptr) {
+        // Check if the entry is a directory and represents a process ID
+        if (entry->d_type == DT_DIR &&std::all_of(entry->d_name, entry->d_name + strlen(entry->d_name), ::isdigit)) {
+            if (isProcessUsingPipe(entry->d_name, (const char*)handle)) {
+                *id = std::stoi(entry->d_name);
+                break;
+            }
+        }
+    }
+
+    closedir(procDir);
+    return true;
 }
 

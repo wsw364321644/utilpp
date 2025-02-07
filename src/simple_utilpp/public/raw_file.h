@@ -11,7 +11,7 @@ public:
     CRawFile();
     ~CRawFile();
 
-    int32_t Open(const char *lpFileName, uint32_t uOpenFlag ,uint64_t uExpectSize=0);
+    int32_t Open(const char8_t *lpFileName, uint32_t uOpenFlag ,uint64_t uExpectSize=0);
     int32_t Read(void *pBuf, uint32_t size);
     int32_t Write(const void *pBuf, uint32_t size);
     int32_t Seek(uint64_t uPos);

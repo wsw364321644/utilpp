@@ -14,6 +14,108 @@
 #include <langinfo.h>
 #include <cstring>
 #endif
+inline size_t GetStringLength(const char* u8Str)
+{
+    size_t inStrLen;
+#ifdef WIN32
+    const size_t inStrMax = INT_MAX - 1;
+    HRESULT hr = ::StringCchLengthA(u8Str, inStrMax, &inStrLen);
+    if (FAILED(hr))
+        return -1;
+#else
+    // std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
+    // return cvt.from_bytes(u8Str);
+    inStrLen = std::char_traits<char>::length(u8Str);
+#endif
+    return inStrLen;
+}
+
+inline size_t GetU8StringLength(const char8_t* u8Str)
+{
+    return GetStringLength((const char*)u8Str);
+}
+
+inline size_t GetStringLengthW(const wchar_t* Str)
+{
+    size_t inStrLen{ 0 };
+#ifdef WIN32
+    const size_t inStrMax = INT_MAX - 1;
+    LPWSTR inStr = (LPWSTR)Str;
+    HRESULT hr = ::StringCchLengthW(inStr, inStrMax, &inStrLen);
+    if (FAILED(hr))
+        return -1;
+#else
+    // std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
+    // return cvt.to_bytes(u16Str);
+    // setlocale(LC_ALL, "");
+    // char* locstr = setlocale(LC_CTYPE, NULL);
+    // char* encoding = nl_langinfo(CODESET);
+    inStrLen = std::char_traits<char16_t>::length(u16Str);
+#endif
+    return inStrLen;
+}
+
+inline size_t GetU16StringLength(const char16_t* Str)
+{
+    GetStringLengthW((const wchar_t*)Str);
+}
+
+inline size_t U8ToU16Buf(const char* u8Str, size_t inStrLen, wchar_t* outBuf, size_t bufLen) {
+    if ((u8Str == NULL) || (*u8Str == '\0'))
+        return 0;
+#ifdef WIN32
+    int result = ::MultiByteToWideChar(CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        u8Str,
+        (int)inStrLen,
+        (LPWSTR)outBuf,
+        bufLen);
+    return result;
+#else
+    iconv_t conv = iconv_open("UTF-16le", "UTF-8");
+    if (conv == (iconv_t)-1)
+    {
+        return -1;
+    }
+    bufLen = bufLen * sizeof(wchar_t);
+    size_t  result = iconv(conv, &(char*)u8Str, &inStrLen, &(char*)outBuf, &bufLen);
+    iconv_close(conv);
+    return result;
+#endif
+}
+
+inline size_t U16ToU8Buf(const wchar_t* u16Str, size_t inStrLen, char* outBuf, size_t bufLen) {
+    if ((u16Str == NULL) || (*u16Str == L'\0'))
+        return 0;
+#ifdef WIN32
+    LPWSTR inStr = (LPWSTR)u16Str;
+#if (WINVER >= 0x0600)
+    DWORD flags = WC_ERR_INVALID_CHARS;
+#else
+    DWORD flags = 0;
+#endif
+    int result = ::WideCharToMultiByte(CP_UTF8,
+        flags,
+        inStr,
+        static_cast<int>(inStrLen),
+        outBuf,
+        bufLen,
+        NULL,
+        NULL);
+    return result;
+#else
+    iconv_t conv = iconv_open("UTF-8", "utf-16le");
+    if (conv == (iconv_t)-1)
+    {
+        return std::string();
+    }
+    inStrLen = inStrLen * sizeof(wchar_t);
+    size_t  result = iconv(conv, &(char*)u16Str, &inStrLen, &outBuf, &bufLen);
+    
+    iconv_close(conv);
+    return result;
+#endif
+}
 
 inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
 #ifdef WIN32
@@ -85,25 +187,8 @@ inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
     return result;
 #endif
 }
-inline std::string U16ToU8(const char16_t *u16Str)
-{
-    size_t inStrLen{0};
-#ifdef WIN32
-    const size_t inStrMax = INT_MAX - 1;
-    LPWSTR inStr = (LPWSTR)u16Str;
-    HRESULT hr = ::StringCchLengthW(inStr, inStrMax, &inStrLen);
-    if (FAILED(hr))
-        return "";
-#else
-    // std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
-    // return cvt.to_bytes(u16Str);
-    // setlocale(LC_ALL, "");
-    // char* locstr = setlocale(LC_CTYPE, NULL);
-    // char* encoding = nl_langinfo(CODESET);
-    inStrLen = std::char_traits<char16_t>::length(u16Str) * 2;
-#endif
-    return U16ToU8(u16Str, inStrLen);
-}
+
+
 
 inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
 #ifdef WIN32
@@ -172,25 +257,10 @@ inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
     return result;
 #endif
 }
-inline std::u16string U8ToU16(const char *u8Str)
-{
-    size_t inStrLen;
-#ifdef WIN32
-    const size_t inStrMax = INT_MAX - 1;
-    HRESULT hr = ::StringCchLengthA(u8Str, inStrMax, &inStrLen);
-    if (FAILED(hr))
-        return std::u16string();
-#else
-    // std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
-    // return cvt.from_bytes(u8Str);
-    inStrLen = std::char_traits<char>::length(u8Str);
-#endif
-    return U8ToU16(u8Str, inStrLen);
-}
+
 
 
 inline std::u32string U8ToU32(const char* u8Str) {
-#ifdef WIN32
     std::u32string out;
     std::mbstate_t state{};
     char32_t c32;
@@ -209,13 +279,9 @@ inline std::u32string U8ToU32(const char* u8Str) {
         u8cursor += rc;
     }
     return out;
-#else
-    return std::u32string();
-#endif
 }
 
 inline std::string U32ToU8(const char32_t* u32Str) {
-#ifdef WIN32
     std::string out;
     std::mbstate_t state{};
     char buf[MB_LEN_MAX]{};
@@ -227,13 +293,9 @@ inline std::string U32ToU8(const char32_t* u32Str) {
         out.append(buf, rc);
     }
     return out;
-#else
-    return "";
-#endif
 }
 
 inline std::string U32ToU8(const char32_t* u32Str,size_t num) {
-#ifdef WIN32
     std::string out;
     std::mbstate_t state{};
     char buf[MB_LEN_MAX]{};
@@ -245,7 +307,4 @@ inline std::string U32ToU8(const char32_t* u32Str,size_t num) {
         out.append(buf, rc);
     }
     return out;
-#else
-    return "";
-#endif
 }
