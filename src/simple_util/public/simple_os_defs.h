@@ -22,7 +22,7 @@ SIMPLE_UTIL_API const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 #endif
 #include <Windows.h>
 
-#define F_HANDLE  void *
+#define F_HANDLE HANDLE
 
 typedef void* (__cdecl *fnmalloc)(size_t _Size);
 typedef void(__cdecl* fnfree)(void* const block);
@@ -33,7 +33,7 @@ typedef void(__cdecl* fnfree)(void* const block);
 #include <iconv.h>
 #include <locale.h>
 #include <langinfo.h>
-
+#include <limits.h>
 #define F_HANDLE int
 
 typedef void* (*fnmalloc)(size_t _Size);
