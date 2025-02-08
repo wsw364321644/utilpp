@@ -276,7 +276,7 @@ bool FDownloadFile::Open()
         if (!std::filesystem::exists(Path.parent_path())) {
             std::filesystem::create_directories(Path.parent_path());
         }
-        if (FileStream.Open((const char*)Path.u8string().c_str(), UTIL_OPEN_ALWAYS, Size)!= ERR_SUCCESS) {
+        if (FileStream.Open(Path.u8string().c_str(), UTIL_OPEN_ALWAYS, Size)!= ERR_SUCCESS) {
             SIMPLELOG_LOGGER_ERROR(nullptr, "open file failed path:{}", Path.string());
             return false;
         };
