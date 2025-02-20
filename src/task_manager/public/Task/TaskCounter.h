@@ -22,6 +22,12 @@ public:
         }
         return true;
     }
+    bool HasTask() {
+        if (UsedIndex.size() > 0) {
+            return true;
+        }
+        return false;
+    }
     std::optional<uint8_t>  GetFreeSlot() {
         if (!HasSpace()) {
             return std::nullopt;
@@ -40,18 +46,20 @@ public:
         Handles[i] = handle;
         return true;
     }
-    void CheckFinished(std::vector<TFinishedSlotData>& FinishedSlot) {
-        FinishedSlot.clear();
-        for (auto& id: UsedIndex) {
+    std::vector<TFinishedSlotData>& CheckFinished() {
+        OutData.clear();
+        for (auto& id : UsedIndex) {
             if (Futures[id].wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                FinishedSlot.push_back({ id,Handles[id]});
+                OutData.push_back({ id,Handles[id] });
             }
         }
-        for (auto& [id,handle ]: FinishedSlot) {
+        for (auto& [id, handle] : OutData) {
             FreeIndex.insert(id);
             UsedIndex.erase(id);
         }
+        return OutData;
     }
+    std::vector<TFinishedSlotData> OutData;
     std::set<uint8_t> FreeIndex;
     std::set<uint8_t> UsedIndex;
     std::vector<std::future<R>> Futures;

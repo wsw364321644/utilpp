@@ -11,8 +11,9 @@
 #include <future>
 #include <functional>
 #include <stdexcept>
-#include "simple_export_ppdefs.h"
-class SIMPLE_UTIL_EXPORT ThreadPool {
+#include <type_traits>
+
+class  ThreadPool {
 public:
     ThreadPool(size_t);
     template<class F, class... Args>

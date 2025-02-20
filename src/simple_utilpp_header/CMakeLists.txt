@@ -4,7 +4,8 @@ source_group( TREE ${PROJECT_SOURCE_DIR}  FILES ${SourceFiles})
 
 function(configure_library TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
-    
+    set_target_properties(${TARGET_NAME} PROPERTIES INTERFACE_COMPILE_FEATURES  cxx_std_20)
+    target_compile_features(${TARGET_NAME} INTERFACE cxx_std_20)
     AddTargetInclude(${TARGET_NAME})
 
     install(TARGETS ${TARGET_NAME}

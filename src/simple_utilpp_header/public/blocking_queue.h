@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 #include <queue>
-#include "simple_export_ppdefs.h"
 
 typedef std::function<void()> TaskFunc;
 
