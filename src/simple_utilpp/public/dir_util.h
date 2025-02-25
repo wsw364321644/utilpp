@@ -38,6 +38,6 @@ public:
     static F_HANDLE RecursiveCreateFile(std::u8string_view  path, uint32_t flag);
 
     typedef std::function<void(DirEntry_t&)> IterateDirCallback;
-    static bool IterateDir(std::u8string_view  path, IterateDirCallback cb);
+    static bool IterateDir(std::u8string_view  path, IterateDirCallback cb, uint32_t depth = std::numeric_limits<uint32_t>::max());
 
 };

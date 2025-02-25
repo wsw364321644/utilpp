@@ -217,13 +217,15 @@ std::u8string_view DirUtil::AbsolutePath(std::u8string_view  path)
     return (const char8_t*)PathBuf.GetBuf();
 }
 
-bool RecursiveIterateDir() {
+bool RecursiveIterateDir(uint32_t depth) {
     WIN32_FIND_DATAW wfd;
+    PathBuf.AppendPathW(L"*", 1);
     auto pathw = PathBuf.GetPrependFileNamespacesW();
     HANDLE hf = FindFirstFileW(pathw, &wfd);
     if (INVALID_HANDLE_VALUE == hf) {
         return false;
     }
+    PathBuf.PopPathW();
     do {
         if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY &&
             (wcscmp(wfd.cFileName, L".") == 0 ||wcscmp(wfd.cFileName, L"..") == 0)) {
@@ -235,8 +237,10 @@ bool RecursiveIterateDir() {
         if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             out.bDir = true;
             cb(out);
-            if (!RecursiveIterateDir()) {
-                return false;
+            if (depth > 0) {
+                if (!RecursiveIterateDir(depth-1)) {
+                    return false;
+                }
             }
         }
         else {
@@ -253,9 +257,9 @@ bool RecursiveIterateDir() {
     return true;
 }
 
-bool DirUtil::IterateDir(std::u8string_view  path, IterateDirCallback _cb)
+bool DirUtil::IterateDir(std::u8string_view  path, IterateDirCallback _cb, uint32_t depth)
 {
     PathBuf.SetNormalizePathW(path.data(), path.length()); 
     cb = _cb;
-    return RecursiveIterateDir();
+    return RecursiveIterateDir(depth);
 }
