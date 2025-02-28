@@ -15,7 +15,6 @@
 #include <filesystem>
 #include <simple_os_defs.h>
 
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -23,138 +22,157 @@
 #include <linux/limits.h>
 thread_local DirUtil::IterateDirCallback cb;
 thread_local DirEntry_t out;
-bool InternalCreateDir(char* path, mode_t mode) {
+bool InternalCreateDir(char *path, mode_t mode)
+{
     struct stat st;
-    if (stat(path, &st) == 0) {
-        if (S_ISDIR(st.st_mode)) {
+    if (stat(path, &st) == 0)
+    {
+        if (S_ISDIR(st.st_mode))
+        {
             return true; // Directory already exists
         }
-        else {
+        else
+        {
             errno = ENOTDIR; // Not a directory
             return false;
         }
     }
 
     // If the error is not "no such file or directory", propagate the error
-    if (errno != ENOENT) {
+    if (errno != ENOENT)
+    {
         return false;
     }
 
-    char* last_slash = strrchr(path, static_cast<char>(std::filesystem::path::preferred_separator));
-    if (last_slash == NULL) {
+    char *last_slash = strrchr(path, static_cast<char>(std::filesystem::path::preferred_separator));
+    if (last_slash == NULL)
+    {
         return false;
     }
 
     *last_slash = '\0';
     bool res = InternalCreateDir(path, mode);
     *last_slash = static_cast<char>(std::filesystem::path::preferred_separator);
-    if (!res) {
+    if (!res)
+    {
         return false;
     }
     // Create the directory
-    if (mkdir(path, mode) != 0) {
-        if (errno != EEXIST) {
+    if (mkdir(path, mode) != 0)
+    {
+        if (errno != EEXIST)
+        {
             return false;
         }
     }
     return true;
 }
 
-
-bool DirUtil::IsExist(std::u8string_view  path)
+bool DirUtil::IsExist(std::u8string_view path)
 {
     struct stat s;
-    int err = stat((const char*)path.data(), &s);
+    int err = stat((const char *)path.data(), &s);
     return err == 0;
 }
 
 bool DirUtil::IsDirectory(std::u8string_view path)
 {
     struct stat s;
-    int err = stat((const char*)path.data(), &s);
+    int err = stat((const char *)path.data(), &s);
     if (err == -1)
         return false;
 
     return S_ISDIR(s.st_mode);
 }
 
-bool DirUtil::IsRegular(std::u8string_view  path)
+bool DirUtil::IsRegular(std::u8string_view path)
 {
     struct stat s;
-    int err = stat((const char*)path.data(), &s);
+    int err = stat((const char *)path.data(), &s);
     if (err == -1)
         return false;
 
     return S_ISREG(s.st_mode);
 }
 
-bool DirUtil::CreateDir(std::u8string_view  path)
+bool DirUtil::CreateDir(std::u8string_view path)
 {
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* norPath = PathBuf.GetBufInternal();
+    char *norPath = PathBuf.GetBufInternal();
     return InternalCreateDir(norPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-F_HANDLE DirUtil::RecursiveCreateFile(std::u8string_view  path, uint32_t flag) {
+F_HANDLE DirUtil::RecursiveCreateFile(std::u8string_view path, uint32_t flag)
+{
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* norPath = PathBuf.GetBufInternal();
+    char *norPath = PathBuf.GetBufInternal();
 
-    char* last_slash = strrchr(norPath, static_cast<char>(std::filesystem::path::preferred_separator));
-    if (last_slash == NULL) {
+    char *last_slash = strrchr(norPath, static_cast<char>(std::filesystem::path::preferred_separator));
+    if (last_slash == NULL)
+    {
         return -1;
     }
     *last_slash = '\0';
     bool res = InternalCreateDir(norPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     *last_slash = static_cast<char>(std::filesystem::path::preferred_separator);
-    if (!res) {
+    if (!res)
+    {
         return -1;
     }
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
     return open(norPath, flag, mode);
 }
 
-std::u8string_view DirUtil::AbsolutePath(std::u8string_view  path)
+std::u8string_view DirUtil::AbsolutePath(std::u8string_view path)
 {
     return u8"";
 }
 
-bool DirUtil::Delete(std::u8string_view  path)
+bool DirUtil::Delete(std::u8string_view path)
 {
     return false;
 }
 
-uint64_t DirUtil::FileSize(std::u8string_view  path)
+uint64_t DirUtil::FileSize(std::u8string_view path)
 {
     struct stat s;
-    int err = stat((const char*)path.data(), &s);
+    int err = stat((const char *)path.data(), &s);
     if (err == -1)
         return 0;
 
     return s.st_size;
 }
-bool RecursiveIterateDir() {
-    char* path = PathBuf.GetBufInternal();
-    DIR* dir = opendir(path);
-    if (dir == NULL) {
-        //SIMPLELOG_LOGGER_DEBUG(nullptr, "opendir  failed ");
+bool RecursiveIterateDir(uint32_t depth)
+{
+    char *path = PathBuf.GetBufInternal();
+    DIR *dir = opendir(path);
+    if (dir == NULL)
+    {
+        // SIMPLELOG_LOGGER_DEBUG(nullptr, "opendir  failed ");
         return false;
     }
 
-    dirent* ent = NULL;
-    while ((ent = readdir(dir)) != NULL) {
+    dirent *ent = NULL;
+    while ((ent = readdir(dir)) != NULL)
+    {
         if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
             continue;
         PathBuf.AppendPath(ent->d_name, GetStringLength(ent->d_name));
-        out.Name = (char8_t*)PathBuf.GetBufInternal();
-        if ( DirUtil::IsDirectory((const char8_t*)ent->d_name)) {
-            //SIMPLELOG_LOGGER_DEBUG(nullptr,"iter dir {} ", ent->d_name);
+        out.Name = (char8_t *)PathBuf.GetBufInternal();
+        if (DirUtil::IsDirectory((const char8_t *)ent->d_name))
+        {
+            // SIMPLELOG_LOGGER_DEBUG(nullptr,"iter dir {} ", ent->d_name);
             out.bDir = true;
             cb(out);
-            RecursiveIterateDir();
+            if (depth > 0)
+            {
+                RecursiveIterateDir(depth - 1);
+            }
         }
-        else if ( DirUtil::IsRegular((const char8_t*)ent->d_name)) {
-            //SIMPLELOG_LOGGER_DEBUG(nullptr,"iter file {} ", ent->d_name);
-            out.Size =  DirUtil::FileSize((const char8_t*)ent->d_name);
+        else if (DirUtil::IsRegular((const char8_t *)ent->d_name))
+        {
+            // SIMPLELOG_LOGGER_DEBUG(nullptr,"iter file {} ", ent->d_name);
+            out.Size = DirUtil::FileSize((const char8_t *)ent->d_name);
             out.bDir = false;
             cb(out);
         }
@@ -163,9 +181,9 @@ bool RecursiveIterateDir() {
     closedir(dir);
     return true;
 }
-bool DirUtil::IterateDir(std::u8string_view  path, IterateDirCallback _cb)
+bool DirUtil::IterateDir(std::u8string_view path, IterateDirCallback _cb, uint32_t depth)
 {
     cb = _cb;
     PathBuf.SetNormalizePath(path.data(), path.length());
-    return RecursiveIterateDir();
+    return RecursiveIterateDir(depth);
 }

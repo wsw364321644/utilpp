@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 #include <functional>
+#include <limits>
 #include "simple_os_defs.h"
 #include "simple_export_ppdefs.h"
 
