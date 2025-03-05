@@ -6,7 +6,7 @@
 
 
 template <class T>
-inline void hash_combine(std::size_t &seed, const T &v)
+inline void hash_combine(std::size_t& seed, const T& v)
 {
     std::hash<T> hasher;
     seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -20,18 +20,18 @@ struct Exactly
 };
 
 template <typename To, typename From>
-To UnsafeVariantCast(From &&from)
+To UnsafeVariantCast(From&& from)
 {
-    return std::visit([](auto &&elem) -> To
-                      {
-        using U = std::decay_t<decltype(elem)>;
-        if constexpr (std::is_constructible_v<To, Exactly<U>>) {
-            return To(std::forward<decltype(elem)>(elem));
-        }
-        else {
-            throw std::runtime_error("Bad type");
-        } },
-                      std::forward<From>(from));
+    return std::visit([](auto&& elem) -> To
+        {
+            using U = std::decay_t<decltype(elem)>;
+            if constexpr (std::is_constructible_v<To, Exactly<U>>) {
+                return To(std::forward<decltype(elem)>(elem));
+            }
+            else {
+                throw std::runtime_error("Bad type");
+            } },
+        std::forward<From>(from));
 }
 
 struct EnumClassHash
@@ -74,4 +74,39 @@ struct string_hash
     std::size_t operator()(const char8_t* str) const { return hash_u8type{}(str); }
     std::size_t operator()(std::u8string_view str) const { return hash_u8type{}(str); }
     std::size_t operator()(std::u8string str) const { return hash_u8type{}(str); }
+};
+
+struct hash_8bit
+{
+    std::size_t operator()(uint8_t key) const { return std::size_t(key); }
+    std::size_t operator()(int8_t key) const { return std::size_t(key); }
+};
+struct hash_16bit
+{
+    std::size_t operator()(uint16_t key) const { return std::size_t(key); }
+    std::size_t operator()(int16_t key) const { return std::size_t(key); }
+};
+struct hash_32bit
+{
+    std::size_t operator()(uint32_t key) const { return std::size_t(key); }
+    std::size_t operator()(int32_t key) const { return std::size_t(key); }
+};
+struct hash_64bit
+{
+    std::size_t operator()(uint64_t key) const {
+        if (sizeof(std::size_t) >= sizeof(uint64_t)) {
+            return std::size_t(key);
+        }
+        else {
+            return std::hash <uint64_t>{}(key);
+        }
+    }
+    std::size_t operator()(int64_t key) const {
+        if (sizeof(std::size_t) >= sizeof(int64_t)) {
+            return std::size_t(key);
+        }
+        else {
+            return std::hash <int64_t>{}(key);
+        }
+    }
 };

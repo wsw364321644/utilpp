@@ -6,7 +6,11 @@
 #include <optional>
 #include <handle.h>
 #include "Task/TaskManager.h"
-typedef std::tuple<uint8_t, CommonTaskHandle_t> TFinishedSlotData;
+
+typedef struct FinishedSlotData_t {
+    uint8_t ID;
+    CommonTaskHandle_t Handle;
+}FinishedSlotData;
 template <typename R>
 class FTaskSlotCounter {
 public:
@@ -46,7 +50,7 @@ public:
         Handles[i] = handle;
         return true;
     }
-    std::vector<TFinishedSlotData>& CheckFinished() {
+    std::vector<FinishedSlotData_t>& CheckFinished() {
         OutData.clear();
         for (auto& id : UsedIndex) {
             if (Futures[id].wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
@@ -59,7 +63,7 @@ public:
         }
         return OutData;
     }
-    std::vector<TFinishedSlotData> OutData;
+    std::vector<FinishedSlotData_t> OutData;
     std::set<uint8_t> FreeIndex;
     std::set<uint8_t> UsedIndex;
     std::vector<std::future<R>> Futures;
