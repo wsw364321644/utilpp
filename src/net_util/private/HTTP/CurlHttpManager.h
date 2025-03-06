@@ -29,8 +29,7 @@ public:
     HttpRequestPtr NewRequest() override;
     bool ProcessRequest(HttpRequestPtr) override;
     void Tick(float delSec) override;
-
-    void HttpThreadTick(float delSec);
+    void HttpThreadTick(float delSec) override;
 
     static struct CurlRequestOptions_t
     {

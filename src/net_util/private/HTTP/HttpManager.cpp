@@ -1,6 +1,6 @@
 #include "HTTP/HttpManager.h"
 #include "HTTP/CurlHttpManager.h"
-std::unordered_map<std::u8string_view, NamedManagerData_t, string_hash> IHttpManager::FnCreates;
+std::unordered_map<std::u8string_view, std::shared_ptr<NamedManagerData_t>, string_hash> IHttpManager::FnCreates;
 enum class EInitStatus
 {
     IS_None,
@@ -22,7 +22,8 @@ HttpManagerPtr IHttpManager::GetNamedManager(std::u8string_view name) {
     if (itr == FnCreates.end()) {
         return nullptr;
     }
-    auto& [_name,data]=*itr;
+    auto& [_name,pdata]=*itr;
+    auto& data = *pdata;
     auto expected = data.Ptr.load();
     if (!expected) {
         auto desired=data.CreateFn();

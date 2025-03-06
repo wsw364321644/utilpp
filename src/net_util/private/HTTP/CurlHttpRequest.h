@@ -101,7 +101,7 @@ public:
     void SetContentBuf(void* Ptr, int64_t Len) override;
     int32_t GetResponseCode() override { return HttpCode; }
     int64_t GetContentBytesRead() override { return TotalBytesRead; }
-    std::string_view GetContentAsString() override;
+    std::u8string_view GetContentAsString() override;
 
     void ContentAppend(char* Data, size_t Len);
     friend class FCurlHttpManager;

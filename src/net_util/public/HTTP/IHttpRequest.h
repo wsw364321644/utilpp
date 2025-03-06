@@ -260,7 +260,7 @@ public:
      *
      * @return the payload as a string.
      */
-    virtual std::string_view GetContentAsString() = 0;
+    virtual std::u8string_view GetContentAsString() = 0;
 
     /**
     * Get payload length not the content-length header.

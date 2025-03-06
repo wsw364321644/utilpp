@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <memory>
 #include <std_ext.h>
 #include "IHttpRequest.h"
 #include "net_export_defs.h"
@@ -28,24 +29,25 @@ public:
     virtual ~IHttpManager() {}
 
     template<class T>
-    static void RigisterNamedManager(std::u8string_view _name) {
-        std::u8string name(_name);
-        auto [pair, res] = FnCreates.try_emplace(name);
+    static void RigisterNamedManager(std::u8string_view name) {
+        auto pNamedManagerData=std::make_shared<NamedManagerData_t>();
+        pNamedManagerData->Name = name;
+
+        auto [pair, res] = FnCreates.try_emplace(pNamedManagerData->Name, pNamedManagerData);
         auto& [key, val] = *pair;
-        val.CreateFn =
+        pNamedManagerData->CreateFn =
             []() -> HttpManagerPtr {
             return std::make_shared<T>();
             };
-        val.Name = std::move(name);
     };
     static HttpManagerPtr GetNamedManager(const char* name);
     static HttpManagerPtr GetNamedManager(std::u8string_view name);
     virtual HttpRequestPtr NewRequest() = 0;
     virtual bool ProcessRequest(HttpRequestPtr) = 0;
     virtual void Tick(float delSec) = 0;
-
+    virtual void HttpThreadTick(float delSec) = 0;
     std::string GetDefaultUserAgent() { return "Mozilla"; }
 
 private:
-    static std::unordered_map<std::u8string_view, NamedManagerData_t, string_hash> FnCreates;
+    static std::unordered_map<std::u8string_view, std::shared_ptr<NamedManagerData_t>, string_hash> FnCreates;
 };

@@ -340,9 +340,9 @@ const std::vector<uint8_t>& FCurlHttpResponse::GetContent()
     return Content;
 }
 
-std::string_view FCurlHttpResponse::GetContentAsString()
+std::u8string_view FCurlHttpResponse::GetContentAsString()
 {
-    return std::string_view((char*)Content.data(), Content.size());
+    return std::u8string_view((const char8_t*)Content.data(), Content.size());
 }
 
 void FCurlHttpResponse::SetContentBuf(void* Ptr, int64_t Len)
