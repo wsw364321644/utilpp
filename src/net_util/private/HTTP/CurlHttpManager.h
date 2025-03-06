@@ -1,10 +1,13 @@
 #pragma once
-#include "HttpManager.h"
-#include "CurlHttpRequest.h"
+
 #include <set>
 #include <list>
 #include <unordered_map>
 #include <mutex>
+#include <std_ext.h>
+#include <tbb/concurrent_queue.h>
+#include "HTTP/HttpManager.h"
+#include "HTTP/CurlHttpRequest.h"
 #include "net_export_defs.h"
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
 typedef struct {
@@ -13,7 +16,7 @@ typedef struct {
     int64_t NewSize;
 }CurlDownloadProgress_t;
 //typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
-class SIMPLE_NET_EXPORT FCurlHttpManager :public FHttpManager {
+class SIMPLE_NET_EXPORT FCurlHttpManager :public IHttpManager {
 
 public:
     enum ECurlState {
@@ -77,15 +80,13 @@ private:
 
     //std::unordered_map<CurlHttpRequestPtr, CurlHttpRequestPtr> ReqsMap;
     std::list<CurlHttpRequestPtr> Reqs;
-    std::unordered_map<void*, CurlHttpRequestPtr> HandlesToRequests;
+    std::unordered_map<void*, CurlHttpRequestPtr, pointer_hash> HandlesToRequests;
     ECurlState CurlState{ INVALID };
 
     //http:wr main:wr
-    std::mutex ReqMutex;
-    std::set<CurlHttpRequestPtr> FinishedRequests;
-    std::list<CurlHttpRequestPtr> RunningRequests;
-    std::mutex ProgressMutex;
-    std::list<CurlDownloadProgress_t> RunningProgressList;
+    tbb::concurrent_queue<CurlHttpRequestPtr> RunningRequests;
+    tbb::concurrent_queue<CurlHttpRequestPtr> FinishedRequests;
+    tbb::concurrent_queue<CurlDownloadProgress_t> RunningProgressList;
 
     //http thread
     std::list<CurlHttpRequestPtr> RunningThreadedRequests;

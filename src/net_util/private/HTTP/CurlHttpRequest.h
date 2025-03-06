@@ -1,5 +1,5 @@
 #pragma once
-#include "IHttpRequest.h"
+#include "HTTP/IHttpRequest.h"
 
 #include <unordered_map>
 #include <list>

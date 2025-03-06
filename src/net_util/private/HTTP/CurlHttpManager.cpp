@@ -68,54 +68,37 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
     // Response object to handle data that comes back after starting this request
     Reqs.push_back(creq);
     SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
-    {
-        std::scoped_lock lock(ReqMutex);
-        RunningRequests.push_back(ThreadedRequest);
-    }
+    RunningRequests.push(ThreadedRequest);
     SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
     return true;
 }
 
 void FCurlHttpManager::Tick(float delSec)
 {
-    std::set<CurlHttpRequestPtr> LocalFinishedRequests;
-    {
-        std::scoped_lock lock(ReqMutex);
-        LocalFinishedRequests.swap(FinishedRequests);
-    }
-    for (auto& FinishedRequest : LocalFinishedRequests) {
-        auto res_itr = std::find(std::begin(Reqs), std::end(Reqs), FinishedRequest);
-
-        if (res_itr == std::end(Reqs)) {
-            SIMPLELOG_LOGGER_ERROR(nullptr, "finished threaded request cant found {}", (void*)FinishedRequest.get());
-            continue;
-        }
-        FinishRequest(*res_itr); 
+    CurlHttpRequestPtr out;
+    while (FinishedRequests.try_pop(out)) {
+        auto res_itr = std::find(std::begin(Reqs), std::end(Reqs), out);
+        assert(res_itr != std::end(Reqs));
+        FinishRequest(*res_itr);
         Reqs.erase(res_itr);
     }
-
-    std::list<CurlDownloadProgress_t> LocalRunningProgressList;
-    {
-        std::scoped_lock ProgressLock(ProgressMutex);
-        LocalRunningProgressList.swap(RunningProgressList);
-    }
-    for (auto& LocalRunningProgress : LocalRunningProgressList) {
-        auto res_itr = std::find_if(std::cbegin(Reqs), std::cend(Reqs), [&LocalRunningProgress](const CurlHttpRequestPtr& ptr)->bool {
-            return ptr.get() == LocalRunningProgress.HttpReq;
+    CurlDownloadProgress_t outProgress;
+    while (RunningProgressList.try_pop(outProgress)) {
+        auto res_itr = std::find_if(std::cbegin(Reqs), std::cend(Reqs), [&outProgress](const CurlHttpRequestPtr& ptr)->bool {
+            return ptr.get() == outProgress.HttpReq;
             });
         if (res_itr == std::cend(Reqs)) {
             continue;
         }
         auto& localReq = *res_itr;
         if (localReq->OnRequestProgress()) {
-            localReq->OnRequestProgress()(localReq, LocalRunningProgress.OldSize, LocalRunningProgress.NewSize, LocalRunningProgress.HttpReq->Response->GetContentLength());
+            localReq->OnRequestProgress()(localReq, outProgress.OldSize, outProgress.NewSize, outProgress.HttpReq->Response->GetContentLength());
         }
     }
 }
 
 void FCurlHttpManager::HttpThreadTick(float delSec)
 {
-
     HttpThreadAddTask();
     if (RunningThreadedRequests.size() > 0)
     {
@@ -152,21 +135,18 @@ void FCurlHttpManager::HttpThreadTick(float delSec)
                         if (itr != RunningThreadedRequests.end()) {
                             (*itr)->bCompleted = true;
                             (*itr)->CurlCompletionResult = Message->data.result;
-                            {
-                                std::scoped_lock lock(ReqMutex);
-                                FinishedRequests.insert(*itr);
-                            }
+                            FinishedRequests.push(*itr);
                             SIMPLELOG_LOGGER_INFO(nullptr, "Request {} (easy handle:{}) has completed (code:{}) and has been marked as such", (void*)CurlRequest.get(), (void*)CompletedHandle, CurlRequest->GetResponse()->GetResponseCode());
                         }
                         else {
-                            SIMPLELOG_LOGGER_WARN(nullptr, "Could not find RunningThreadedRequests for completed request (easy handle: {})", (void*)CompletedHandle);
+                            SIMPLELOG_LOGGER_ERROR(nullptr, "Could not find RunningThreadedRequests for completed request (easy handle: {})", (void*)CompletedHandle);
                         }
                         RunningThreadedRequests.erase(itr);
                         HandlesToRequests.erase(multiHandleItr);
                     }
                     else
                     {
-                        SIMPLELOG_LOGGER_WARN(nullptr, "Could not find mapping for completed request (easy handle: {})", (void*)CompletedHandle);
+                        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not find mapping for completed request (easy handle: {})", (void*)CompletedHandle);
                     }
                 }
             }
@@ -278,10 +258,11 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
         {
             auto oldsize = Response->GetContentBytesRead();
             Response->ContentAppend((char*)Ptr, SizeToDownload);
-            {
-                std::scoped_lock lock(ProgressMutex);
-                RunningProgressList.emplace_back(creq, oldsize, Response->TotalBytesRead);
-            }
+            CurlDownloadProgress_t progress;
+            progress.NewSize = Response->TotalBytesRead;
+            progress.OldSize = oldsize;
+            progress.HttpReq = creq;
+            RunningProgressList.push(std::move(progress));
             return SizeToDownload;
         }
     }
@@ -312,28 +293,17 @@ size_t FCurlHttpManager::StaticReceiveResponseBodyCallback(void* Ptr, size_t Siz
 
 void FCurlHttpManager::HttpThreadAddTask()
 {
-    int32_t oldsize = RunningThreadedRequests.size();
-    {
-        std::scoped_lock lock(ReqMutex);
-        if (!RunningRequests.size()) {
-            return;
-        }
-        RunningThreadedRequests.splice(RunningThreadedRequests.end(), RunningRequests);
-    }
-    auto itr = RunningThreadedRequests.begin();
-    for (std::advance(itr, oldsize); itr != RunningThreadedRequests.end(); ) {
-        CURLMcode AddResult = curl_multi_add_handle(MultiHandle, (*itr)->EasyHandle);
-        (*itr)->CurlAddToMultiResult = AddResult;
-
+    CurlHttpRequestPtr out;
+    while (RunningRequests.try_pop(out)) {
+        CURLMcode AddResult = curl_multi_add_handle(MultiHandle, out->EasyHandle);
+        out->CurlAddToMultiResult = AddResult;
         if (AddResult != CURLM_OK)
         {
-            SIMPLELOG_LOGGER_WARN(nullptr, "Failed to add easy handle {} to multi handle with code {}", (*itr)->EasyHandle, (int)AddResult);
-            RunningThreadedRequests.erase(itr++);
-            continue;
+            SIMPLELOG_LOGGER_WARN(nullptr, "Failed to add easy handle {} to multi handle with code {}", out->EasyHandle, (int)AddResult);
         }
         else {
-            HandlesToRequests[(*itr)->EasyHandle] = (*itr);
-            itr++;
+            HandlesToRequests[out->EasyHandle] = out;
+            RunningThreadedRequests.push_back(out);
         }
     }
 }
@@ -432,7 +402,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     curl_easy_setopt(creq->EasyHandle, CURLOPT_URL, creq->URL.c_str());
 
     // set up verb (note that Verb is expected to be uppercase only)
-    if (creq->Verb == TEXT("POST"))
+    if (creq->Verb == VERB_POST)
     {
         std::vector<MimePart_t> AllMime = creq->GetAllMime();
         const int32_t NumAllMime = AllMime.size();
@@ -460,7 +430,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
             }
         }
     }
-    else if (creq->Verb == TEXT("PUT"))
+    else if (creq->Verb == VERB_PUT)
     {
         curl_easy_setopt(creq->EasyHandle, CURLOPT_UPLOAD, 1L);
         // this pointer will be passed to read function
@@ -471,18 +441,18 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         // reset the counter
         creq->BytesSent = 0;
     }
-    else if (creq->Verb == TEXT("GET"))
+    else if (creq->Verb == VERB_GET)
     {
         // technically might not be needed unless we reuse the handles
         curl_easy_setopt(creq->EasyHandle, CURLOPT_HTTPGET, 1L);
     }
-    else if (creq->Verb == TEXT("HEAD"))
+    else if (creq->Verb == VERB_HEAD)
     {
         curl_easy_setopt(creq->EasyHandle, CURLOPT_NOBODY, 1L);
         //CURLOPT_HEADER  header would return by body callback(StaticReceiveResponseBodyCallback)
         //curl_setopt(creq->EasyHandle, CURLOPT_HEADER, 1);
     }
-    else if (creq->Verb == TEXT("DELETE"))
+    else if (creq->Verb == VERB_DELETE)
     {
         curl_easy_setopt(creq->EasyHandle, CURLOPT_CUSTOMREQUEST, creq->Verb.c_str());
         curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDS, creq->Content.data());

@@ -76,6 +76,11 @@ struct string_hash
     std::size_t operator()(std::u8string str) const { return hash_u8type{}(str); }
 };
 
+struct pointer_hash
+{
+    std::size_t operator()(void* ptr) const { return std::size_t(ptr); }
+};
+
 struct hash_8bit
 {
     std::size_t operator()(uint8_t key) const { return std::size_t(key); }

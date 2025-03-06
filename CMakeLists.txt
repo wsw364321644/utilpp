@@ -28,7 +28,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY git@github.com:wsw364321644/OCmakeUtil.git
-  GIT_TAG 35dc84a57e2222e4ede01f58d48deea147c9a098
+  GIT_TAG bdf7886212fb4bb9e8dba8420c3c5905341ba269
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -74,9 +74,10 @@ FetchContent_Declare(
   GIT_REPOSITORY git@github.com:taskflow/taskflow.git
   GIT_TAG 12f8bd4e970ab27fd3dee3bffa24b5b48b54ba39 # 3.6.0
 )
-FetchContent_MakeAvailable(taskflow)
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem)
+ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
+
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src/simple_util)
