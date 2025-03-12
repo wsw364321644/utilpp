@@ -16,7 +16,10 @@ typedef struct CommonHandle_t
     constexpr CommonHandle_t(const CommonHandle_t& handle) : ID(handle.ID) {}
     CommonHandle_t(std::atomic<CommonHandleID_t>&counter)
     {
-        ID = ++counter ? counter.load() : ++counter;
+        ID = counter.fetch_add(1,std::memory_order::relaxed);
+        if (ID==0) {
+            ID = counter.fetch_add(1, std::memory_order::relaxed);
+        }
     }
     virtual ~CommonHandle_t(){}
     bool IsValid() const

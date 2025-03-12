@@ -10,7 +10,7 @@ class SIMPLE_UTIL_EXPORT CharBuffer
 {
 public:
     CharBuffer();
-    CharBuffer(CharBuffer &&);
+    CharBuffer(CharBuffer &&)noexcept;
     CharBuffer(CharBuffer &);
     CharBuffer(const char *cstr);
     CharBuffer(const char *cstr, size_t size);

@@ -584,7 +584,8 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
     // declare an array of the EXPLICIT_ACCESS structure
     EXPLICIT_ACCESS_A ea;
     // Verify the object name validity
-    char username[S_INFO_BUFFER_SIZE];
+    char* username = NULL;
+    username = (char*)malloc(S_INFO_BUFFER_SIZE);
     uint64_t count = S_INFO_BUFFER_SIZE;
     char* interpath{NULL};
     if (path == NULL)
@@ -593,6 +594,9 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
     }
     else {
         interpath=(char*)malloc(strlen(path));
+        if (!interpath) {
+            return false;
+        }
         strcpy(interpath, path);
     }
     auto Cleanup = [&]() {
@@ -602,6 +606,9 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
             LocalFree((HLOCAL)pNewDACL);
         if (interpath) {
             free(interpath);
+        }
+        if (username) {
+            free(username);
         }
     };
 

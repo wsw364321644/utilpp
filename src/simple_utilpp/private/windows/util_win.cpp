@@ -32,6 +32,9 @@ int util_dll_wpath(wchar_t* path, size_t* size)
     }
     else {
         temppath = (wchar_t*)malloc(buflen * sizeof(WCHAR));
+        if (!temppath) {
+            return -1;
+        }
     }
     while (true) {
 
@@ -104,9 +107,11 @@ int util_exe_wpath(wchar_t* path, size_t* size)
     }
     else {
         temppath = (wchar_t*)malloc(buflen * sizeof(WCHAR));
+        if (!temppath) {
+            return -1;
+        }
     }
     while (true) {
-
         len = GetModuleFileNameW(NULL, temppath, buflen);
         /* if it truncated, then len >= buflen - 1 */
         /* if there was enough room (or failure), len < buflen - 1 */
@@ -136,6 +141,9 @@ static DWORD WINAPI win_thread_func(void* arg);
 util_thread_t util_create_thread(void* arg, util_thread_func func)
 {
     struct sk_thread* p = (struct sk_thread*)calloc(1, sizeof(struct sk_thread));
+    if (!p) {
+        return NULL;
+    }
     p->arg = arg;
     p->func = func;
 

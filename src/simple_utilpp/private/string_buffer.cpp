@@ -6,7 +6,7 @@
 CharBuffer::CharBuffer() : bufSize(0), cursor(0), readCursor(0), pBuf(nullptr), freeptr(free), mallocptr(malloc)
 {
 }
-CharBuffer::CharBuffer(CharBuffer &&mbuf) : CharBuffer()
+CharBuffer::CharBuffer(CharBuffer &&mbuf)noexcept : CharBuffer()
 {
     pBuf = mbuf.pBuf;
     mbuf.pBuf = nullptr;
