@@ -37,6 +37,7 @@ public:
     void SetMimePart(InMimePart_t part)override;
     void SetRange(uint64_t begin, uint64_t end)override;
     bool ProcessRequest() override;
+    void Clear();
     HttpRequestCompleteDelegateType& OnProcessRequestComplete() override;
     HttpRequestProgressDelegateType& OnRequestProgress() override;
     void CancelRequest() override;
@@ -78,6 +79,7 @@ private:
     std::vector<MimePart_t> MimeParts;
     std::vector<uint8_t> Content;
 
+    uint32_t RequestID;
     HttpRequestCompleteDelegateType HttpRequestCompleteDelegate;
     HttpRequestProgressDelegateType HttpRequestProgressDelegate;
 };
@@ -104,6 +106,7 @@ public:
     std::u8string_view GetContentAsString() override;
 
     void ContentAppend(char* Data, size_t Len);
+    void Clear();
     friend class FCurlHttpManager;
 private:
     FCurlHttpRequest* CurlRequest;

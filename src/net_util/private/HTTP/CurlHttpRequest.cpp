@@ -217,6 +217,20 @@ bool FCurlHttpRequest::ProcessRequest()
     return Manager->ProcessRequest(shared_from_this());
 }
 
+void FCurlHttpRequest::Clear()
+{
+    Content.clear();
+    Headers.clear();
+    Queries.clear();
+    Verb.clear();
+    URL.clear();
+    Host.clear();
+    Path.clear();
+    Scheme.clear();
+    Port = 0;
+    RequestID = 0;
+}
+
 HttpRequestCompleteDelegateType& FCurlHttpRequest::OnProcessRequestComplete()
 {
     return HttpRequestCompleteDelegate;
@@ -367,4 +381,15 @@ void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
         Content.insert(itr, Data, Data + Len + 1);
     }
     TotalBytesRead += Len;
+}
+
+void FCurlHttpResponse::Clear()
+{
+    Headers.clear();
+    Content.clear();
+    bSucceeded = false;
+    bIsReady = false;
+    HttpCode = 0;
+    ContentLength = -1;
+    TotalBytesRead = 0;
 }

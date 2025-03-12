@@ -34,24 +34,22 @@ FCurlHttpManager::FCurlHttpManager()
 
 HttpRequestPtr FCurlHttpManager::NewRequest()
 {
-    //return std::make_shared<CurlHttpRequest>(this);
-    auto req = std::shared_ptr<FCurlHttpRequest>(new FCurlHttpRequest(this));
-    req->Response = std::make_shared<FCurlHttpResponse>(req.get());
-    return req;
+    CurlHttpRequestPtr pCurlHttpRequest;
+    FreeToUseRequests.try_dequeue(pCurlHttpRequest);
+    if (pCurlHttpRequest) {
+        return pCurlHttpRequest;
+    }
+    pCurlHttpRequest = std::shared_ptr<FCurlHttpRequest>(new FCurlHttpRequest(this));
+    // Response object to handle data that comes back after starting this request
+    pCurlHttpRequest->Response = std::make_shared<FCurlHttpResponse>(pCurlHttpRequest.get());
+    return pCurlHttpRequest;
 }
 
 bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 {
-
     auto creq = std::dynamic_pointer_cast<FCurlHttpRequest>(req);
-
-    auto resitr = std::find(Reqs.cbegin(), Reqs.cend(), creq);
-    if (resitr != Reqs.cend()) {
-        return false;
-    }
     SetupLocalRequest(creq);
 
-    //auto ThreadedRequest = std::make_shared<FCurlHttpRequest>(*creq);
     auto ThreadedRequest = creq;
     if (!SetupRequest(ThreadedRequest))
     {
@@ -60,47 +58,40 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
         creq->Response = NULL;
         // Cleanup and call delegate
         FinishRequest(creq);
-
         return false;
     }
-
-
-    // Response object to handle data that comes back after starting this request
-    Reqs.push_back(creq);
+    
     SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
-    RunningRequests.push(ThreadedRequest);
+    RunningRequests.enqueue(ThreadedRequest);
     SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
     return true;
 }
 
 void FCurlHttpManager::Tick(float delSec)
 {
-    CurlHttpRequestPtr out;
-    while (FinishedRequests.try_pop(out)) {
-        auto res_itr = std::find(std::begin(Reqs), std::end(Reqs), out);
-        assert(res_itr != std::end(Reqs));
-        FinishRequest(*res_itr);
-        Reqs.erase(res_itr);
-    }
     CurlDownloadProgress_t outProgress;
-    while (RunningProgressList.try_pop(outProgress)) {
-        auto res_itr = std::find_if(std::cbegin(Reqs), std::cend(Reqs), [&outProgress](const CurlHttpRequestPtr& ptr)->bool {
-            return ptr.get() == outProgress.HttpReq;
-            });
-        if (res_itr == std::cend(Reqs)) {
+    while (RunningProgressList.try_dequeue(outProgress)) {
+        auto creq = std::dynamic_pointer_cast<FCurlHttpRequest>(outProgress.HttpReq);
+        if (creq->RequestID!= outProgress.RequestID) {
             continue;
         }
-        auto& localReq = *res_itr;
-        if (localReq->OnRequestProgress()) {
-            localReq->OnRequestProgress()(localReq, outProgress.OldSize, outProgress.NewSize, outProgress.HttpReq->Response->GetContentLength());
+        if (outProgress.HttpReq->OnRequestProgress()) {
+            outProgress.HttpReq->OnRequestProgress()(outProgress.HttpReq, outProgress.OldSize, outProgress.NewSize, outProgress.HttpReq->GetResponse()->GetContentLength());
         }
+    }
+
+    CurlHttpRequestPtr out;
+    while (FinishedRequests.try_dequeue(out)) {
+        FinishRequest(out);
+        FreeToUseRequests.enqueue(out);
     }
 }
 
 void FCurlHttpManager::HttpThreadTick(float delSec)
 {
     HttpThreadAddTask();
-    if (RunningThreadedRequests.size() > 0)
+    auto RunningThreadedRequestsNum = HandlesToRequests.size();
+    if (RunningThreadedRequestsNum > 0)
     {
         int RunningRequestNum = -1;
 
@@ -109,7 +100,7 @@ void FCurlHttpManager::HttpThreadTick(float delSec)
 
         // read more info if number of requests changed or if there's zero running
         // (note that some requests might have never be "running" from libcurl's point of view)
-        if (RunningRequestNum == 0 || RunningRequestNum != RunningThreadedRequests.size())
+        if (RunningRequestNum == 0 || RunningRequestNum != RunningThreadedRequestsNum)
         {
             for (;;)
             {
@@ -130,18 +121,11 @@ void FCurlHttpManager::HttpThreadTick(float delSec)
                     auto multiHandleItr = HandlesToRequests.find(CompletedHandle);
                     if (multiHandleItr != HandlesToRequests.end())
                     {
-                        CurlHttpRequestPtr CurlRequest = multiHandleItr->second;
-                        auto itr = std::find(RunningThreadedRequests.begin(), RunningThreadedRequests.end(), CurlRequest);
-                        if (itr != RunningThreadedRequests.end()) {
-                            (*itr)->bCompleted = true;
-                            (*itr)->CurlCompletionResult = Message->data.result;
-                            FinishedRequests.push(*itr);
-                            SIMPLELOG_LOGGER_INFO(nullptr, "Request {} (easy handle:{}) has completed (code:{}) and has been marked as such", (void*)CurlRequest.get(), (void*)CompletedHandle, CurlRequest->GetResponse()->GetResponseCode());
-                        }
-                        else {
-                            SIMPLELOG_LOGGER_ERROR(nullptr, "Could not find RunningThreadedRequests for completed request (easy handle: {})", (void*)CompletedHandle);
-                        }
-                        RunningThreadedRequests.erase(itr);
+                        auto& [handle, CurlRequest] = *multiHandleItr;
+                        CurlRequest->bCompleted = true;
+                        CurlRequest->CurlCompletionResult = Message->data.result;
+                        FinishedRequests.enqueue(CurlRequest);
+                        SIMPLELOG_LOGGER_INFO(nullptr, "Request {} (easy handle:{}) has completed (code:{}) and has been marked as such", (void*)CurlRequest.get(), (void*)CompletedHandle, CurlRequest->GetResponse()->GetResponseCode());
                         HandlesToRequests.erase(multiHandleItr);
                     }
                     else
@@ -261,8 +245,9 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
             CurlDownloadProgress_t progress;
             progress.NewSize = Response->TotalBytesRead;
             progress.OldSize = oldsize;
-            progress.HttpReq = creq;
-            RunningProgressList.push(std::move(progress));
+            progress.HttpReq = creq->shared_from_this();
+            progress.RequestID = creq->RequestID;
+            RunningProgressList.enqueue(std::move(progress));
             return SizeToDownload;
         }
     }
@@ -294,7 +279,7 @@ size_t FCurlHttpManager::StaticReceiveResponseBodyCallback(void* Ptr, size_t Siz
 void FCurlHttpManager::HttpThreadAddTask()
 {
     CurlHttpRequestPtr out;
-    while (RunningRequests.try_pop(out)) {
+    while (RunningRequests.try_dequeue(out)) {
         CURLMcode AddResult = curl_multi_add_handle(MultiHandle, out->EasyHandle);
         out->CurlAddToMultiResult = AddResult;
         if (AddResult != CURLM_OK)
@@ -303,7 +288,6 @@ void FCurlHttpManager::HttpThreadAddTask()
         }
         else {
             HandlesToRequests[out->EasyHandle] = out;
-            RunningThreadedRequests.push_back(out);
         }
     }
 }
@@ -360,7 +344,7 @@ bool FCurlHttpManager::SetupLocalRequest(CurlHttpRequestPtr creq)
         }
         creq->URL = url;
     }
-
+    creq->RequestID = RequestIDCounter.fetch_add(1);
 end:
     if (urlp) {
         curl_url_cleanup(urlp);
@@ -711,5 +695,10 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
             curl_mime_free(creq->Mime);
             creq->Mime = nullptr;
         }
+    }
+    {
+        //for reuse 
+        creq->Clear();
+        Response->Clear();
     }
 }

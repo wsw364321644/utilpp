@@ -28,7 +28,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY git@github.com:wsw364321644/OCmakeUtil.git
-  GIT_TAG bdf7886212fb4bb9e8dba8420c3c5905341ba269
+  GIT_TAG 24b87522ba7b9a771f51f2030021dec72935d5c9
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -75,7 +75,13 @@ FetchContent_Declare(
   GIT_TAG 12f8bd4e970ab27fd3dee3bffa24b5b48b54ba39 # 3.6.0
 )
 
-FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem)
+FetchContent_Declare(
+  concurrentqueue
+  GIT_REPOSITORY git@github.com:cameron314/concurrentqueue.git
+  GIT_TAG 2f09da73d22a47dc8a89cdd4fc4c3bfae07f4284 
+)
+
+FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem concurrentqueue)
 ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
 
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)

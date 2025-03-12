@@ -5,15 +5,16 @@
 #include <unordered_map>
 #include <mutex>
 #include <std_ext.h>
-#include <tbb/concurrent_queue.h>
+#include <concurrentqueue.h>
 #include "HTTP/HttpManager.h"
 #include "HTTP/CurlHttpRequest.h"
 #include "net_export_defs.h"
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
 typedef struct {
-    FCurlHttpRequest* HttpReq;
+    HttpRequestPtr HttpReq;
     int64_t OldSize;
     int64_t NewSize;
+    uint32_t RequestID;
 }CurlDownloadProgress_t;
 //typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
 class SIMPLE_NET_EXPORT FCurlHttpManager :public IHttpManager {
@@ -77,18 +78,19 @@ private:
     bool SetupRequest(CurlHttpRequestPtr);
     void FinishRequest(CurlHttpRequestPtr creq);
 
-    //std::unordered_map<CurlHttpRequestPtr, CurlHttpRequestPtr> ReqsMap;
-    std::list<CurlHttpRequestPtr> Reqs;
-    std::unordered_map<void*, CurlHttpRequestPtr, pointer_hash> HandlesToRequests;
-    ECurlState CurlState{ INVALID };
 
-    //http:wr main:wr
-    tbb::concurrent_queue<CurlHttpRequestPtr> RunningRequests;
-    tbb::concurrent_queue<CurlHttpRequestPtr> FinishedRequests;
-    tbb::concurrent_queue<CurlDownloadProgress_t> RunningProgressList;
+    ECurlState CurlState{ INVALID };
+    //mutil:wr
+    std::atomic_uint32_t RequestIDCounter{ 0 };
+    moodycamel::ConcurrentQueue<CurlHttpRequestPtr> FreeToUseRequests;
+
+    //http:wr mutil:wr
+    moodycamel::ConcurrentQueue<CurlHttpRequestPtr> RunningRequests;
+    moodycamel::ConcurrentQueue<CurlHttpRequestPtr> FinishedRequests;
+    moodycamel::ConcurrentQueue<CurlDownloadProgress_t> RunningProgressList;
 
     //http thread
-    std::list<CurlHttpRequestPtr> RunningThreadedRequests;
+    std::unordered_map<void*, CurlHttpRequestPtr, pointer_hash> HandlesToRequests;
     CURLM* MultiHandle{ nullptr };
     CURLSH* ShareHandle{ nullptr };
 
