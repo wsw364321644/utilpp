@@ -5,7 +5,8 @@ function(add_lib TARGET_NAME)
     AddTargetInclude(${TARGET_NAME})
 
     target_link_libraries(${TARGET_NAME} PRIVATE Taskflow)
-
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE TBB::tbb)
     install(TARGETS ${TARGET_NAME}
         EXPORT ${TARGET_NAME}Targets
         LIBRARY DESTINATION lib

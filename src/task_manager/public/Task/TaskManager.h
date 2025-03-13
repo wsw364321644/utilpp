@@ -1,15 +1,9 @@
 #pragma once
 #include <functional>
-#include <unordered_map>
 #include <memory>
-#include <chrono>
-#include <mutex>
 #include <atomic>
 #include <future>
 #include <tuple>
-#include <set>
-#include <optional>
-#include <shared_mutex>
 #include <handle.h>
 
 #include <delegate_macros.h>
@@ -101,12 +95,13 @@ public:
 
 class  ITaskManager {
 public:
+    virtual ~ITaskManager(){};
     virtual WorkflowHandle_t NewWorkflow() = 0;
+    virtual void ReleaseWorkflow(WorkflowHandle_t) = 0;
     /**
     * get MainThread handle
     */
     virtual WorkflowHandle_t GetMainThread() = 0;
-    virtual void ReleaseWorkflow(WorkflowHandle_t) = 0;
     virtual void Run() = 0;
     virtual void Tick() = 0;
     virtual void Stop() = 0;
