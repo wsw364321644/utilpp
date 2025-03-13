@@ -5,12 +5,12 @@ set(VERSION "0.0.1")
 project(utilpp VERSION ${VERSION})
 enable_language(C CXX ASM)
 
-option(UTILPP_STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
+option(STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
 option(UTILPP_WITH_STATIC_LIBUV "USE UV_a." OFF)
 
 # option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 if(PROJECT_IS_TOP_LEVEL)
-  if(UTILPP_STATIC_CRT)
+  if(STATIC_CRT)
     if(MSVC)
       set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
       add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -78,13 +78,17 @@ FetchContent_Declare(
 FetchContent_Declare(
   concurrentqueue
   GIT_REPOSITORY git@github.com:cameron314/concurrentqueue.git
-  GIT_TAG 2f09da73d22a47dc8a89cdd4fc4c3bfae07f4284 
+  GIT_TAG 2f09da73d22a47dc8a89cdd4fc4c3bfae07f4284
 )
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem concurrentqueue)
-ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
-
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+# if(STATIC_CRT)
+#   ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
+# else()
+#   ImportProject(TBB SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
+# endif()
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)

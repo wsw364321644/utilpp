@@ -13,6 +13,4 @@ public:
     void Run() override;
     void Tick() override;
     void Stop() override;
-
-
 };
