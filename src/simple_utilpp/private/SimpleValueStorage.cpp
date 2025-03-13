@@ -21,7 +21,7 @@ std::unordered_map<SimpleValueHandle_t,std::shared_ptr<StorageValueInfo_t>, std:
 const SimpleValueHandle_t SimpleValueStorage::RegisterValue(uint32_t size, ConstructFn_t LConstructFn, ConstructFn_t RConstructFn, DeconstructFn_t deconstructfn)
 {
     auto pinfo=std::make_shared<StorageValueInfo_t>();
-    auto res=StorageValueInfoList.emplace(std::piecewise_construct, std::make_tuple(), std::make_tuple(pinfo));
+    auto res=StorageValueInfoList.try_emplace(SimpleValueHandle_t(SimpleValueHandle_t::SimpleValueCount), pinfo);
     if (!res.second) {
         return NullHandle;
     }

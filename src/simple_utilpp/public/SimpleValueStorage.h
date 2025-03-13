@@ -8,7 +8,7 @@
 typedef struct SimpleValueHandle_t : CommonHandle_t
 {
     constexpr SimpleValueHandle_t(NullCommonHandle_t nhandle) :CommonHandle_t(nhandle) { }
-    SimpleValueHandle_t() : CommonHandle_t(SimpleValueCount) {}
+    SimpleValueHandle_t() : CommonHandle_t() {}
     constexpr SimpleValueHandle_t(CommonHandleID_t id) : CommonHandle_t(id) {}
     constexpr SimpleValueHandle_t(const SimpleValueHandle_t& handle) : CommonHandle_t(handle) {}
 

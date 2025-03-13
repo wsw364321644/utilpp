@@ -332,7 +332,7 @@ FDownloader::FDownloader(){
 
 DownloadTaskHandle_t FDownloader::AddTask(FDownloadFile* file)
 {
-    auto respair=Files.emplace(DownloadTaskHandle_t::task_count, file);
+    auto respair=Files.try_emplace(DownloadTaskHandle_t::task_count, file);
     if (respair.second) {
         return respair.first->first;
     }

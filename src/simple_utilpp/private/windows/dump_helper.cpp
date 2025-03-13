@@ -14,9 +14,9 @@
 
 struct DumpHandle_t : CommonHandle_t
 {
-    DumpHandle_t() : CommonHandle_t(CommonHandle_t::atomic_count)
-    {
-    }
+    DumpHandle_t(const CommonHandle_t handle) :CommonHandle_t(handle) {}
+    DumpHandle_t() : CommonHandle_t() {}
+    inline static std::atomic<CommonHandleID_t> DumpCount;
     static std::atomic_bool initialized;
     static std::vector<DumpHandle_t> DumpHandles;
     CrashCallback funcptr;
@@ -139,13 +139,12 @@ LONG __stdcall MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 
 CommonHandle_t SetCrashHandle(CrashCallback infunc)
 {
-    DumpHandle_t::DumpHandles.emplace_back();
+    DumpHandle_t::DumpHandles.emplace_back(DumpHandle_t::DumpCount);
     DumpHandle_t& handle = DumpHandle_t::DumpHandles.back();
     handle.funcptr = infunc;
     bool expected = false;
     if (DumpHandle_t::initialized.compare_exchange_strong(expected, true))
     {
-
         SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
     }
     return handle;

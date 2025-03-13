@@ -10,8 +10,8 @@ struct NullCommonHandle_t {
 typedef struct CommonHandle_t
 {
     typedef  uint32_t CommonHandleID_t;
-    constexpr CommonHandle_t(const NullCommonHandle_t):ID(0){ }
-    CommonHandle_t() : CommonHandle_t(atomic_count) {}
+    constexpr CommonHandle_t() :ID(0) {}
+    constexpr CommonHandle_t(const NullCommonHandle_t):CommonHandle_t() { }
     constexpr CommonHandle_t(CommonHandleID_t id) : ID(id) {}
     constexpr CommonHandle_t(const CommonHandle_t& handle) : ID(handle.ID) {}
     CommonHandle_t(std::atomic<CommonHandleID_t>&counter)

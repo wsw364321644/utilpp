@@ -6,7 +6,7 @@
 
 FTaskManagerBase::FTaskManagerBase() {
     TaskWorkflowDatas.try_emplace(NullHandle, std::make_shared<TaskWorkflow_t>());
-    MainThread = WorkflowHandle_t();
+    MainThread = WorkflowHandle_t(WorkflowHandle_t::WorkflowCount);
     TaskWorkflowDatas.try_emplace(MainThread, std::make_shared<TaskWorkflow_t>());
 }
 
@@ -19,7 +19,7 @@ FTaskManagerBase::~FTaskManagerBase()
 
 WorkflowHandle_t FTaskManagerBase::NewWorkflow()
 {
-    auto out = WorkflowHandle_t();
+    auto out = WorkflowHandle_t(WorkflowHandle_t::WorkflowCount);
     AppendingAddTaskWorkflowDatas.enqueue(std::make_tuple(out, std::make_shared<TaskWorkflow_t>()));
     return out;
 }
@@ -152,7 +152,7 @@ void FTaskManagerBase::Stop()
 
 CommonTaskHandle_t FTaskManagerBase::AddCancelableTask(WorkflowHandle_t handle, FCancelableTaskBase* task)
 {
-    auto TaskHandle = CommonTaskHandle_t();
+    auto TaskHandle = CommonTaskHandle_t(CommonTaskHandle_t::TaskCount);
     auto AddFunc =
         [&, handle, task, TaskHandle]() {
         auto itr = TaskWorkflowDatas.find(handle);
@@ -174,7 +174,7 @@ CommonTaskHandle_t FTaskManagerBase::AddCancelableTask(WorkflowHandle_t handle, 
 
 CommonTaskHandle_t FTaskManagerBase::AddTick(WorkflowHandle_t handle, TTickTask task)
 {
-    auto TaskHandle = CommonTaskHandle_t();
+    auto TaskHandle = CommonTaskHandle_t(CommonTaskHandle_t::TaskCount);
     auto AddFunc =
         [&, handle, task, TaskHandle]() {
         auto itr = TaskWorkflowDatas.find(handle);
@@ -196,7 +196,7 @@ CommonTaskHandle_t FTaskManagerBase::AddTick(WorkflowHandle_t handle, TTickTask 
 
 CommonTaskHandle_t FTaskManagerBase::AddTimer(WorkflowHandle_t handle, TTimerTask task, uint64_t repeat, uint64_t timeout)
 {
-    auto TaskHandle = CommonTaskHandle_t();
+    auto TaskHandle = CommonTaskHandle_t(CommonTaskHandle_t::TaskCount);
     auto AddFunc =
         [&, handle, task, repeat, timeout, TaskHandle]() {
         auto itr = TaskWorkflowDatas.find(handle);
@@ -218,7 +218,7 @@ CommonTaskHandle_t FTaskManagerBase::AddTimer(WorkflowHandle_t handle, TTimerTas
 
 CommonTaskHandle_t FTaskManagerBase::AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask task)
 {
-    auto TaskHandle = CommonTaskHandle_t();
+    auto TaskHandle = CommonTaskHandle_t(CommonTaskHandle_t::TaskCount);
     auto AddFunc = 
         [&, handle, task, TaskHandle]() {
         auto itr = TaskWorkflowDatas.find(handle);

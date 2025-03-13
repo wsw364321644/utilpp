@@ -7,7 +7,7 @@
 typedef struct SIMPLE_NET_EXPORT DownloadTaskHandle : CommonHandle_t
 {
     DownloadTaskHandle() :CommonHandle_t() {}
-    DownloadTaskHandle(CommonHandle_t h) :CommonHandle_t(h) {}
+    DownloadTaskHandle(const CommonHandle_t h) :CommonHandle_t(h) {}
     static std::atomic_uint32_t task_count;
 }DownloadTaskHandle_t ;
 

@@ -15,7 +15,7 @@ class  ITaskManager;
 typedef struct TASK_MANAGER_EXPORT CommonTaskHandle_t : CommonHandle_t
 {
     CommonTaskHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
-    CommonTaskHandle_t() :CommonHandle_t(TaskCount) {}
+    CommonTaskHandle_t() :CommonHandle_t() {}
     CommonTaskHandle_t(const NullCommonHandle_t handle) :CommonHandle_t(handle) {}
     static std::atomic_uint32_t TaskCount;
 }CommonTaskHandle_t;
@@ -24,7 +24,7 @@ typedef struct TASK_MANAGER_EXPORT WorkflowHandle_t : CommonHandle_t
 {
     WorkflowHandle_t(NullCommonHandle_t h) :CommonHandle_t(h) {}
     WorkflowHandle_t(CommonHandle_t h) :CommonHandle_t(h) {}
-    WorkflowHandle_t() : CommonHandle_t(WorkflowCount) {}
+    WorkflowHandle_t() : CommonHandle_t() {}
     static std::atomic_uint32_t WorkflowCount;
 }WorkflowHandle_t;
 
