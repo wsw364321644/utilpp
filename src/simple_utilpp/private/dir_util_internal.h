@@ -35,10 +35,12 @@ public:
         PathLenW = len;
     }
     void ToPathW() {
-        U8ToU16Buf(GetBufInternal(), PathLen, GetBufInternalW(), PATH_MAX);
+        PathLenW=U8ToU16Buf(GetBufInternal(), PathLen, GetBufInternalW(), PATH_MAX);
+        GetBufInternalW()[PathLenW] = '\0';
     }
     void ToPath() {
-        U16ToU8Buf(GetBufInternalW(), PathLenW, GetBufInternal(), PATH_MAX);
+        PathLen=U16ToU8Buf(GetBufInternalW(), PathLenW, GetBufInternal(), PATH_MAX);
+        GetBufInternal()[PathLen] = '\0';
     }
 
     template<typename T>
