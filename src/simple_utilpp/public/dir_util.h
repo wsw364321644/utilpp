@@ -35,7 +35,7 @@ public:
     static std::u8string_view AbsolutePath(std::u8string_view  path);
     static std::u8string_view FileName(std::u8string_view  path);
     static bool Delete(std::u8string_view  path);
-
+    static bool Rename(std::u8string_view  oldpath, std::u8string_view  path);
     static F_HANDLE RecursiveCreateFile(std::u8string_view  path, uint32_t flag);
 
     typedef std::function<void(DirEntry_t&)> IterateDirCallback;

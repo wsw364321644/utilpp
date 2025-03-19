@@ -130,8 +130,20 @@ std::u8string_view DirUtil::AbsolutePath(std::u8string_view path)
 
 bool DirUtil::Delete(std::u8string_view path)
 {
-    return false;
+    PathBuf.SetNormalizePath(path.data(), path.length());
+    char* norPath = PathBuf.GetBufInternal();
+    return remove(norPath) == 0;
 }
+
+bool DirUtil::Rename(std::u8string_view  oldpath, std::u8string_view  path)
+{
+    PathBuf.SetNormalizePath(path.data(), path.length());
+    char* norOldPath = PathBuf.GetBufInternal();
+    PathBuf2.SetNormalizePath(path.data(), path.length());
+    char* norPath = PathBuf2.GetBufInternal();
+    return rename(norOldPath, norPath)==0;
+}
+
 
 uint64_t DirUtil::FileSize(std::u8string_view path)
 {

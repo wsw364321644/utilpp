@@ -206,6 +206,17 @@ bool DirUtil::Delete(std::u8string_view  path)
     return DeleteFileW((LPCWSTR)pathw) == TRUE;
 }
 
+bool DirUtil::Rename(std::u8string_view  oldpath, std::u8string_view  path)
+{
+    PathBuf.SetPath((char*)path.data(), path.size());
+    PathBuf.ToPathW();
+    PathBuf2.SetPath((char*)oldpath.data(), oldpath.size());
+    PathBuf2.ToPathW();
+    auto pathw = PathBuf.GetPrependFileNamespacesW();
+    auto path_oldw = PathBuf2.GetPrependFileNamespacesW();
+    return MoveFileExW(path_oldw, pathw, MOVEFILE_COPY_ALLOWED| MOVEFILE_REPLACE_EXISTING| MOVEFILE_WRITE_THROUGH) == TRUE;
+}
+
 std::u8string_view DirUtil::AbsolutePath(std::u8string_view  path)
 {
     PathBuf2.SetPath((char*)path.data(), path.size());
