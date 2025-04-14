@@ -6,7 +6,7 @@
 #include <functional>
 #include <optional>
 #include <raw_file.h>
-#include <HTTP/CurlHttpManager.h>
+#include <HTTP/HttpManager.h>
 #include <ThroughCRTWrapper.h>
 #include "Downloader/DownloaderDef.h"
 #include "net_export_defs.h"
@@ -56,7 +56,7 @@ private:
     typedef std::unordered_map<CommonHandle_t, std::shared_ptr<FDownloadFile>> TaskContainer;
     TaskContainer Files;
     std::set<CommonHandle_t> RequireRemoveFiles;
-    FCurlHttpManager HttpManager;
+    HttpManagerPtr pHttpManager;
     BufList BufPool;
 
     //trans data between io and main
