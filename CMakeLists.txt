@@ -112,3 +112,5 @@ find_package(CURL)
 if(CURL_FOUND)
   add_subdirectory(src/net_util)
 endif()
+
+add_subdirectory(src/steam_util)
