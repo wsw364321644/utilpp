@@ -27,7 +27,7 @@ public:
     bool RegisterDownloadProgressDelegate(DownloadTaskHandle_t, FDownloadProgressDelegate);
     bool RegisterDownloadFinishedDelegate(DownloadTaskHandle_t, FDownloadFinishedDelegate);
     bool RegisterGetFileInfoDelegate(DownloadTaskHandle_t, FGetFileInfoDelegate);
-    std::optional<TaskStatus_t> GetTaskStatus(DownloadTaskHandle_t handle);
+    std::shared_ptr<TaskStatus_t> GetTaskStatus(DownloadTaskHandle_t handle);
     void Tick(float delSec);
     void NetThreadTick(float delSec);
     void IOThreadTick(float delSec);
@@ -59,6 +59,7 @@ private:
     HttpManagerPtr pHttpManager;
     BufList BufPool;
 
+    std::shared_ptr<TaskStatus_t> OutStatus;
     //trans data between io and main
     BufList  BufInIO;
     BufList  BufIOComplete;

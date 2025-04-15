@@ -407,6 +407,7 @@ FDownloader* FDownloader::Instance() {
                     break;
                 }
             }
+            downloader->OutStatus = std::make_shared<TaskStatus_t>();
         }
     }
     
@@ -470,14 +471,16 @@ bool FDownloader::RegisterGetFileInfoDelegate(DownloadTaskHandle_t handle, FGetF
     return true;
 }
 
-std::optional<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle_t handle) {
+std::shared_ptr<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle_t handle) {
     auto itr = Files.find(handle);
     if (itr == Files.end()) {
-        return std::nullopt;
+        return nullptr;
     }
   
     auto& pfile = itr->second;
-    TaskStatus_t status{};
+
+    auto& status = *OutStatus;
+
     status.DownloadSize = pfile->DownloadSize.load();
     status.PreDownloadSize = pfile->PreDownloadSize.load();
     status.LastTime = pfile->LastTime.load();
@@ -485,7 +488,7 @@ std::optional<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle_t hand
     status.IsCompelete= pfile->Status == EFileTaskStatus::Finished;
     status.ChunksCompleteFlag = pfile->ChunksCompleteFlag;
     
-    return status;
+    return OutStatus;
 }
 
 void FDownloader::Tick(float delSec)
