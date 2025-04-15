@@ -1,17 +1,9 @@
 #pragma once
+#include "dir_util.h"
 #include "string_convert.h"
 #include <string>
 #include <limits>
 #include <filesystem>
-#ifdef _WIN32
-constexpr char8_t FILE_NAMESPACES[] = u8"\\\\?\\";
-constexpr wchar_t FILE_NAMESPACESW[] = L"\\\\?\\";
-constexpr size_t PATH_PREFIX_MAX = std::char_traits<char8_t>::length(FILE_NAMESPACES);
-constexpr size_t PATH_MAX = std::numeric_limits<int16_t>::max();
-#else
-constexpr size_t PATH_PREFIX_MAX = 0;
-#endif // _WIN32
-
 
 class FPathBuf{
 public:

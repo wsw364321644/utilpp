@@ -14,6 +14,16 @@
 #include "simple_os_defs.h"
 #include "simple_export_ppdefs.h"
 
+constexpr size_t PATH_MAX = std::numeric_limits<int16_t>::max();
+#ifdef _WIN32
+constexpr char8_t FILE_NAMESPACES[] = u8"\\\\?\\";
+constexpr wchar_t FILE_NAMESPACESW[] = L"\\\\?\\";
+constexpr size_t PATH_PREFIX_MAX = std::char_traits<char8_t>::length(FILE_NAMESPACES);
+#else
+constexpr size_t PATH_PREFIX_MAX = 0;
+#endif // _WIN32
+
+
 typedef struct DirEntry_t
 {
     const char8_t* Name;
