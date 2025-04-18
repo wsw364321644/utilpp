@@ -80,6 +80,7 @@ private:
 
 
     ECurlState CurlState{ INVALID };
+    std::set<CurlHttpRequestPtr> WaitToFree;
     //mutil:wr
     std::atomic_uint32_t RequestIDCounter{ 0 };
     moodycamel::ConcurrentQueue<CurlHttpRequestPtr> FreeToUseRequests;

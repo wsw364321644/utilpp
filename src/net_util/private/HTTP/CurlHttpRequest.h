@@ -79,7 +79,7 @@ private:
     std::vector<MimePart_t> MimeParts;
     std::vector<uint8_t> Content;
 
-    uint32_t RequestID;
+    uint32_t RequestID{ 0 };
     HttpRequestCompleteDelegateType HttpRequestCompleteDelegate;
     HttpRequestProgressDelegateType HttpRequestProgressDelegate;
 };

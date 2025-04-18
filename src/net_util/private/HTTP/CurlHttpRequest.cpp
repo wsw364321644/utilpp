@@ -227,8 +227,9 @@ void FCurlHttpRequest::Clear()
     Host.clear();
     Path.clear();
     Scheme.clear();
-    Port = 0;
+    Port = std::numeric_limits<uint32_t>::max();
     RequestID = 0;
+    CompletionStatus = EHttpRequestStatus::NotStarted;
 }
 
 HttpRequestCompleteDelegateType& FCurlHttpRequest::OnProcessRequestComplete()

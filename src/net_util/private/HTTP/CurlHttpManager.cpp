@@ -7,6 +7,13 @@
 #include <string>
 #include <regex>
 
+typedef struct CurlManagerRigister_t {
+    CurlManagerRigister_t() {
+        IHttpManager::RigisterNamedManager<FCurlHttpManager>((const char8_t*)CURL_HTTP_MANAGER_NAME);
+    }
+}CurlManagerRigister_t;
+static CurlManagerRigister_t CurlManagerRigister;
+
 FCurlHttpManager::CurlRequestOptions_t FCurlHttpManager::CurlRequestOptions;
 FCurlHttpManager::FCurlHttpManager()
 {
@@ -80,10 +87,29 @@ void FCurlHttpManager::Tick(float delSec)
         }
     }
 
-    CurlHttpRequestPtr out;
-    while (FinishedRequests.try_dequeue(out)) {
+    
+    do{
+        CurlHttpRequestPtr out;
+        if (!FinishedRequests.try_dequeue(out)) {
+            break;
+        }
         FinishRequest(out);
-        FreeToUseRequests.enqueue(out);
+        WaitToFree.insert(out);
+    } while (true);
+    for (auto it = WaitToFree.begin(); it != WaitToFree.end(); ) {
+        if ((*it).use_count() == 1) {
+            {
+                //for reuse 
+                (*it)->Clear();
+                if ((*it)->Response)
+                    (*it)->Response->Clear();
+            }
+            FreeToUseRequests.enqueue(*it);
+            it=WaitToFree.erase(it);
+        }
+        else {
+            it++;
+        }
     }
 }
 
@@ -696,9 +722,5 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
             creq->Mime = nullptr;
         }
     }
-    {
-        //for reuse 
-        creq->Clear();
-        Response->Clear();
-    }
+    creq->HttpRequestCompleteDelegate = nullptr;
 }
