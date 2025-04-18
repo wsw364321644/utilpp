@@ -39,8 +39,6 @@ int32_t CRawFile::Open(const char8_t*file_name, uint32_t flag, uint64_t expect_s
         return ERR_ARGUMENT;
     }
     DWORD err = 0;
-    DWORD low = 0;
-    DWORD high = 0;
 
     handle_ = DirUtil::RecursiveCreateFile(file_name, flag);
     if (handle_ == INVALID_HANDLE_VALUE)
@@ -54,18 +52,6 @@ int32_t CRawFile::Open(const char8_t*file_name, uint32_t flag, uint64_t expect_s
         SIMPLELOG_LOGGER_WARN(nullptr, "Failed to set writable, file: {}, error: {}", file_name, err);
         return ERR_FILE;
     }
-
-    low = GetFileSize(handle_, &high);
-
-    if (low == 0xffffffff && (err = GetLastError()) != NO_ERROR)
-    {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Can't get the size of file: {}. ErrorCode is {}", file_name, err);
-        CloseHandle(handle_);
-        handle_ = INVALID_HANDLE_VALUE;
-        return ERR_FILE;
-    }
-
-    file_size_ = ((uint64_t)high << 32) | ((uint64_t)low);
 
     if ((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && (file_size_ != expect_size))
     {
@@ -220,6 +206,24 @@ void CRawFile::Flush()
 
 uint64_t CRawFile::GetSize()
 {
+    if (handle_ == INVALID_HANDLE_VALUE)
+    {
+        return 0;
+    }
+    DWORD err = 0;
+    DWORD low = 0;
+    DWORD high = 0;
+    low = GetFileSize(handle_, &high);
+
+    if (low == 0xffffffff && (err = GetLastError()) != NO_ERROR)
+    {
+        SIMPLELOG_LOGGER_WARN(nullptr, "Can't get the size of file: {}. ErrorCode is {}", name_.c_str(), err);
+        CloseHandle(handle_);
+        handle_ = INVALID_HANDLE_VALUE;
+        return 0;
+    }
+
+    file_size_ = ((uint64_t)high << 32) | ((uint64_t)low);
     return file_size_;
 }
 

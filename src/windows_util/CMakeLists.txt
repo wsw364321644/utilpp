@@ -9,7 +9,7 @@ function(add_windows_util TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
-    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
+    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
 
     AddTargetInclude(${TARGET_NAME})
 

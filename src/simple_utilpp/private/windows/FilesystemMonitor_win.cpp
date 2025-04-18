@@ -97,7 +97,7 @@ CommonHandle_t FFilesystemMonitorWin::Monitor(std::u8string_view pathstr, uint32
     PathMonitorData.DirHandle = DirHandle;
     PathMonitorData.OverlappedData.hEvent = EventHandle;
     PathMonitorData.Mask = mask;
-    PathMonitorData.ResultBuf.resize(sizeof(FILE_NOTIFY_INFORMATION) * FILE_NOTIFY_INFO_CACHE_SIZE);
+    PathMonitorData.ResultBuf.resize(1024*4);
     PathMonitorData.Delegate = CB;
     // Set up the filter for the notifications
     if (mask & MONITOR_MASK_ACCESS) PathMonitorData.NotifyFilter |= FILE_NOTIFY_CHANGE_LAST_ACCESS;
@@ -239,10 +239,12 @@ bool FFilesystemMonitorWin::InternalStartMonitor(PathMonitorData_t& PathMonitorD
 IFilesystemMonitor* GetFilesystemMonitor()
 {
     static std::atomic<std::shared_ptr<FFilesystemMonitorWin>> atomicptr;
-    auto oldptr = atomicptr.load();
-    if (!oldptr) {
-        std::shared_ptr<FFilesystemMonitorWin> ptr(new FFilesystemMonitorWin);
-        atomicptr.compare_exchange_strong(oldptr, ptr);
+    auto ptr = atomicptr.load();
+    if (!ptr) {
+        std::shared_ptr<FFilesystemMonitorWin> newptr(new FFilesystemMonitorWin);
+        if (atomicptr.compare_exchange_strong(ptr, newptr)) {
+            ptr = newptr;
+        }
     }
-    return atomicptr.load().get();
+    return ptr.get();
 }

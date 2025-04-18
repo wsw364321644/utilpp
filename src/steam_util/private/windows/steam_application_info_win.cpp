@@ -27,7 +27,7 @@ bool IsSteamClientStarted() {
     return IsServiceRunning(STEAM_SERVICE_NAME);
 }
 
-bool GetSteamClientDir(char * pathBuf, uint32_t* length) {
+bool GetSteamClientPath(char * pathBuf, uint32_t* length) {
     if (!length) {
         return false;
     }
