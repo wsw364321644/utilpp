@@ -1,5 +1,5 @@
 NewTargetSource()
-AddSourceFolder(INCLUDE RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
+AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
 AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
@@ -16,19 +16,7 @@ function(add_simple_utilpp TARGET_NAME)
     # target_compile_definitions(${TARGET_NAME} PRIVATE UTILPP_ENABLE_LOG)
     # target_link_libraries (${TARGET_NAME} PRIVATE simple_logger)
     # endif()
-    install(TARGETS ${TARGET_NAME}
-        EXPORT ${TARGET_NAME}Targets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        PUBLIC_HEADER DESTINATION include
-    )
-
-    install(EXPORT ${TARGET_NAME}Targets
-        FILE ${TARGET_NAME}Targets.cmake
-        NAMESPACE UTILPP::
-        DESTINATION lib/cmake/${TARGET_NAME}
-    )
+    AddTargetInstall(${TARGET_NAME} UTILPP)
 endfunction()
 
 set(TARGET_NAME simple_utilpp)
