@@ -16,6 +16,12 @@
 #include <unistd.h>
 #endif // WIN32
 
+int32_t CRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
+{
+    return Open(lpFileName.data(), uOpenFlag, uExpectSize);
+}
+
+
 #ifdef WIN32
 
 CRawFile::CRawFile()

@@ -13,12 +13,13 @@ typedef struct PathMonitorData_t
 {
     ~PathMonitorData_t(){
         if (DirHandle != INVALID_HANDLE_VALUE) {
+            if (OverlappedData.hEvent != INVALID_HANDLE_VALUE) {
+                CloseHandle(OverlappedData.hEvent);
+                CancelIoEx(DirHandle, &OverlappedData);
+            }
             CloseHandle(DirHandle);
         }
-        if (OverlappedData.hEvent != INVALID_HANDLE_VALUE) {
-            CloseHandle(OverlappedData.hEvent);
-            CancelIoEx(DirHandle, &OverlappedData);
-        }
+
     }
     IFilesystemMonitor::TMonitorCallback Delegate;
     CommonHandle_t Handle;

@@ -191,7 +191,12 @@ inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
 #endif
 }
 
-
+inline std::string U16ToU8(const wchar_t* u16Str, size_t inStrLen) {
+    return U16ToU8((const char16_t*)u16Str, inStrLen);
+}
+inline std::string U16ToU8(std::u16string_view strview) {
+    return U16ToU8(strview.data(), strview.size());
+}
 
 inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
 #ifdef WIN32
@@ -261,7 +266,13 @@ inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
 #endif
 }
 
+inline std::u16string U8ToU16(const char8_t* u8Str, size_t inStrLen) {
+    return U8ToU16((const char*)u8Str, inStrLen);
+}
 
+inline std::u16string U8ToU16(std::u8string_view strview) {
+    return U8ToU16(strview.data(), strview.size());
+}
 
 inline std::u32string U8ToU32(const char* u8Str) {
     std::u32string out;
