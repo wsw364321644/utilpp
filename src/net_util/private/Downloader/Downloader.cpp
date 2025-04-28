@@ -328,7 +328,7 @@ bool FDownloadBuf::RemoveChunk(std::shared_ptr<file_chunk_t> pchunk)
 }
 
 FDownloader::FDownloader(){
-    pHttpManager = IHttpManager::GetNamedManager(CURL_HTTP_MANAGER_NAME);
+    pHttpManager = IHttpManager::GetNamedClass(CURL_HTTP_MANAGER_NAME);
 }
 
 DownloadTaskHandle_t FDownloader::AddTask(FDownloadFile* file)

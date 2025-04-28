@@ -6,13 +6,7 @@
 #include <LoggerHelper.h>
 #include <string>
 #include <regex>
-
-typedef struct CurlManagerRigister_t {
-    CurlManagerRigister_t() {
-        IHttpManager::RigisterNamedManager<FCurlHttpManager>((const char8_t*)CURL_HTTP_MANAGER_NAME);
-    }
-}CurlManagerRigister_t;
-static CurlManagerRigister_t CurlManagerRigister;
+static TNamedClassAutoRegister_t<FCurlHttpManager> NamedClassAutoRegister(CURL_HTTP_MANAGER_NAME);
 
 FCurlHttpManager::CurlRequestOptions_t FCurlHttpManager::CurlRequestOptions;
 FCurlHttpManager::FCurlHttpManager()
