@@ -50,15 +50,6 @@ public:
     inline static std::unordered_map<std::u8string_view, std::shared_ptr<NamedClassInfo_t>, string_hash> NamedClassInfos;
 };
 
-template <typename T>
-class MyClass {
-public:
-    template <typename U>
-    static U myStaticFunction(U value) {
-        return value;
-    }
-};
-
 template<class T>
 struct TNamedClassAutoRegister_t {
     TNamedClassAutoRegister_t(std::u8string_view name) {
