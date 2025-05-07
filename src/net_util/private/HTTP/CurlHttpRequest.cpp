@@ -230,6 +230,9 @@ void FCurlHttpRequest::Clear()
     Port = std::numeric_limits<uint32_t>::max();
     RequestID = 0;
     CompletionStatus = EHttpRequestStatus::NotStarted;
+    if (Response) {
+        Response->Clear();
+    }
 }
 
 HttpRequestCompleteDelegateType& FCurlHttpRequest::OnProcessRequestComplete()
@@ -277,12 +280,12 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
 
     case CURLINFO_HEADER_IN:
     {
-        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received header ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received header: ({} bytes) - {}", (void*)this, DebugInfoSize ,std::string_view(DebugInfo, DebugInfoSize));
     }
     break;
     case CURLINFO_HEADER_OUT:
     {
-        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Sent header ({} bytes) - {}", (void*)this, DebugInfoSize, std::string(DebugInfo, DebugInfoSize));
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Sent header ({} bytes) - {}", (void*)this, DebugInfoSize, std::string_view(DebugInfo, DebugInfoSize));
     }
     break;
 
@@ -370,7 +373,7 @@ void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
 {
     auto iTotalBytesRead = TotalBytesRead.load();
     if (UserBuf) {
-        auto writelen = UserBufLen >= iTotalBytesRead + Len ? Len : UserBufLen - iTotalBytesRead;
+        auto writelen = std::min(UserBufLen - iTotalBytesRead, int64_t(Len));
         if (writelen > 0) {
             memcpy(UserBuf + iTotalBytesRead, Data, writelen);
         }
@@ -388,6 +391,7 @@ void FCurlHttpResponse::Clear()
 {
     Headers.clear();
     Content.clear();
+    EffectiveUrl.clear();
     bSucceeded = false;
     bIsReady = false;
     HttpCode = 0;

@@ -118,7 +118,7 @@ CommonHandle_t FFilesystemMonitorWin::Monitor(std::u8string_view pathstr, uint32
         return NullHandle;
     }
     auto [itr,res]=MonitorDatas.try_emplace(CommonHandle_t(CommonHandle_t::atomic_count), pPathMonitorData);
-    MonitorDataPathMap.try_emplace(ConvertStringTotU8View(PathMonitorData.Path), itr->first);
+    MonitorDataPathMap.try_emplace(ConvertStringToU8View(PathMonitorData.Path), itr->first);
     return itr->first;
 }
 void FFilesystemMonitorWin::CancelMonitor(CommonHandle_t handle) 
@@ -128,7 +128,7 @@ void FFilesystemMonitorWin::CancelMonitor(CommonHandle_t handle)
         return;
     }
     auto& [key, data] = *itr;
-    MonitorDataPathMap.erase(ConvertStringTotU8View(data->Path));
+    MonitorDataPathMap.erase(ConvertStringToU8View(data->Path));
     MonitorDatas.erase(itr);
 }
 

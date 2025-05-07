@@ -6,6 +6,8 @@
 #include <LoggerHelper.h>
 #include <string>
 #include <regex>
+constexpr char CURL_HTTP_MANAGER_NAME[] = "Curl";
+
 static TNamedClassAutoRegister_t<FCurlHttpManager> NamedClassAutoRegister(CURL_HTTP_MANAGER_NAME);
 
 FCurlHttpManager::CurlRequestOptions_t FCurlHttpManager::CurlRequestOptions;
@@ -80,8 +82,6 @@ void FCurlHttpManager::Tick(float delSec)
             outProgress.HttpReq->OnRequestProgress()(outProgress.HttpReq, outProgress.OldSize, outProgress.NewSize, outProgress.HttpReq->GetResponse()->GetContentLength());
         }
     }
-
-    
     do{
         CurlHttpRequestPtr out;
         if (!FinishedRequests.try_dequeue(out)) {
@@ -95,8 +95,6 @@ void FCurlHttpManager::Tick(float delSec)
             {
                 //for reuse 
                 (*it)->Clear();
-                if ((*it)->Response)
-                    (*it)->Response->Clear();
             }
             FreeToUseRequests.enqueue(*it);
             it=WaitToFree.erase(it);
@@ -114,10 +112,7 @@ void FCurlHttpManager::HttpThreadTick(float delSec)
     if (RunningThreadedRequestsNum > 0)
     {
         int RunningRequestNum = -1;
-
         curl_multi_perform(MultiHandle, &RunningRequestNum);
-
-
         // read more info if number of requests changed or if there's zero running
         // (note that some requests might have never be "running" from libcurl's point of view)
         if (RunningRequestNum == 0 || RunningRequestNum != RunningThreadedRequestsNum)
@@ -202,7 +197,7 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
             Header = std::regex_replace(Header, std::regex(R"(\n)"), "");
             Header = std::regex_replace(Header, std::regex(R"(\r)"), "");
 
-            SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseHeaderCallback {}: Received response header '{}'.", (void*)cresp.get(), Header);
+            //SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseHeaderCallback {}: Received response header '{}'.", (void*)cresp.get(), Header);
             std::string HeaderKey, HeaderValue;
             auto i = Header.find(":");
             if (i != std::string::npos)
@@ -252,10 +247,10 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 
         int64_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
 
-        SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
-            (void*)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
-            SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
-        );
+        //SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
+        //    (void*)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
+        //    SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
+        //);
 
         // note that we can be passed 0 bytes if file transmitted has 0 length
         if (SizeToDownload > 0)
@@ -404,7 +399,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     }
 
     curl_easy_setopt(creq->EasyHandle, CURLOPT_URL, creq->URL.c_str());
-
+    curl_easy_setopt(creq->EasyHandle, CURLOPT_CUSTOMREQUEST, creq->Verb.c_str());
     // set up verb (note that Verb is expected to be uppercase only)
     if (creq->Verb == VERB_POST)
     {
@@ -420,7 +415,6 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
                 curl_mime_name(part, AllMime[Idx].Name.c_str());
                 curl_mime_data(part, AllMime[Idx].Data.c_str(), CURL_ZERO_TERMINATED);
             }
-            curl_easy_setopt(creq->EasyHandle, CURLOPT_CUSTOMREQUEST, creq->Verb.c_str());
             curl_easy_setopt(creq->EasyHandle, CURLOPT_MIMEPOST, creq->Mime);
         }
         else {
@@ -509,7 +503,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     }
 
     if (creq->Ranges.size()) {
-        CharBuffer buf;
+        FCharBuffer buf;
         for (auto& range : creq->Ranges) {
             if (range.second == InfiniteRange) {
                 buf.FormatAppend("%lu-", range.first);
@@ -609,6 +603,12 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
             if (!curl_easy_getinfo(creq->EasyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &ContentLengthDownload))
             {
                 Response->ContentLength = ContentLengthDownload;
+            }
+
+            char* url = NULL;
+            if (curl_easy_getinfo(creq->EasyHandle, CURLINFO_EFFECTIVE_URL, &url)== CURLE_OK)
+            {
+                Response->EffectiveUrl = url;
             }
         }
     }

@@ -6,31 +6,32 @@
 #include <stddef.h>
 #include "simple_export_ppdefs.h"
 
-class SIMPLE_UTIL_EXPORT CharBuffer
+class SIMPLE_UTIL_EXPORT FCharBuffer
 {
 public:
-    CharBuffer();
-    CharBuffer(CharBuffer &&)noexcept;
-    CharBuffer(CharBuffer &);
-    CharBuffer(const char *cstr);
-    CharBuffer(const char *cstr, size_t size);
-    ~CharBuffer();
-    CharBuffer &operator()(const char *cstr);
+    FCharBuffer();
+    FCharBuffer(FCharBuffer &&)noexcept;
+    FCharBuffer(FCharBuffer &);
+    FCharBuffer(const char *cstr);
+    FCharBuffer(const char *cstr, size_t size);
+    ~FCharBuffer();
+    FCharBuffer &operator()(const char *cstr);
 
-    friend void Swap(CharBuffer& l, CharBuffer& r);
+    friend void Swap(FCharBuffer& l, FCharBuffer& r);
 
     // template <typename T,
     //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, char>::value>::type>
     //     void Push(T&& c);
     void Append(const char * cstr);
     void Append(const char *cstr, size_t size);
-    void Append(CharBuffer &);
+    void Append(FCharBuffer &);
     void Append(int);
     void Append(double);
+    bool Format(const char* format, ...);
     bool FormatAppend(const char* format, ...);
-    
+    bool VFormatAppend(const char* format, va_list vlist);
     // template <typename T,
-    //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, CharBuffer>::value>::type>
+    //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, FCharBuffer>::value>::type>
     // void Append(T&&);
 
     void Assign(const char *cstr, size_t size);
@@ -66,12 +67,12 @@ private:
 
     void(*freeptr)(void *const block);
     void *(*mallocptr)(size_t _Size);
-    uint32_t GetIncreasedSize()
+    uint64_t GetIncreasedSize()
     {
         return (bufSize == 0 ? 64 : bufSize) * 2;
     };
-    uint32_t bufSize;
+    uint64_t bufSize;
     char *pBuf;
-    uint32_t cursor;
-    uint32_t readCursor;
+    uint64_t cursor;
+    uint64_t readCursor;
 };

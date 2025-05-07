@@ -142,7 +142,7 @@ ERPCParseError JsonRPCResponse::CheckResult(const char* Method) const
     return ERPCParseError::OK;
 }
 
-CharBuffer JsonRPCResponse::ToBytes()
+FCharBuffer JsonRPCResponse::ToBytes()
 {
     return JRPCPaser::ToByte(*this);
 }
@@ -174,7 +174,7 @@ ERPCParseError JsonRPCRequest::CheckParams()const
     return ERPCParseError::OK;
 }
 
-CharBuffer JsonRPCRequest::ToBytes()
+FCharBuffer JsonRPCRequest::ToBytes()
 {
     return JRPCPaser::ToByte(*this);
 }
@@ -338,9 +338,9 @@ JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
     return res;
 }
 
-CharBuffer JRPCPaser::ToByte(const JsonRPCRequest& req)
+FCharBuffer JRPCPaser::ToByte(const JsonRPCRequest& req)
 {
-    CharBuffer buffer;
+    FCharBuffer buffer;
     nlohmann::json doc(nlohmann::json::value_t::object);
     doc[MethodFieldStr] = req.Method;
     auto Paramsnode=GetParamsNlohmannJson(req);
@@ -358,9 +358,9 @@ CharBuffer JRPCPaser::ToByte(const JsonRPCRequest& req)
     return buffer;
 }
 
-CharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
+FCharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
 {
-    CharBuffer buffer;
+    FCharBuffer buffer;
     nlohmann::json doc(nlohmann::json::value_t::object);
     if (!res.IsValiad()) {
         return buffer;

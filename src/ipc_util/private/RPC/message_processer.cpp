@@ -49,9 +49,9 @@ bool MessageProcesser::Init(IMessageSession* insession)
     lastHeartBeat = std::chrono::steady_clock::now();
     return true;
 }
-CharBuffer MessageProcesser::ChangePolicy(uint8_t channel, EMessagePolicy policy)
+FCharBuffer MessageProcesser::ChangePolicy(uint8_t channel, EMessagePolicy policy)
 {
-    return CharBuffer();
+    return FCharBuffer();
 }
 
 bool MessageProcesser::SendContent(const char* data, uint32_t len, uint8_t channel)
@@ -253,9 +253,9 @@ void MessageProcesser::HeartBeat()
     return;
 }
 
-CharBuffer MessageProcesser::BuildPacket(const char* data, uint32_t len, uint8_t channel)
+FCharBuffer MessageProcesser::BuildPacket(const char* data, uint32_t len, uint8_t channel)
 {
-    CharBuffer buff;
+    FCharBuffer buff;
     buff.Append(MessageBegin, strlen(MessageBegin));
     buff.Append(MessageEnd, strlen(MessageEnd));
     if (channel > 0) {
@@ -273,7 +273,7 @@ CharBuffer MessageProcesser::BuildPacket(const char* data, uint32_t len, uint8_t
     return buff;
 }
 
-void MessageProcesser::AddHeader(CharBuffer& buf, CharBuffer key, CharBuffer value)
+void MessageProcesser::AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer value)
 {
     buf.Append(key);
     buf.Append(MessageHeaderSeparator, strlen(MessageHeaderSeparator));

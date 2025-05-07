@@ -66,7 +66,7 @@ public:
         std::vector<std::shared_ptr<MessagePacket_t>> MessagePackets;
     };
     bool Init(IMessageSession*);
-    CharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy);
+    FCharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy);
     bool SendContent(const char*, uint32_t len, uint8_t channel = 0);
     ConsumeResult_t TryConsume(const char* data, uint32_t len);
 
@@ -75,10 +75,10 @@ public:
     DEFINE_EVENT_ONE_PARAM(OnPacketRecv, MessagePacket_t*)
 private:
 
-    CharBuffer BuildPacket(const char* data, uint32_t len, uint8_t channel = 0);
+    FCharBuffer BuildPacket(const char* data, uint32_t len, uint8_t channel = 0);
     void OnRead(IMessageSession*, char*, intptr_t);
     void HeartBeat();
-    void AddHeader(CharBuffer& buf, CharBuffer key, CharBuffer value);
+    void AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer value);
 
 private:
 

@@ -8,12 +8,12 @@
 #include "IHttpRequest.h"
 #include "net_export_defs.h"
 
-const char CURL_HTTP_MANAGER_NAME[] = "Curl";
-const char VERB_POST[] = "POST";
-const char VERB_PUT[] = "PUT";
-const char VERB_GET[] = "GET";
-const char VERB_HEAD[] = "HEAD";
-const char VERB_DELETE[] = "DELETE";
+extern const char CURL_HTTP_MANAGER_NAME[];
+constexpr char VERB_POST[] = "POST";
+constexpr char VERB_PUT[] = "PUT";
+constexpr char VERB_GET[] = "GET";
+constexpr char VERB_HEAD[] = "HEAD";
+constexpr char VERB_DELETE[] = "DELETE";
 
 typedef std::shared_ptr<class IHttpManager> HttpManagerPtr;
 

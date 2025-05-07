@@ -3,10 +3,12 @@
 #include <string>
 #include <stdarg.h>
 #include <vector>
-CharBuffer::CharBuffer() : bufSize(0), cursor(0), readCursor(0), pBuf(nullptr), freeptr(free), mallocptr(malloc)
+#include <FunctionExitHelper.h>
+
+FCharBuffer::FCharBuffer() : bufSize(0), cursor(0), readCursor(0), pBuf(nullptr), freeptr(free), mallocptr(malloc)
 {
 }
-CharBuffer::CharBuffer(CharBuffer &&mbuf)noexcept : CharBuffer()
+FCharBuffer::FCharBuffer(FCharBuffer &&mbuf)noexcept : FCharBuffer()
 {
     pBuf = mbuf.pBuf;
     mbuf.pBuf = nullptr;
@@ -14,32 +16,32 @@ CharBuffer::CharBuffer(CharBuffer &&mbuf)noexcept : CharBuffer()
     cursor = mbuf.cursor;
     readCursor = mbuf.readCursor;
 }
-CharBuffer::CharBuffer(CharBuffer &mbuf) : CharBuffer()
+FCharBuffer::FCharBuffer(FCharBuffer &mbuf) : FCharBuffer()
 {
     Assign(mbuf.CStr(), mbuf.Length());
 }
-CharBuffer::CharBuffer(const char *cstr) : CharBuffer()
+FCharBuffer::FCharBuffer(const char *cstr) : FCharBuffer()
 {
     Assign(cstr, strlen(cstr));
 }
-CharBuffer::CharBuffer(const char *cstr, size_t size) : CharBuffer()
+FCharBuffer::FCharBuffer(const char *cstr, size_t size) : FCharBuffer()
 {
     Assign(cstr, size);
 }
-CharBuffer::~CharBuffer()
+FCharBuffer::~FCharBuffer()
 {
     if (pBuf)
     {
         freeptr(pBuf);
     }
 }
-CharBuffer &CharBuffer::operator()(const char *cstr)
+FCharBuffer &FCharBuffer::operator()(const char *cstr)
 {
     Assign(cstr, strlen(cstr));
     return *this;
 }
 
-void Swap(CharBuffer& l, CharBuffer& r) {
+void Swap(FCharBuffer& l, FCharBuffer& r) {
     std::swap(l.bufSize,r.bufSize);
     std::swap(l.cursor,r.cursor);
     std::swap(l.readCursor,r.readCursor);
@@ -48,149 +50,188 @@ void Swap(CharBuffer& l, CharBuffer& r) {
     std::swap(l.freeptr,r.freeptr);
 }
 
-void CharBuffer::Append(const char* cstr)
+void FCharBuffer::Append(const char* cstr)
 {
     Append(cstr, strlen(cstr));
 }
 
-void CharBuffer::Append(const char *str, size_t size)
+void FCharBuffer::Append(const char *str, size_t size)
 {
     if(size <= 0) {
         return;
     }
     if (bufSize == 0 || size + cursor > bufSize - 1)
     {
-        Reverse(GetIncreasedSize() > size + cursor+1 ? GetIncreasedSize() : size + cursor+1);
+        Reverse(std::max(GetIncreasedSize(), size + cursor + 1));
     }
     memcpy(pBuf + cursor, str, size);
     cursor += size;
 }
 
-void CharBuffer::Append(CharBuffer &inbuf)
+void FCharBuffer::Append(FCharBuffer &inbuf)
 {
     Append(inbuf.CStr(), inbuf.Length());
 }
 
-void CharBuffer::Append(int num)
+void FCharBuffer::Append(int num)
 {
     Append(std::to_string(num).c_str());
 }
 
-void CharBuffer::Append(double num)
+void FCharBuffer::Append(double num)
 {
     Append(std::to_string(num).c_str());
 }
 
-bool CharBuffer::FormatAppend(const char* format, ...)
+bool FCharBuffer::Format(const char* format, ...)
 {
-    // initializing list pointer 
-    va_list ptr;
-    va_start(ptr, format);
+    Clear();
+    va_list args;
+    va_start(args, format);
+    auto res = VFormatAppend(format, args);
+    va_end(args);
+    return res;
+}
 
-    auto oldcursor = cursor;
-    // char array to store token 
-    const char* head = format;
-    // parsing the formatted string 
-    for (int i = 0 ; ; ) {
-        if (format[i] == '%' || format[i] == '\0') {
-            Append(head, format + i - head);
-            if (format[i] == '%') {
-                int j = i+1;
-                char ch1 = 0;
+bool FCharBuffer::FormatAppend(const char* format, ...)
+{
+    //// initializing list pointer 
+    //va_list ptr;
+    //va_start(ptr, format);
 
-                // this loop is required when printing 
-                // formatted value like 0.2f, when ch1='f' 
-                // loop ends 
-                while ((ch1 = format[j++]) < 58) {
-                }
-                // for integers 
-                if (ch1 == 'i' || ch1 == 'd' || ch1 == 'u'
-                    || ch1 == 'h') {
-                    auto num=va_arg(ptr, int);
-                    Append(std::to_string(num).c_str());
-                }
-                // for characters 
-                else if (ch1 == 'c') {
-                    char num = va_arg(ptr, int);
-                    Put(num);
-                }
-                // for float values 
-                else if (ch1 == 'f') {
-                    auto num = va_arg(ptr, double);
-                    Append(std::to_string(num).c_str());
-                }
-                else if (ch1 == 'l') {
-                    char ch2 = format[j++];
-                    // for long int 
-                    if (ch2 == 'u') {
-                        auto num = va_arg(ptr, uint64_t);
-                        Append(std::to_string(num).c_str());
-                    }
-                    else if (ch2 == 'd'
-                        || ch2 == 'i') {
-                        auto num = va_arg(ptr, int64_t);
-                        Append(std::to_string(num).c_str());
-                    }
-                    // for double 
-                    else if (ch2 == 'f') {
-                        auto num = va_arg(ptr, double);
-                        Append(std::to_string(num).c_str());
-                    }
-                    else {
-                        cursor= oldcursor;
-                        return false;
-                    }
-                }
-                else if (ch1 == 'L') {
-                    char ch2 = format[j++];
+    //auto oldcursor = cursor;
+    //// char array to store token 
+    //const char* head = format;
+    //// parsing the formatted string 
+    //for (int i = 0 ; ; ) {
+    //    if (format[i] == '\0') {
+    //        Append(head, format + i - head);
+    //    }else if (format[i] == '%') {
+    //        Append(head, format + i - head);
+    //        int j = i+1;
+    //        char ch1 = 0;
+    //        // this loop is required when printing 
+    //        // formatted value like 0.2f, when ch1='f' 
+    //        // loop ends 
+    //        while ((ch1 = format[j++]) < 58) {
+    //        }
+    //        // for integers 
+    //        if (ch1 == 'i' || ch1 == 'd' || ch1 == 'u'
+    //            || ch1 == 'h') {
+    //            auto num=va_arg(ptr, int);
+    //            Append(std::to_string(num).c_str());
+    //        }
+    //        // for characters 
+    //        else if (ch1 == 'c') {
+    //            char num = va_arg(ptr, int);
+    //            Put(num);
+    //        }
+    //        // for float values 
+    //        else if (ch1 == 'f') {
+    //            auto num = va_arg(ptr, double);
+    //            Append(std::to_string(num).c_str());
+    //        }
+    //        else if (ch1 == 'l') {
+    //            char ch2 = format[j++];
+    //            // for long int 
+    //            if (ch2 == 'u') {
+    //                auto num = va_arg(ptr, uint64_t);
+    //                Append(std::to_string(num).c_str());
+    //            }
+    //            else if (ch2 == 'd'
+    //                || ch2 == 'i') {
+    //                auto num = va_arg(ptr, int64_t);
+    //                Append(std::to_string(num).c_str());
+    //            }
+    //            // for double 
+    //            else if (ch2 == 'f') {
+    //                auto num = va_arg(ptr, double);
+    //                Append(std::to_string(num).c_str());
+    //            }
+    //            else {
+    //                cursor= oldcursor;
+    //                return false;
+    //            }
+    //        }
+    //        else if (ch1 == 'L') {
+    //            char ch2 = format[j++];
 
-                    // for long long int 
-                    if (ch2 == 'u' || ch2 == 'd'
-                        || ch2 == 'i') {
-                        auto num = va_arg(ptr, long long);
-                        Append(std::to_string(num).c_str());
-                    }
+    //            // for long long int 
+    //            if (ch2 == 'u' || ch2 == 'd'
+    //                || ch2 == 'i') {
+    //                auto num = va_arg(ptr, long long);
+    //                Append(std::to_string(num).c_str());
+    //            }
 
-                    // for long double 
-                    else if (ch2 == 'f') {
-                        auto num = va_arg(ptr, long double);
-                        Append(std::to_string(num).c_str());
-                    }
-                    else {
-                        cursor = oldcursor;
-                        return false;
-                    }
-                }
+    //            // for long double 
+    //            else if (ch2 == 'f') {
+    //                auto num = va_arg(ptr, long double);
+    //                Append(std::to_string(num).c_str());
+    //            }
+    //            else {
+    //                cursor = oldcursor;
+    //                return false;
+    //            }
+    //        }
 
-                // for strings 
-                else if (ch1 == 's') {
-                    auto str = va_arg(ptr, char*);
-                    Append(str);
-                }
+    //        // for strings 
+    //        else if (ch1 == 's') {
+    //            auto str = va_arg(ptr, char*);
+    //            Append(str);
+    //        }
 
-                // print the whole token 
-                // if no case is matched 
-                else {
-                    Append(head, format + i - head);
-                }
-                head = format + j;
-                i = j;
-            }
-            else {
-                break;
-            }
+    //        // print the whole token 
+    //        // if no case is matched 
+    //        else {
+    //            Append(head, format + i - head);
+    //        }
+    //        head = format + j;
+    //        i = j;
+    //    }
+    //    else {
+    //        i++;
+    //    }
+    //}
+
+    //// ending traversal 
+    //va_end(ptr);
+    va_list args;
+    va_start(args, format);
+    auto res=VFormatAppend(format, args);
+    va_end(args);
+    return res;
+}
+
+bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
+{
+    va_list args;
+    va_copy(args, vlist);
+    FunctionExitHelper_t va_copy_helper(
+        [&args]() {
+            va_end(args);
         }
-        else {
-            i++;
-        }
+    );
+    auto available = bufSize - cursor;
+    // up to bufsz - 1 characters may be written, plus the null terminator
+    // num not including the terminating null-byte
+    auto num = vsnprintf(pBuf + cursor, available, format, vlist);
+    if (num < 0) {
+        return false;
     }
-
-    // ending traversal 
-    va_end(ptr);
+    if (num < available) {
+        cursor += num;
+        return true;
+    }
+    Reverse(std::max(GetIncreasedSize(), num + cursor + 1));
+    num = vsnprintf(pBuf + cursor, available, format, args);
+    if (num < 0) {
+        return false;
+    }
+    cursor += num;
     return true;
 }
 
-void CharBuffer::Assign(const char *cstr, size_t size)
+void FCharBuffer::Assign(const char *cstr, size_t size)
 {
     Resize(size + 1);
     if (size > 0)
@@ -200,41 +241,41 @@ void CharBuffer::Assign(const char *cstr, size_t size)
     cursor = size;
 }
 
-const char *CharBuffer::CStr() const
+const char *FCharBuffer::CStr() const
 {
     pBuf[cursor] = 0;
     return pBuf;
 }
-char *CharBuffer::Data()
+char *FCharBuffer::Data()
 {
     return pBuf;
 }
-size_t CharBuffer::Length() const
+size_t FCharBuffer::Length() const
 {
     return cursor;
 }
 
-size_t CharBuffer::Size() const
+size_t FCharBuffer::Size() const
 {
     return bufSize;
 }
 
-char CharBuffer::Peek() const
+char FCharBuffer::Peek() const
 {
     return pBuf[readCursor];
 }
 
-char CharBuffer::Take()
+char FCharBuffer::Take()
 {
     return pBuf[readCursor++];
 }
 
-size_t CharBuffer::Tell()
+size_t FCharBuffer::Tell()
 {
     return readCursor;
 }
 
-void CharBuffer::Put(char c)
+void FCharBuffer::Put(char c)
 {
     if (bufSize == 0 || cursor >= bufSize - 1)
     {
@@ -242,7 +283,7 @@ void CharBuffer::Put(char c)
     }
     pBuf[cursor++] = c;
 }
-void CharBuffer::Reverse(uint32_t size)
+void FCharBuffer::Reverse(uint32_t size)
 {
     if (size <= bufSize)
     {
@@ -258,7 +299,7 @@ void CharBuffer::Reverse(uint32_t size)
     pBuf = newbuf;
 }
 
-void CharBuffer::Resize(uint32_t size)
+void FCharBuffer::Resize(uint32_t size)
 {
     if (size == 0)
     {

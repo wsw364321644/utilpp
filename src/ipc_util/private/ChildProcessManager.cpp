@@ -33,7 +33,7 @@ typedef struct UVProcess_t {
     FChildProcessManager::FOnReadDelegate  OnReadDelegate;
     FChildProcessManager::FOnExitDelegate  OnExitDelegate;
     CommonHandle_t handle{ NullHandle };
-    CharBuffer Buf;
+    FCharBuffer Buf;
     //std::mutex m;
     //std::condition_variable cv;
     //bool running = true;

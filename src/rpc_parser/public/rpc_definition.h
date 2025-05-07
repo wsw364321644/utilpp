@@ -23,7 +23,7 @@ class RPC_PARSER_EXPORT RPCRequest {
     friend class JRPCPaser;
 public:
     virtual ~RPCRequest() = default;
-    virtual CharBuffer ToBytes() = 0;
+    virtual FCharBuffer ToBytes() = 0;
     void SetParams(const std::string& str) {
         Params = str;
     }
@@ -61,7 +61,7 @@ protected:
 class RPC_PARSER_EXPORT RPCResponse {
 public:
     virtual ~RPCResponse() = default;
-    virtual CharBuffer ToBytes() = 0;
+    virtual FCharBuffer ToBytes() = 0;
     virtual bool IsError()const=0;
 
     void SetResult(const std::string& str) {

@@ -91,7 +91,7 @@ public:
 
     FCurlHttpResponse(FCurlHttpRequest* inCurlRequest) :CurlRequest(inCurlRequest) {};
     ~FCurlHttpResponse() override {};
-    std::string_view GetURL()override { return ""; };
+    std::string_view GetURL()override { return EffectiveUrl; };
     std::string_view GetURLParameter(const std::string_view ParameterName)override { return ""; }
     std::string_view GetHeader(const std::string_view HeaderName)override;
     std::vector<std::string> GetAllHeaders()override;
@@ -113,6 +113,7 @@ private:
     bool bSucceeded{ false };
     bool bIsReady{ false };
     int32_t HttpCode{ 0 };
+    std::string EffectiveUrl{};
     std::atomic_int64_t ContentLength{ -1 };
     std::atomic_int64_t TotalBytesRead{ 0 };
     std::unordered_map<std::string, std::string> Headers;

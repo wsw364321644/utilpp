@@ -44,7 +44,7 @@ public:
         return *this;
     }
     ERPCParseError CheckParams()const;
-    CharBuffer ToBytes() override;
+    FCharBuffer ToBytes() override;
 
 };
 class RPC_PARSER_EXPORT JsonRPCResponse :public RPCResponse {
@@ -75,7 +75,7 @@ public:
     }
 
     ERPCParseError CheckResult(const char* Method) const;
-    CharBuffer ToBytes() override;
+    FCharBuffer ToBytes() override;
     bool IsError()const override{
         return OptError.has_value()? OptError.value():true;
     }
@@ -104,8 +104,8 @@ public:
     std::shared_ptr<RPCResponse> GetMethodNotFoundResponse(std::optional<uint32_t> id) override;
     std::shared_ptr<RPCResponse> GetErrorParseResponse(ERPCParseError error) override;
     static ParseResult StaticParse(const char* data, int len);
-    static CharBuffer ToByte(const JsonRPCRequest&);
-    static CharBuffer ToByte(const JsonRPCResponse&);
+    static FCharBuffer ToByte(const JsonRPCRequest&);
+    static FCharBuffer ToByte(const JsonRPCResponse&);
     static std::string RPCTypeToString(ERPCType type);
 private:
     static std::filesystem::path GetParamsFilePath(const char* method);

@@ -10,6 +10,7 @@
 #include "HTTP/CurlHttpRequest.h"
 #include "net_export_defs.h"
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
+
 typedef struct {
     HttpRequestPtr HttpReq;
     int64_t OldSize;
@@ -17,7 +18,7 @@ typedef struct {
     uint32_t RequestID;
 }CurlDownloadProgress_t;
 //typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
-class SIMPLE_NET_EXPORT FCurlHttpManager :public IHttpManager {
+class FCurlHttpManager :public IHttpManager {
 
 public:
     enum ECurlState {
