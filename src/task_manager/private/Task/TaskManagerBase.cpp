@@ -48,6 +48,12 @@ void FTaskManagerBase::Run()
         }
     }
     Tick();
+    for (auto& [wHandle, pTaskWorkflow] : TaskWorkflowDatas) {
+        auto& optfuture = pTaskWorkflow->OptFuture;
+        if (optfuture.has_value()) {
+            optfuture.value().wait();
+        }
+    }
 }
 
 void FTaskManagerBase::Tick()
