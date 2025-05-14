@@ -506,10 +506,10 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         FCharBuffer buf;
         for (auto& range : creq->Ranges) {
             if (range.second == InfiniteRange) {
-                buf.FormatAppend("%lu-", range.first);
+                buf.FormatAppend("%llu-", range.first);
             }
             else {
-                buf.FormatAppend("%lu-%lu", range.first, range.second);
+                buf.FormatAppend("%llu-%llu", range.first, range.second);
             }
             if (&range != &*creq->Ranges.rbegin()) {
                 buf.FormatAppend(",");
