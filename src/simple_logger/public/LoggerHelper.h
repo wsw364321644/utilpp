@@ -81,7 +81,7 @@ public:
     std::shared_ptr<spdlog::logger> Logger;
 };
 SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> CreateAsyncLogger(const LoggerSetting_t& setting);
-SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> GetLogger(std::string name = "");
+SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> GetLogger(std::string_view name = "");
 SIMPLE_LOGGER_EXPORT std::shared_ptr<FLoggerWrapper> GetLogger(std::nullptr_t ptr);
 
 #define SIMPLELOG_LOGGER_TRACE(name ,...) GetLogger(name)->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, spdlog::level::level_enum::trace, __VA_ARGS__)
