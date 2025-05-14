@@ -136,7 +136,7 @@ CommonHandle_t FFilesystemMonitorPosix::Monitor(std::u8string_view pathstr, uint
 
     auto [itr, res] = MonitorDatas.try_emplace(CommonHandle_t(CommonHandle_t::atomic_count), pPathMonitorData);
     PathMonitorData.Handle = itr->first;
-    MonitorDataPathMap.try_emplace(ConvertStringTotU8View(PathMonitorData.Path), PathMonitorData.Handle);
+    MonitorDataPathMap.try_emplace(ConvertStringToU8View(PathMonitorData.Path), PathMonitorData.Handle);
 
     MonitorAddOnePath(PathMonitorData, pathstr);
     std::ranges::for_each(
@@ -159,7 +159,7 @@ void FFilesystemMonitorPosix::CancelMonitor(CommonHandle_t handle)
     }
     auto& [key, data] = *itr;
     RemoveWatchs(*data);
-    MonitorDataPathMap.erase(ConvertStringTotU8View(data->Path));
+    MonitorDataPathMap.erase(ConvertStringToU8View(data->Path));
     MonitorDatas.erase(itr);
 }
 
