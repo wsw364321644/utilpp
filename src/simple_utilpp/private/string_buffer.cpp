@@ -214,7 +214,7 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
     auto available = bufSize - cursor;
     // up to bufsz - 1 characters may be written, plus the null terminator
     // num not including the terminating null-byte
-    auto num = vsnprintf(pBuf + cursor, available, format, vlist);
+    auto num = vsnprintf(pBuf + cursor, available, format, args);
     if (num < 0) {
         return false;
     }
@@ -223,6 +223,7 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
         return true;
     }
     Reverse(std::max(GetIncreasedSize(), num + cursor + 1));
+    available = bufSize - cursor;
     num = vsnprintf(pBuf + cursor, available, format, args);
     if (num < 0) {
         return false;
