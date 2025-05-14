@@ -8,7 +8,7 @@
 #include "IHttpRequest.h"
 #include "net_export_defs.h"
 
-extern const char CURL_HTTP_MANAGER_NAME[];
+SIMPLE_NET_EXPORT extern const char CURL_HTTP_MANAGER_NAME[];
 constexpr char VERB_POST[] = "POST";
 constexpr char VERB_PUT[] = "PUT";
 constexpr char VERB_GET[] = "GET";
