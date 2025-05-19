@@ -13,16 +13,20 @@ SIMPLE_UTIL_API const uint32_t UTIL_OPEN_EXISTING;// OPEN_EXISTING;
 SIMPLE_UTIL_API const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 
 #ifdef WIN32
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif // !WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#else
+#include <Windows.h>
+#endif
 
 #define F_HANDLE HANDLE
+#define pid_t DWORD
 
 typedef void* (__cdecl *fnmalloc)(size_t _Size);
 typedef void(__cdecl* fnfree)(void* const block);
@@ -34,6 +38,8 @@ typedef void(__cdecl* fnfree)(void* const block);
 #include <locale.h>
 #include <langinfo.h>
 #include <limits.h>
+#include <signal.h>
+
 #define F_HANDLE int
 
 typedef void* (*fnmalloc)(size_t _Size);

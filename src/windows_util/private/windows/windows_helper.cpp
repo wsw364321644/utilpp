@@ -261,7 +261,7 @@ WINDOWS_UTIL_API HMODULE get_process_module_from_hanlde(HANDLE hProcess, LPSTR f
     EnumProcessModules(hProcess, hModList, cbNeeded, &cbNewNeeded);
     int i = 0;
     for (; i < cbNeeded; i++) {
-        get_process_file_base_name_by_handle(hProcess, hModList[i], moduleName, MAX_PATH);
+        get_process_file_base_name_from_handle(hProcess, hModList[i], moduleName, MAX_PATH);
         auto res=strstr(moduleName, file_name);
         if (res != nullptr) {
             break;
@@ -279,12 +279,12 @@ DWORD  get_process_file_name(DWORD process_id, HMODULE hMod, LPSTR  file_path, D
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
         PROCESS_VM_READ,
         FALSE, process_id);
-    DWORD res=get_process_file_name_by_handle(hProcess, hMod,file_path, size);
+    DWORD res=get_process_file_name_from_handle(hProcess, hMod,file_path, size);
     CloseHandle(hProcess);
     return res;
 }
 
-DWORD  get_process_file_name_by_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_path, DWORD  size) {
+DWORD  get_process_file_name_from_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_path, DWORD  size) {
     return GetModuleFileNameExA(hProcess, hMod, file_path, size);
     //return GetProcessImageFileNameA(hProcess, file_path, size);
 }
@@ -294,14 +294,19 @@ WINDOWS_UTIL_API DWORD get_process_file_base_name(DWORD process_id, HMODULE hMod
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
         PROCESS_VM_READ,
         FALSE, process_id);
-    DWORD res = get_process_file_base_name_by_handle(hProcess, hMod, file_name, nSize);
+    DWORD res = get_process_file_base_name_from_handle(hProcess, hMod, file_name, nSize);
     CloseHandle(hProcess);
     return res;
 }
 
-WINDOWS_UTIL_API DWORD get_process_file_base_name_by_handle(HANDLE hProcess, HMODULE hMod, LPSTR file_name, DWORD nSize)
+WINDOWS_UTIL_API DWORD get_process_file_base_name_from_handle(HANDLE hProcess, HMODULE hMod, LPSTR file_name, DWORD nSize)
 {
     return  GetModuleBaseNameA(GetCurrentProcess(), hMod, file_name,nSize);
+}
+
+WINDOWS_UTIL_API DWORD get_process_id_from_handle(HANDLE hProcess)
+{
+    return ::GetProcessId(hProcess);
 }
 
 

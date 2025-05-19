@@ -19,9 +19,10 @@ WINDOWS_UTIL_API HWND find_window_by_title(const char* name);
 WINDOWS_UTIL_API HMODULE get_process_module(DWORD process_id, LPSTR  file_name);
 WINDOWS_UTIL_API HMODULE get_process_module_from_hanlde(HANDLE  hProcess, LPSTR  file_name);
 WINDOWS_UTIL_API DWORD  get_process_file_name(DWORD process_id, HMODULE hMod, LPSTR  file_path, DWORD  nSize);
-WINDOWS_UTIL_API DWORD  get_process_file_name_by_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_path, DWORD  nSize);
+WINDOWS_UTIL_API DWORD  get_process_file_name_from_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_path, DWORD  nSize);
 WINDOWS_UTIL_API DWORD  get_process_file_base_name(DWORD process_id, HMODULE hMod, LPSTR  file_name, DWORD  nSize);
-WINDOWS_UTIL_API DWORD  get_process_file_base_name_by_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_name, DWORD  nSize);
+WINDOWS_UTIL_API DWORD  get_process_file_base_name_from_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_name, DWORD  nSize);
+WINDOWS_UTIL_API DWORD get_process_id_from_handle(HANDLE hProcess);
 
 WINDOWS_UTIL_API HANDLE create_mutex(const char* name, BOOL is_app);
 WINDOWS_UTIL_API HANDLE open_mutex(const char* name, BOOL is_app);

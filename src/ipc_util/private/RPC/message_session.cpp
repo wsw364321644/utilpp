@@ -3,6 +3,7 @@
 #include "message_internal.h"
 #include <LoggerHelper.h>
 #include <module_util.h>
+#include <simple_os_process.h>
 
 
 MessageSessionUV::MessageSessionUV(MessageServerUV* inserver)
@@ -109,11 +110,11 @@ uint64_t MessageSessionUV::GetPID() const
     if (messageConnectionType != EMessageConnectionType::EMCT_IPC) {
         return 0;
     }
-    uint64_t out;
+    pid_t out;
 #ifdef _WIN32
-    GetProcessIdFromPipe(ClientHandle.PipeHandle.handle, &out);
+    get_pipe_client_proc_id(ClientHandle.PipeHandle.handle, &out);
 #else
-    GetProcessIdFromPipe((void*)ClientHandle.PipeHandle.pipe_fname, &out);
+    get_pipe_client_proc_id_from_pipe_name((void*)ClientHandle.PipeHandle.pipe_fname, &out);
 #endif
     return out;
 }
