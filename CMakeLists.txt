@@ -28,7 +28,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY git@github.com:wsw364321644/OCmakeUtil.git
-  GIT_TAG 24b87522ba7b9a771f51f2030021dec72935d5c9
+  GIT_TAG 42df17bbf7891beffbd6d6bacd84bf29211d7605
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -78,18 +78,17 @@ FetchContent_Declare(
 FetchContent_Declare(
   concurrentqueue
   GIT_REPOSITORY git@github.com:cameron314/concurrentqueue.git
-  GIT_TAG 2f09da73d22a47dc8a89cdd4fc4c3bfae07f4284
+  GIT_TAG 24b78782bd6ca5a5853ef46917708806112dc142
 )
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem concurrentqueue)
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # if(STATIC_CRT)
-#   ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
+# ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
 # else()
-#   ImportProject(TBB SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
+# ImportProject(TBB SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
 # endif()
-
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
 add_subdirectory(src/simple_utilpp)
@@ -113,4 +112,6 @@ if(CURL_FOUND)
   add_subdirectory(src/net_util)
 endif()
 
-add_subdirectory(src/steam_util)
+if(TARGET ValveFileVDF::ValveFileVDF)
+  add_subdirectory(src/steam_util)
+endif()

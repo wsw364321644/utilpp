@@ -44,3 +44,30 @@
 #endif 
 #endif
 #endif
+
+
+#ifdef __cplusplus
+#if defined( _WIN32 ) && !defined( _X360 )
+#if defined( STEAM_UTIL_API_EXPORTS )
+#define STEAM_UTIL_EXPORT __declspec( dllexport ) 
+#elif defined( STEAM_UTIL_API_NODLL )
+#define STEAM_UTIL_EXPORT 
+#else
+#define STEAM_UTIL_EXPORT  __declspec( dllimport ) 
+#endif 
+#elif defined( GNUC )
+#if defined( STEAM_UTIL_API_EXPORTS )
+#define STEAM_UTIL_EXPORT  __attribute__ ((visibility("default"))) 
+#else
+#define STEAM_UTIL_EXPORT 
+#endif 
+#else // !WIN32
+#if defined( STEAM_UTIL_API_EXPORTS )
+#define STEAM_UTIL_EXPORT 
+#else
+#define STEAM_UTIL_EXPORT 
+#endif 
+#endif
+#else
+#define STEAM_UTIL_EXPORT 
+#endif
