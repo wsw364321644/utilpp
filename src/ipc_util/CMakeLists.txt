@@ -11,7 +11,7 @@ function(add_ipc_util TARGET_NAME)
 
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
-
+    target_compile_definitions(${TARGET_NAME} PRIVATE -DNOMINMAX)
     if(UTILPP_WITH_STATIC_LIBUV)
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv_a)
     else()
