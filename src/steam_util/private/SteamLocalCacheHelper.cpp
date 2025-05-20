@@ -1,6 +1,7 @@
 #include "SteamLocalCacheHelper.h"
 #include "steam_application_info.h"
 #include <dir_util.h>
+#include <nlohmann/json.hpp>
 #include <string_convert.h>
 #include <FunctionExitHelper.h>
 #include <vdf_parser.hpp>
@@ -9,6 +10,62 @@
 #include <set>
 #include <mutex>
 #include <regex>
+
+enum class EMagicNumber :uint32_t {
+    MN_V1 = 123094055U,
+    MN_V2 = 123094056U,
+    MN_V3 = 123094057U,
+};
+enum class ESteamAppPropertyType :int8_t
+{
+    SAPT_Invalid_ = -1,
+    SAPT_Table = 0,
+    SAPT_String = 1,
+    SAPT_Int32 = 2,
+    SAPT_Float = 3,
+    SAPT_WString = 5,
+    SAPT_Color = 6,
+    SAPT_Uint64 = 7,
+    SAPT_EndOfTable = 8,
+};
+
+typedef struct SteamAppInfoHeader_t {
+    uint32_t MagicNumber{ 0 };
+    uint32_t UniveseNumber{ 0 };
+}SteamAppInfoHeader_t;
+typedef struct SteamAppInfoStringTable_t {
+    int64_t StringTableOffset{ 0 };
+    uint32_t StringCount{ 0 };
+    std::vector<std::string> StringPool;
+}SteamAppInfoStringTable_t;
+typedef struct SteamAppInfoCache_t {
+    uint32_t AppId;
+    nlohmann::json PropertyTable{ nlohmann::json::value_t::object};
+}SteamAppInfoCache_t;
+typedef struct SteamCachedLibrary_t
+{
+    EMagicNumber GetMagicNumber() {
+        return EMagicNumber(Header.MagicNumber);
+    }
+    bool HasStringTable() {
+        return GetMagicNumber() == EMagicNumber::MN_V3;
+    }
+    bool IsMagicNumberValid() {
+        auto MagicNumber = EMagicNumber(Header.MagicNumber);
+        switch (MagicNumber) {
+        case EMagicNumber::MN_V1:
+        case EMagicNumber::MN_V2:
+        case EMagicNumber::MN_V3:
+            return true;
+        default:
+            return false;
+        }
+    }
+    SteamAppInfoHeader_t Header;
+    SteamAppInfoStringTable_t StringTable;
+    std::unordered_map<uint32_t, std::shared_ptr<SteamAppInfoCache_t>> AppInfoCacheMap;
+} SteamCachedLibrary_t;
+
 
 
 class FSteamLocalCacheHelper :public ISteamLocalCacheHelper
@@ -36,7 +93,7 @@ public:
     //Queue
     typedef struct ManifestFileChangeEvent_t {
         std::string LibraryPath;
-        uint32_t AppID;
+        uint32_t AppID{ 0 };
         bool bDelete{ false };
     }ManifestFileChangeEvent_t;
     moodycamel::ConcurrentQueue<ManifestFileChangeEvent_t> ManifestFileChangeEventQueue;
@@ -62,6 +119,7 @@ private:
     bool UpdateSteamLibraryFoldersFile(std::u8string_view SteamLibraryFoldersFilePathStr);
     bool UpdateSteamAppManifest(std::shared_ptr<SteamLibraryFolderInfo_t>, uint32_t appid);
     std::shared_ptr<SteamLibraryAppInfo_t> ReadSteamAppManifest(std::u8string_view pathView, uint32_t appid);
+    std::shared_ptr<SteamCachedLibrary_t> ReadLibraryCache(std::u8string_view pathView);
 
     void StartMonitorIO();
     void StopMonitorIO();
@@ -266,6 +324,136 @@ std::shared_ptr<SteamLibraryAppInfo_t> FSteamLocalCacheHelper::ReadSteamAppManif
         pSteamLibraryAppInfo->UpdateInfo.BytesStaged = std::stoll(attribsItr->second);
     }
     return pSteamLibraryAppInfo;
+}
+
+std::shared_ptr<SteamCachedLibrary_t> FSteamLocalCacheHelper::ReadLibraryCache(std::u8string_view pathView)
+{
+    std::filesystem::path Path(pathView);
+    Path /= STEAM_APPCACHE_FOLDER_NAME;
+    Path /= STEAM_APP_INFO_FILE_NAME;
+    std::error_code ec;
+    if (!std::filesystem::exists(Path, ec) || ec) {
+        return nullptr;
+    }
+    std::ifstream file(Path, std::ios_base::binary);
+    std::wifstream wif(Path, std::ios_base::binary);
+    if (!file.is_open()) {
+        return nullptr;
+    }
+    if (!wif.is_open()) {
+        return nullptr;
+    }
+    auto pSteamCachedLibrary=std::make_shared<SteamCachedLibrary_t>();
+    file.read((char*)&pSteamCachedLibrary->Header, sizeof(pSteamCachedLibrary->Header));
+    if (!pSteamCachedLibrary->IsMagicNumberValid()) {
+        return nullptr;
+    }
+    if (pSteamCachedLibrary->HasStringTable()) {
+        file.read((char*)&pSteamCachedLibrary->StringTable.StringTableOffset, sizeof(pSteamCachedLibrary->StringTable.StringTableOffset));
+        auto pos=file.tellg();
+        file.seekg(pSteamCachedLibrary->StringTable.StringTableOffset);
+        file.read((char*)&pSteamCachedLibrary->StringTable.StringCount, sizeof(pSteamCachedLibrary->StringTable.StringCount));
+        pSteamCachedLibrary->StringTable.StringPool.reserve(pSteamCachedLibrary->StringTable.StringCount);
+        for (uint32_t i = 0; i < pSteamCachedLibrary->StringTable.StringCount; i++) {
+            std::string& str= pSteamCachedLibrary->StringTable.StringPool[i];
+            std::getline(file, str, '\0');
+        }
+        file.seekg(pos);
+    }
+
+    while (true) {
+        auto pSteamAppInfo = std::make_shared<SteamAppInfoCache_t>();
+        file.read((char*)&pSteamAppInfo->AppId, sizeof(pSteamAppInfo->AppId));
+        if (pSteamAppInfo->AppId == 0) {
+            break;
+        }
+        int32_t count;
+        file.read((char*)&count, sizeof(count));
+        file.seekg(file.tellg() + std::streamoff(16));//stuffBeforeHash
+        file.seekg(file.tellg() + std::streamoff(20));//hash
+        file.seekg(file.tellg() + std::streamoff(sizeof(uint32_t)));//changeNumber
+        if (pSteamCachedLibrary->GetMagicNumber() == EMagicNumber::MN_V2 || pSteamCachedLibrary->GetMagicNumber() == EMagicNumber::MN_V3) {
+            file.seekg(file.tellg() + std::streamoff(20));
+        }
+
+        std::string StringValue;
+        std::wstring WStringValue;
+        int32_t int32Value;
+        float floatValue;
+        uint64_t uint64Value;
+        uint8_t uint8Value;
+        auto ReadPropertyTable = [&](this const auto& self, nlohmann::json& obj)->void {
+            std::string PropertyNameBuf;
+            while (true) {
+                int8_t type;
+                file.read((char*)&type, sizeof(type));
+                if (ESteamAppPropertyType(type) == ESteamAppPropertyType::SAPT_EndOfTable) {
+                    break;
+                }
+                std::string* pPropertyName{ nullptr };
+                if (pSteamCachedLibrary->HasStringTable()) {
+                    int32_t stringIndex;
+                    file.read((char*)&stringIndex, sizeof(stringIndex));
+                    pPropertyName = &pSteamCachedLibrary->StringTable.StringPool[stringIndex];
+                }
+                else {
+                    std::getline(file, PropertyNameBuf, '\0');
+                    pPropertyName = &PropertyNameBuf;
+                }
+
+                switch (ESteamAppPropertyType(type))
+                {
+                case ESteamAppPropertyType::SAPT_Table: {
+                    nlohmann::json childObj{ nlohmann::json::value_t::object };
+                    self(childObj);
+                    obj[*pPropertyName] = childObj;
+                    break;
+                }
+                case ESteamAppPropertyType::SAPT_String: {
+                    std::getline(file, StringValue, '\0');
+                    obj[*pPropertyName] = StringValue;
+                    break;
+                }
+                case ESteamAppPropertyType::SAPT_WString: {
+                    wif.seekg(file.tellg());
+                    std::getline(wif, WStringValue, L'\0');
+                    obj[*pPropertyName] = WStringValue;
+                    file.seekg(wif.tellg());
+                    break;
+                }
+                case ESteamAppPropertyType::SAPT_Int32: {
+
+                    file.read((char*)&int32Value, sizeof(int32Value));
+                    obj[*pPropertyName] = int32Value;
+                    break;
+                }
+                case ESteamAppPropertyType::SAPT_Float: {
+                    file.read((char*)&floatValue, sizeof(floatValue));
+                    obj[*pPropertyName] = floatValue;
+                    break;
+                }
+                case ESteamAppPropertyType::SAPT_Color: {
+                    nlohmann::json arr{ nlohmann::json::value_t::array };
+                    file.read((char*)&uint8Value, sizeof(uint8Value));
+                    arr.push_back(uint8Value);
+                    file.read((char*)&uint8Value, sizeof(uint8Value));
+                    arr.push_back(uint8Value);
+                    file.read((char*)&uint8Value, sizeof(uint8Value));
+                    arr.push_back(uint8Value);
+                    obj[*pPropertyName] = arr;
+                    break;
+                }
+                case ESteamAppPropertyType::SAPT_Uint64: {
+                    file.read((char*)&uint64Value, sizeof(uint64Value));
+                    obj[*pPropertyName] = uint64Value;
+                    break;
+                }
+                }
+            }
+            };
+        ReadPropertyTable(pSteamAppInfo->PropertyTable);
+    }
+    return pSteamCachedLibrary;
 }
 
 void FSteamLocalCacheHelper::StartMonitorIO()

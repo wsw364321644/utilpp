@@ -14,10 +14,18 @@ constexpr char STEAM_SERVICE_NAME[] = "Steam Client Service";
 
 
 constexpr char STEAMAPPS_FOLDER_NAME[] = "steamapps";
+constexpr char STEAM_CONFIG_FOLDER_NAME[] = "config";
+constexpr char STEAM_APPCACHE_FOLDER_NAME[] = "appcache";
+constexpr char STEAM_LIBRARYCACHE_FOLDER_NAME[] = "librarycache";
+
 constexpr char LIBRARY_FOLDERS_FILE_NAME[] = "libraryfolders.vdf";
 constexpr char LIBRARY_FOLDERS_FILE_REGEX_STRING[] = R"(libraryfolders\.vdf)";
 constexpr char STEAM_APP_MANIFEST_FORMAT_STRING[] = "appmanifest_{}.acf";
 constexpr char STEAM_APP_MANIFEST_REGEX_STRING[] = R"(appmanifest_([0-9]+)\.acf)";
+constexpr char STEAM_LOGIN_USERS_FILE_NAME[] = "loginusers.vdf";
+constexpr char STEAM_APP_INFO_FILE_NAME[] = "appinfo.vdf";
+constexpr char STEAM_CONFIG_FILE_NAME[] = "config.vdf";
+
 
 constexpr uint32_t STEAM_APP_FLAG_INSTALLED = 1 << 3;
 constexpr uint32_t STEAM_APP_FLAG_NEED_UPDATE = 1 << 1;

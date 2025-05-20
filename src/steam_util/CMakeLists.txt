@@ -5,7 +5,7 @@ source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
 function(add_lib TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
-    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
+    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
     set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
