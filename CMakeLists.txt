@@ -1,16 +1,22 @@
 cmake_minimum_required(VERSION 3.24)
 include(FetchContent)
+include(GNUInstallDirs)
 
 set(VERSION "0.0.1")
 project(utilpp VERSION ${VERSION})
 enable_language(C CXX ASM)
 
-option(STATIC_CRT "SUTIL STATIC CRT Build ." OFF)
-option(UTILPP_WITH_STATIC_LIBUV "USE UV_a." OFF)
+option(UTILPP_STATIC_CRT "determine build STATIC CRT Build ." OFF)
+option(UTILPP_GIT_SSH "git via ssh" OFF)
+option(UTILPP_ENABLE_IPC "enable ipc_util" OFF)
+option(UTILPP_WITH_STATIC_LIBUV "ipc_util use libuv::uv_a" OFF)
+option(UTILPP_ENABLE_NET "enable net_util" OFF)
+option(UTILPP_WITH_STATIC_LIBCURL "net_util use static libcurl" OFF)
+option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
 
 # option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 if(PROJECT_IS_TOP_LEVEL)
-  if(STATIC_CRT)
+  if(UTILPP_STATIC_CRT)
     if(MSVC)
       set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
       add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -21,9 +27,9 @@ if(PROJECT_IS_TOP_LEVEL)
   endif()
 endif()
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 FetchContent_Declare(
   OCmakeUtil
@@ -84,11 +90,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem concurrentqueue)
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# if(STATIC_CRT)
-# ImportProject(TBB STATIC_CRT SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
-# else()
-# ImportProject(TBB SSH FIND TAG 0c0ff192a2304e114bc9e6557582dfba101360ff) # 2022.0.0
-# endif()
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
 add_subdirectory(src/simple_utilpp)
@@ -100,18 +101,35 @@ if(WIN32)
   add_subdirectory(src/windows_util)
 endif()
 
-find_package(libuv)
+if(UTILPP_STATIC_CRT)
+  set(STATIC_CRT STATIC_CRT)
+else()
+  unset(STATIC_CRT)
+endif()
 
-if(libuv_FOUND)
+if(UTILPP_GIT_SSH)
+  set(SSH SSH)
+else()
+  unset(SSH)
+endif()
+
+if(UTILPP_ENABLE_IPC)
+  ImportProject(libuv ${STATIC_CRT} ${SSH} FIND TAG be6b81a352d17513c95be153afcb3148f1a451cd) # 1.47.0
   add_subdirectory(src/ipc_util)
 endif()
 
-find_package(CURL)
+if(UTILPP_ENABLE_NET)
+  if(UTILPP_WITH_STATIC_LIBCURL)
+    set(STATIC STATIC)
+  else()
+    unset(STATIC)
+  endif()
 
-if(CURL_FOUND)
+  ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} FIND TAG 45d2ff6f8521524cbfa22e8be6a71a55578ccc4c) # 8.4.0
   add_subdirectory(src/net_util)
 endif()
 
-if(TARGET ValveFileVDF::ValveFileVDF)
+if(UTILPP_ENABLE_STEAM)
+  ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
   add_subdirectory(src/steam_util)
 endif()
