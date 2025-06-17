@@ -29,10 +29,10 @@ public:
             return std::make_shared<RegisterClassChild>();
             };
     };
-    static std::shared_ptr<RegisterClassParent> GetNamedClass(const char* name) {
-        return GetNamedClass((const char8_t*)name);
+    static std::shared_ptr<RegisterClassParent> GetNamedClassSingleton(const char* name) {
+        return GetNamedClassSingleton((const char8_t*)name);
     }
-    static std::shared_ptr<RegisterClassParent> GetNamedClass(std::u8string_view name) {
+    static std::shared_ptr<RegisterClassParent> GetNamedClassSingleton(std::u8string_view name) {
         auto itr = NamedClassInfos.find(name);
         if (itr == NamedClassInfos.end()) {
             return nullptr;

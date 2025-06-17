@@ -2,12 +2,19 @@
 #include <stdint.h>
 #include <atomic>
 #include <functional>
+#include <memory>
+class ICommonHandle {
+public:
+    virtual ~ICommonHandle() = default;
+    virtual bool IsValid() const = 0;
+};
+typedef std::shared_ptr<ICommonHandle> FCommonHandlePtr;
 
 struct NullCommonHandle_t {
     struct _Tag {};
     constexpr explicit NullCommonHandle_t(_Tag) {}
 };
-typedef struct CommonHandle_t
+typedef struct CommonHandle_t:public ICommonHandle
 {
     typedef  uint32_t CommonHandleID_t;
     constexpr CommonHandle_t() :ID(0) {}
@@ -22,7 +29,7 @@ typedef struct CommonHandle_t
         }
     }
     virtual ~CommonHandle_t(){}
-    bool IsValid() const
+    bool IsValid() const override
     {
         return ID != 0;
     }
@@ -46,12 +53,7 @@ typedef struct CommonHandle_t
 
 constexpr CommonHandle_t::CommonHandleID_t NullCommonHandleID{ 0 };
 inline constexpr NullCommonHandle_t NullHandle{ NullCommonHandle_t::_Tag{} };
-// inline bool operator< (const CommonHandle_t& lhs, const CommonHandle_t& rhs) {
-//     return lhs < rhs;
-// }
-// inline bool operator== (const CommonHandle_t& lhs, const CommonHandle_t& rhs) {
-//     return lhs == rhs;
-// }
+
 namespace std
 {
     template <>
