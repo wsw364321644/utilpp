@@ -1,10 +1,14 @@
 #pragma once
 #include <string>
 #include <vector>
-
+#include "HTTP/HttpManager.h"
 #include "Downloader/DownloaderDef.h"
 #include "net_export_defs.h"
 
+/**
+* rely on IHttpManager
+* need call Tick&HttpThreadTick on IHttpManager external
+*/
 class  IDownloader
 {
 public:
@@ -19,7 +23,5 @@ public:
     virtual bool RegisterGetFileInfoDelegate(DownloadTaskHandle_t, FGetFileInfoDelegate) = 0;
     virtual std::shared_ptr<TaskStatus_t> GetTaskStatus(DownloadTaskHandle_t handle) = 0;
     virtual void Tick(float delSec) = 0;
-    virtual void NetThreadTick(float delSec) = 0;
     virtual void IOThreadTick(float delSec) = 0;
-
 };

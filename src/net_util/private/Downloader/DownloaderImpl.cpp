@@ -350,7 +350,7 @@ bool FDownloadBuf::RemoveChunk(std::shared_ptr<file_chunk_t> pchunk)
 }
 
 FDownloader::FDownloader(){
-    pHttpManager = IHttpManager::GetNamedClass(CURL_HTTP_MANAGER_NAME);
+    pHttpManager = IHttpManager::GetNamedClassSingleton(CURL_HTTP_MANAGER_NAME);
 }
 
 DownloadTaskHandle_t FDownloader::AddTask(FDownloadFile* file)
@@ -515,7 +515,6 @@ std::shared_ptr<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle_t ha
 void FDownloader::Tick(float delSec)
 {
     auto& HttpManager = *pHttpManager;
-    HttpManager.Tick(delSec);
     TransferBuf();
     for (auto itr = RequireRemoveFiles.begin(); itr != RequireRemoveFiles.end(); std::advance(itr,1)) {
         Files.erase(*itr);
@@ -676,11 +675,6 @@ void FDownloader::Tick(float delSec)
     }
 }
 
-void FDownloader::NetThreadTick(float delSec)
-{
-    auto& HttpManager = *pHttpManager;
-    HttpManager.HttpThreadTick(delSec);
-}
 
 void FDownloader::IOThreadTick(float delSec)
 {

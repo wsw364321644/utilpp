@@ -29,7 +29,6 @@ public:
     bool RegisterGetFileInfoDelegate(DownloadTaskHandle_t, FGetFileInfoDelegate);
     std::shared_ptr<TaskStatus_t> GetTaskStatus(DownloadTaskHandle_t handle);
     void Tick(float delSec);
-    void NetThreadTick(float delSec);
     void IOThreadTick(float delSec);
     FDownloader& operator=(const FDownloader& other) = delete;
     FDownloader(FDownloader&) = delete;

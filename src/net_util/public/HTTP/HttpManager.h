@@ -14,6 +14,9 @@ constexpr char VERB_PUT[] = "PUT";
 constexpr char VERB_GET[] = "GET";
 constexpr char VERB_HEAD[] = "HEAD";
 constexpr char VERB_DELETE[] = "DELETE";
+constexpr char SCHEME_HTTPS[] = "https";
+constexpr char SCHEME_HTTP[] = "http";
+
 
 typedef std::shared_ptr<class IHttpManager> HttpManagerPtr;
 
