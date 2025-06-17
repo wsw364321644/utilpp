@@ -15,6 +15,8 @@ FCharBuffer::FCharBuffer(FCharBuffer &&mbuf)noexcept : FCharBuffer()
     bufSize = mbuf.bufSize;
     cursor = mbuf.cursor;
     readCursor = mbuf.readCursor;
+    freeptr = mbuf.freeptr;
+    mallocptr = mbuf.mallocptr;
 }
 FCharBuffer::FCharBuffer(FCharBuffer &mbuf) : FCharBuffer()
 {
@@ -232,6 +234,16 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
     return true;
 }
 
+void FCharBuffer::ReverseAssign(const char* cstr, size_t size)
+{
+    Reverse(size + 1);
+    if (size > 0)
+    {
+        memcpy(pBuf, cstr, size);
+    }
+    cursor = size;
+}
+
 void FCharBuffer::Assign(const char *cstr, size_t size)
 {
     Resize(size + 1);
@@ -240,6 +252,16 @@ void FCharBuffer::Assign(const char *cstr, size_t size)
         memcpy(pBuf, cstr, size);
     }
     cursor = size;
+}
+
+void FCharBuffer::Clear()
+{
+    cursor = 0;
+    readCursor = 0;
+    if (pBuf)
+    {
+        pBuf[0] = 0;
+    }
 }
 
 const char *FCharBuffer::CStr() const
@@ -261,12 +283,12 @@ size_t FCharBuffer::Size() const
     return bufSize;
 }
 
-char FCharBuffer::Peek() const
+FCharBuffer::Ch FCharBuffer::Peek() const
 {
     return pBuf[readCursor];
 }
 
-char FCharBuffer::Take()
+FCharBuffer::Ch FCharBuffer::Take()
 {
     return pBuf[readCursor++];
 }
@@ -276,7 +298,7 @@ size_t FCharBuffer::Tell()
     return readCursor;
 }
 
-void FCharBuffer::Put(char c)
+void FCharBuffer::Put(FCharBuffer::Ch c)
 {
     if (bufSize == 0 || cursor >= bufSize - 1)
     {
@@ -298,6 +320,7 @@ void FCharBuffer::Reverse(uint32_t size)
     }
     bufSize = size;
     pBuf = newbuf;
+    readCursor = 0;
 }
 
 void FCharBuffer::Resize(uint32_t size)
@@ -320,4 +343,5 @@ void FCharBuffer::Resize(uint32_t size)
     }
     bufSize = size;
     pBuf = newbuf;
+    readCursor = 0;;
 }

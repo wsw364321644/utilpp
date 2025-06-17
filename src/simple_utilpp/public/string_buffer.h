@@ -33,10 +33,18 @@ public:
     // template <typename T,
     //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, FCharBuffer>::value>::type>
     // void Append(T&&);
-
+    void ReverseAssign(const char* cstr, size_t size);
+    template <typename T>
+    void ReverseAssign(const T* first, const T* last) {
+        ReverseAssign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
+    }
     void Assign(const char *cstr, size_t size);
-    void Clear() { cursor = 0; }
+    template <typename T>
+    void Assign(const char* first, const char* last) {
+        Assign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
+    }
 
+    void Clear();
     const char *CStr() const;
     char *Data();
     size_t Length() const;
