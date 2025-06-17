@@ -23,7 +23,7 @@ target_compile_definitions(${TARGET_NAME} PRIVATE -DSTEAM_UTIL_API_EXPORTS)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp)
 
 if(TARGET UTILPP::net_util)
-    target_compile_definitions(${TARGET_NAME} PRIVATE -DSTEAM_UTIL_HAS_NET)
+    target_compile_definitions(${TARGET_NAME} PUBLIC -DSTEAM_UTIL_HAS_NET)
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::net_util)
 endif()
 
@@ -39,7 +39,7 @@ target_compile_definitions(${TARGET_NAME} PUBLIC -DSTEAM_UTIL_API_NODLL)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp_a)
 
 if(TARGET UTILPP::net_util_a)
-    target_compile_definitions(${TARGET_NAME} PRIVATE -DSTEAM_UTIL_HAS_NET)
+    target_compile_definitions(${TARGET_NAME} PUBLIC -DSTEAM_UTIL_HAS_NET)
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::net_util_a)
 endif()
 
