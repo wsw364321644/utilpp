@@ -5,7 +5,7 @@ std::atomic_uint32_t WorkflowHandle_t::WorkflowCount{ 1 };
 std::atomic_uint32_t CommonTaskHandle_t::TaskCount{ 1 };
 
 
-ITaskManager* GetTaskManagerInstance()
+ITaskManager* GetTaskManagerSingleton()
 {
     return FTaskFlowTaskManager::Get();
 }

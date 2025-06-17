@@ -160,4 +160,4 @@ public:
 };
 
 
-TASK_MANAGER_EXPORT ITaskManager* GetTaskManagerInstance();
+TASK_MANAGER_EXPORT ITaskManager* GetTaskManagerSingleton();
