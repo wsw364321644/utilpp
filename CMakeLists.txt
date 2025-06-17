@@ -13,6 +13,7 @@ option(UTILPP_WITH_STATIC_LIBUV "ipc_util use libuv::uv_a" OFF)
 option(UTILPP_ENABLE_NET "enable net_util" OFF)
 option(UTILPP_WITH_STATIC_LIBCURL "net_util use static libcurl" OFF)
 option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
+option(UTILPP_ENABLE_WEBSOCKET "enable websocket_util" OFF)
 
 # option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 if(PROJECT_IS_TOP_LEVEL)
@@ -33,9 +34,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 FetchContent_Declare(
   OCmakeUtil
-  GIT_REPOSITORY git@github.com:wsw364321644/OCmakeUtil.git
+  GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
   GIT_TAG 42df17bbf7891beffbd6d6bacd84bf29211d7605
 )
+include(ResourceDownload)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -46,14 +48,14 @@ set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
 set(SPDLOG_BUILD_PIC ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   spdlog
-  GIT_REPOSITORY git@github.com:gabime/spdlog.git
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
   GIT_TAG 8e5613379f5140fefb0b60412fbf1f5406e7c7f8 # 1.15.0
 )
 
 set(JSON_Install TRUE)
 FetchContent_Declare(
   nlohmann-json
-  GIT_REPOSITORY git@github.com:nlohmann/json.git
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 # 3.11.3
 )
 
@@ -61,33 +63,32 @@ set(JSON_VALIDATOR_INSTALL TRUE)
 set(nlohmann_json_schema_validator_SHARED_LIBS OFF)
 FetchContent_Declare(
   json-schema-validator
-  GIT_REPOSITORY git@github.com:pboettch/json-schema-validator.git
+  GIT_REPOSITORY https://github.com/pboettch/json-schema-validator.git
   GIT_TAG 349cba9f7e3cb423bbc1811bdd9f6770f520b468 # 2.3.0
 )
 
-FetchContent_Declare(
-  gcem
-  GIT_REPOSITORY git@github.com:kthohr/gcem.git
-  GIT_TAG 012ae73c6d0a2cb09ffe86475f5c6fba3926e200 # 1.18.0
-)
-
+# FetchContent_Declare(
+# gcem
+# GIT_REPOSITORY git@github.com:kthohr/gcem.git
+# GIT_TAG 012ae73c6d0a2cb09ffe86475f5c6fba3926e200 # 1.18.0
+# )
 set(TF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(TF_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(TF_BUILD_PROFILER ON CACHE BOOL "" FORCE)
 set(TF_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   taskflow
-  GIT_REPOSITORY git@github.com:taskflow/taskflow.git
+  GIT_REPOSITORY https://github.com/taskflow/taskflow.git
   GIT_TAG 12f8bd4e970ab27fd3dee3bffa24b5b48b54ba39 # 3.6.0
 )
 
 FetchContent_Declare(
   concurrentqueue
-  GIT_REPOSITORY git@github.com:cameron314/concurrentqueue.git
+  GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
   GIT_TAG 24b78782bd6ca5a5853ef46917708806112dc142
 )
 
-FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow gcem concurrentqueue)
+FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow concurrentqueue)
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src/simple_util)
@@ -129,7 +130,16 @@ if(UTILPP_ENABLE_NET)
   add_subdirectory(src/net_util)
 endif()
 
+if(UTILPP_ENABLE_WEBSOCKET)
+  add_subdirectory(src/websocket_util)
+endif()
+
 if(UTILPP_ENABLE_STEAM)
   ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
   add_subdirectory(src/steam_util)
+endif()
+
+if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
+  add_subdirectory(src/steam_protobufs)
+  add_subdirectory(src/steam_msg)
 endif()
