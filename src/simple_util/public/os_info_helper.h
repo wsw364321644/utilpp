@@ -1,0 +1,138 @@
+#pragma once
+#ifdef __cplusplus
+#include <cstdint>
+#else
+#include <stdint.h>
+#endif // __cplusplus
+#include "simple_os_defs.h"
+#include "simple_export_defs.h"
+
+#define OS_NAME_MAX 32
+#define OS_GUIDLEN 39
+#define MACHINE_GUID_MAX 36
+enum EOSCoreType {
+    OSCT_Unknown = -1,
+    OSCT_Web = -700,
+    OSCT_IOSUnknown = -600,
+    OSCT_IOS1 = -599,
+    OSCT_IOS2 = -598,
+    OSCT_IOS3 = -597,
+    OSCT_IOS4 = -596,
+    OSCT_IOS5 = -595,
+    OSCT_IOS6 = -594,
+    OSCT_IOS6_1 = -593,
+    OSCT_IOS7 = -592,
+    OSCT_IOS7_1 = -591,
+    OSCT_IOS8 = -590,
+    OSCT_IOS8_1 = -589,
+    OSCT_IOS8_2 = -588,
+    OSCT_IOS8_3 = -587,
+    OSCT_IOS8_4 = -586,
+    OSCT_IOS9 = -585,
+    OSCT_IOS9_1 = -584,
+    OSCT_IOS9_2 = -583,
+    OSCT_IOS9_3 = -582,
+    OSCT_IOS10 = -581,
+    OSCT_IOS10_1 = -580,
+    OSCT_IOS10_2 = -579,
+    OSCT_IOS10_3 = -578,
+    OSCT_IOS11 = -577,
+    OSCT_IOS11_1 = -576,
+    OSCT_IOS11_2 = -575,
+    OSCT_IOS11_3 = -574,
+    OSCT_IOS11_4 = -573,
+    OSCT_IOS12 = -572,
+    OSCT_IOS12_1 = -571,
+    OSCT_AndroidUnknown = -500,
+    OSCT_Android6 = -499,
+    OSCT_Android7 = -498,
+    OSCT_Android8 = -497,
+    OSCT_Android9 = -496,
+    OSCT_UMQ = -400,
+    OSCT_PS3 = -300,
+    OSCT_MacOSUnknown = -102,
+    OSCT_MacOS104 = -101,
+    OSCT_MacOS105 = -100,
+    OSCT_MacOS1058 = -99,
+    OSCT_MacOS106 = -95,
+    OSCT_MacOS1063 = -94,
+    OSCT_MacOS1064_slgu = -93,
+    OSCT_MacOS1067 = -92,
+    OSCT_MacOS107 = -90,
+    OSCT_MacOS108 = -89,
+    OSCT_MacOS109 = -88,
+    OSCT_MacOS1010 = -87,
+    OSCT_MacOS1011 = -86,
+    OSCT_MacOS1012 = -85,
+    OSCT_Macos1013 = -84,
+    OSCT_Macos1014 = -83,
+    OSCT_Macos1015 = -82,
+    OSCT_MacOS1016 = -81,
+    OSCT_MacOS11 = -80,
+    OSCT_MacOS111 = -79,
+    OSCT_MacOS1017 = -78,
+    OSCT_MacOS12 = -77,
+    OSCT_MacOS1018 = -76,
+    OSCT_MacOS13 = -75,
+    OSCT_MacOS1019 = -74,
+    OSCT_MacOS14 = -73,
+    OSCT_MacOS1020 = -72,
+    OSCT_MacOS15 = -71,
+    OSCT_MacOSMax = -1,
+    OSCT_LinuxUnknown = -203,
+    OSCT_Linux22 = -202,
+    OSCT_Linux24 = -201,
+    OSCT_Linux26 = -200,
+    OSCT_Linux32 = -199,
+    OSCT_Linux35 = -198,
+    OSCT_Linux36 = -197,
+    OSCT_Linux310 = -196,
+    OSCT_Linux316 = -195,
+    OSCT_Linux318 = -194,
+    OSCT_Linux3x = -193,
+    OSCT_Linux4x = -192,
+    OSCT_Linux41 = -191,
+    OSCT_Linux44 = -190,
+    OSCT_Linux49 = -189,
+    OSCT_Linux414 = -188,
+    OSCT_Linux419 = -187,
+    OSCT_Linux5x = -186,
+    OSCT_Linux54 = -185,
+    OSCT_Linux6x = -184,
+    OSCT_Linux7x = -183,
+    OSCT_Linux510 = -182,
+    OSCT_LinuxMax = -101,
+    OSCT_WinUnknown = 0,
+    OSCT_Win311 = 1,
+    OSCT_Win95 = 2,
+    OSCT_Win98 = 3,
+    OSCT_WinME = 4,
+    OSCT_WinNT = 5,
+    OSCT_Win2000 = 6,
+    OSCT_WinXP = 7,
+    OSCT_Win2003 = 8,
+    OSCT_WinVista = 9,
+    OSCT_Windows7 = 10,
+    OSCT_Win2008 = 11,
+    OSCT_Win2012 = 12,
+    OSCT_Windows8 = 13,
+    OSCT_Windows81 = 14,
+    OSCT_Win2012R2 = 15,
+    OSCT_Windows10 = 16,
+    OSCT_Win2016 = 17,
+    OSCT_Win2019 = 18,
+    OSCT_Win2022 = 19,
+    OSCT_Win11 = 20,
+};
+
+
+typedef struct OSInfo_t {
+    EOSCoreType OSCoreType;
+    char OSName[OS_NAME_MAX];
+    char DeviceGUID[OS_GUIDLEN];
+}OSInfo_t;
+
+SIMPLE_UTIL_API bool IsOS64Bit();
+SIMPLE_UTIL_API bool IsProcess64Bit();
+SIMPLE_UTIL_API void GetOsInfo(OSInfo_t* info);
+SIMPLE_UTIL_API bool GetMachineUUID(char* buf, uint32_t* buflen,bool* isGUID);
