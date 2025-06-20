@@ -55,7 +55,7 @@ std::tuple< std::string_view, bool> FSteamPacketMsg::Parse(const char* data, int
             readLen += stream.gcount();
             stream.read((char*)&ExtendedClientMsgHeader.HeaderCanary, sizeof(ExtendedClientMsgHeader.HeaderCanary));
             readLen += stream.gcount();
-            stream.read((char*)&ExtendedClientMsgHeader.steamID, sizeof(ExtendedClientMsgHeader.steamID));
+            stream.read((char*)&ExtendedClientMsgHeader.SteamID, sizeof(ExtendedClientMsgHeader.SteamID));
             readLen += stream.gcount();
             stream.read((char*)&ExtendedClientMsgHeader.SessionID, sizeof(ExtendedClientMsgHeader.SessionID));
             readLen += stream.gcount();
@@ -129,7 +129,7 @@ std::tuple<std::string_view, bool> FSteamPacketMsg::SerializeToOstream(uint32_t 
             stream.write((char*)&ExtendedClientMsgHeader.TargetJobID, sizeof(ExtendedClientMsgHeader.TargetJobID));
             stream.write((char*)&ExtendedClientMsgHeader.SourceJobID, sizeof(ExtendedClientMsgHeader.SourceJobID));
             stream.write((char*)&ExtendedClientMsgHeader.HeaderCanary, sizeof(ExtendedClientMsgHeader.HeaderCanary));
-            stream.write((char*)&ExtendedClientMsgHeader.steamID, sizeof(ExtendedClientMsgHeader.steamID));
+            stream.write((char*)&ExtendedClientMsgHeader.SteamID, sizeof(ExtendedClientMsgHeader.SteamID));
             stream.write((char*)&ExtendedClientMsgHeader.SessionID, sizeof(ExtendedClientMsgHeader.SessionID));
         }
     }

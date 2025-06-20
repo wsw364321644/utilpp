@@ -29,7 +29,7 @@ typedef struct ExtendedClientMsgHeader_t {
     uint64_t TargetJobID;
     uint64_t SourceJobID;
     uint8_t HeaderCanary;
-    uint64_t steamID;
+    uint64_t SteamID;
     int32_t SessionID;
 }ExtendedClientMsgHeader_t;
 
@@ -80,6 +80,7 @@ public:
             return pMsgHeader->SourceJobID;
         }
     }
+
     EMsg MsgType;
     bool bProtoBuf;
     std::variant<utilpp::steam::CMsgProtoBufHeader, MsgHeader_t, ExtendedClientMsgHeader_t>Header;

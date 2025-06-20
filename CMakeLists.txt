@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
 include(FetchContent)
-include(GNUInstallDirs)
 
 set(VERSION "0.0.1")
 project(utilpp VERSION ${VERSION})
+include(GNUInstallDirs)
 enable_language(C CXX ASM)
 
 option(UTILPP_STATIC_CRT "determine build STATIC CRT Build ." OFF)
@@ -35,9 +35,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 42df17bbf7891beffbd6d6bacd84bf29211d7605
+  GIT_TAG f2475b3370b751f8d3fa914e191daabc7a764e32
 )
-include(ResourceDownload)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -89,6 +88,9 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow concurrentqueue)
+include(ResourceDownload)
+include(ProjectImport)
+
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(src/simple_util)

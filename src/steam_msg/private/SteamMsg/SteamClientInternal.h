@@ -1,14 +1,8 @@
 #pragma once
 #include <system_error>
 #include <handle.h>
-enum class ESteamClientError : int {
-    SCE_OK = 0,
-    SCE_InvalidInput,
-    SCE_NotConnected,
-    SCE_AlreadyLoggedin,
-    SCE_RequestErrFromServer,
-    SCE_RequestTimeout,
-};
+#include <google/protobuf/service.h>
+#include "SteamMsg/SteamClient.h"
 class SteamClientErrorCategory : public std::error_category {
 public:
     const char* name() const noexcept override {
@@ -20,8 +14,17 @@ public:
         case ESteamClientError::SCE_OK: return "OK";
         case ESteamClientError::SCE_InvalidInput: return "Invalid input";
         case ESteamClientError::SCE_NotConnected: return "Client not connected";
+        case ESteamClientError::SCE_NotLogin: return "Client not login";
         case ESteamClientError::SCE_AlreadyLoggedin: return "Client Already Loggedin";
-        default: return "Unknown error";
+        case ESteamClientError::SCE_RequestErrFromServer: return "Client Request Err From Server";
+        case ESteamClientError::SCE_RequestTimeout: return "Client Request Timeout";
+
+        default: {
+            if (ev < std::to_underlying(ESteamClientError::SCE_MAX)) {
+                return "Error no mssage";
+            }
+            return "Unknown error";
+        }
         }
     }
 };
@@ -34,6 +37,5 @@ typedef struct SteamRequestHandle_t : ICommonHandle {
         return !bFinished;
     }
     bool bFinished{ true };
-    uint64_t SourceJobID;
-
+    uint64_t SourceJobID{ 0 };
 }SteamRequestHandle_t;

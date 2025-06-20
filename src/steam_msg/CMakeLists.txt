@@ -14,6 +14,7 @@ function(add_lib TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::steam_protobufs)
     target_link_libraries(${TARGET_NAME} PRIVATE OpenSSL::Crypto)
     target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
 
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)

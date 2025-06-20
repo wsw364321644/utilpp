@@ -42,7 +42,7 @@ void FSteamAuthSession::Tick(float delta)
             AuthRequestHandlePtr->SourceJobID = SourceJobID;
             Owner->JobManager.AddJob(SourceJobID,
                 std::bind(&FSteamAuthSession::OnGetPasswordRSAPublicKeyResponse, this, std::placeholders::_1, std::placeholders::_2),
-                std::bind(&FSteamClient::OnRequestFailed, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
+                std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
             );
             AuthSessionStatus = EAuthSessionStatus::GettingPasswordRSAPublicKey;
         }
@@ -77,7 +77,7 @@ void FSteamAuthSession::Tick(float delta)
             PollJobID = Owner->PacketMsg.GetSourceJobID();
             Owner->JobManager.AddJob(PollJobID,
                 std::bind(&FSteamAuthSession::OnPollAuthSessionStatusResponse, this, std::placeholders::_1, std::placeholders::_2),
-                std::bind(&FSteamClient::OnRequestFailed, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
+                std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
             );
         }
     }
@@ -264,7 +264,7 @@ bool FSteamAuthSession::OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMs
     Owner->PacketMsgInCB.MsgType = EMsg::ServiceMethodCallFromClientNonAuthed;
     utilpp::steam::CAuthentication_BeginAuthSessionViaCredentials_Request body;
     body.set_account_name(Account);
-    body.set_persistence(utilpp::steam::k_ESessionPersistence_Ephemeral);
+    body.set_persistence(utilpp::steam::k_ESessionPersistence_Persistent);
     body.set_website_id("Client");
     body.set_encrypted_password(std::string_view((char*)base64Output, base64Len));
     body.set_encryption_timestamp(resp.timestamp());
@@ -286,7 +286,7 @@ bool FSteamAuthSession::OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMs
     AuthRequestHandlePtr->SourceJobID = SourceJobID;
     Owner->JobManager.AddJob(SourceJobID,
         std::bind(&FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponse, this, std::placeholders::_1, std::placeholders::_2),
-        std::bind(&FSteamClient::OnRequestFailed, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
+        std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
     );
     return true;
 }
@@ -306,7 +306,7 @@ void FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponse(FSteamPacketMsg
     if (!bres) {
         SIMPLELOG_LOGGER_DEBUG(nullptr, "BeginAuthSessionViaCredentialsResponse failed");
         AuthSessionStatus = EAuthSessionStatus::Unauthorized;
-        Owner->OnRequestFailed(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
+        Owner->OnRequestFinished(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
         return;
     }
     SIMPLELOG_LOGGER_DEBUG(nullptr, "BeginAuthSessionViaCredentialsResponse seccess");
@@ -351,7 +351,7 @@ void FSteamAuthSession::OnPollAuthSessionStatusResponse(FSteamPacketMsg& msg, st
     if (!bres) {
         SIMPLELOG_LOGGER_DEBUG(nullptr, "PollAuthSessionStatusResponse failed");
         //AuthSessionStatus = EAuthSessionStatus::Unauthorized;
-        //Owner->OnRequestFailed(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
+        //Owner->OnRequestFinished(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
         return;
     }
     AuthRequestHandlePtr.reset();

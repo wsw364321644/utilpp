@@ -12,6 +12,7 @@
 
 #include <steam/steammessages_clientserver_login.pb.h>
 #include <steam/steammessages_clientserver.pb.h>
+#include <steam/steammessages_store.steamclient.pb.h>
 
 
 
@@ -73,8 +74,105 @@ FCommonHandlePtr FSteamClient::Login(std::string_view account, std::string_view 
     return SteamAuthSession.BeginAuthSessionViaCredentials(account, password, FailedDelegate, ec);
 }
 
+FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamRequestFinishedDelegate Delegate, std::error_code& ec)
+{
+    if (LogStatus!= ELogStatus::Logon) {
+        ec = std::error_code(std::to_underlying(ESteamClientError::SCE_NotLogin), SteamClientErrorCategory());
+    }
+
+    PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
+    PacketMsg.bProtoBuf = true;
+    PacketMsg.MsgType = EMsg::ServiceMethodCallFromClient;
+    auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(PacketMsg.Header);
+    header.set_jobid_source(GetNextJobID().GetValue());
+    header.set_target_job_name("Store.RegisterCDKey#1");
+    header.set_client_sessionid(SessionID);
+    header.set_steamid(SteamAccoutnInfo.SteamID);
+
+    utilpp::steam::CStore_RegisterCDKey_Request body;
+    body.set_activation_code(keyView);
+    body.set_is_request_from_client(true);
+    auto bodyLen = body.ByteSizeLong();
+
+
+
+    auto [bufview, bres] = PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CStore_RegisterCDKey_Request::SerializeToOstream, &body, std::placeholders::_1));
+    if (!bres) {
+        return nullptr;
+    }
+    pWSClient->SendData(bufview.data(), bufview.size());
+    auto SourceJobID = PacketMsg.GetSourceJobID();
+    auto RequestHandlePtr = std::make_shared<SteamRequestHandle_t>(SourceJobID);
+    JobManager.AddJob(SourceJobID,
+        [&, RequestHandlePtr, Delegate](FSteamPacketMsg& msg, std::string_view bodyView) {
+            utilpp::steam::CStore_RegisterCDKey_Response body;
+            auto bres=body.ParseFromArray(bodyView.data(), bodyView.size());
+            if (!bres) {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RequestErrFromServer);
+                return;
+            }
+            auto result=(EResult)body.mutable_purchase_receipt_info()->purchase_status();
+            auto purchaseResultDetail = (EPurchaseResultDetail)body.purchase_result_details();
+            switch (purchaseResultDetail) {
+            case EPurchaseResultDetail::AccountLocked: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RequestErrFromServer);
+                break;
+            }
+            case EPurchaseResultDetail::AlreadyPurchased: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_AlreadyPurchased);
+                break;
+            }
+            case EPurchaseResultDetail::CannotRedeemCodeFromClient: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_CannotRedeemCodeFromClient);
+                break;
+            }
+            case EPurchaseResultDetail::DoesNotOwnRequiredApp: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_DoesNotOwnRequiredApp);
+                break;
+            }
+            case EPurchaseResultDetail::NoWallet: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_NoWallet);
+                break;
+            }
+            case EPurchaseResultDetail::RestrictedCountry: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RestrictedCountry);
+                break;
+            }
+            case EPurchaseResultDetail::Timeout: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RequestTimeout);
+                break;
+            }
+            case EPurchaseResultDetail::BadActivationCode: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_BadActivationCode);
+                break;
+            }
+            case EPurchaseResultDetail::DuplicateActivationCode: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_DuplicateActivationCode);
+                break;
+            }
+            case EPurchaseResultDetail::NoDetail: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_OK);
+                break;
+            }
+            case EPurchaseResultDetail::RateLimited: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RateLimited);
+                break;
+            }
+            default: {
+                OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_UnknowError);
+                break;
+            }
+            }
+            RequestHandlePtr->bFinished = true;
+        },
+        std::bind(&FSteamClient::OnRequestFinished, this, RequestHandlePtr, Delegate, std::placeholders::_1)
+    );
+    return RequestHandlePtr;
+}
+
 void FSteamClient::Tick(float delta)
 {
+    static auto PreLogStatus = ELogStatus::NotConnect;
     switch (LogStatus) {
     case ELogStatus::NotConnect: {
         if (SteamAuthSession.AuthSessionStatus != EAuthSessionStatus::Unauthorized) {
@@ -102,6 +200,11 @@ void FSteamClient::Tick(float delta)
         break;
     }
     case ELogStatus::Logon: {
+        if (PreLogStatus != ELogStatus::Logon) {
+            std::error_code ec;
+            HeartBeat(ec);
+            TriggerOnLoginDelegates(SteamAccoutnInfo);
+        }
         HeartBeatSecCount += delta;
         if (HeartBeatSecCount > HeartBeatSec) {
             HeartBeatSecCount = 0;
@@ -111,6 +214,7 @@ void FSteamClient::Tick(float delta)
         break;
     }
     }
+    PreLogStatus = LogStatus;
     SteamAuthSession.Tick(delta);
 }
 
@@ -157,10 +261,12 @@ bool FSteamClient::Connect()
         [&](bool bres, std::u8string_view body) {
             if (!bres) {
                 LogStatus = ELogStatus::NotConnect;
+                return;
             }
             utilpp::GetCMListForConnectResp_t resp;
             if (!resp.Parse(body)) {
                 LogStatus = ELogStatus::NotConnect;
+                return;
             }
 
             pWSClient->SetHost(ConvertStringToU8View(resp.EndpointDetails[0].Host));
@@ -230,7 +336,7 @@ bool FSteamClient::Logon()
     return true;
 }
 
-void FSteamClient::OnRequestFailed(std::shared_ptr<SteamRequestHandle_t> SteamRequestHandle, FSteamRequestFailedDelegate SteamRequestFailedDelegate, ESteamClientError err)
+void FSteamClient::OnRequestFinished(std::shared_ptr<SteamRequestHandle_t> SteamRequestHandle, FSteamRequestFinishedDelegate SteamRequestFailedDelegate, ESteamClientError err)
 {
     SteamRequestHandle->bFinished = true;
     SteamRequestFailedDelegate(std::error_code(std::to_underlying(err), SteamClientErrorCategory()));
@@ -352,7 +458,6 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             HeartBeatSec = MsgClientLogonResponse.heartbeat_seconds();
             HeartBeatSecCount = 0;
             LogStatus = ELogStatus::Logon;
-            TriggerOnLoginDelegates(SteamAccoutnInfo);
         }
         else if (res == EResult::TryAnotherCM || res == EResult::ServiceUnavailable) {
             LogStatus = ELogStatus::NotConnect;

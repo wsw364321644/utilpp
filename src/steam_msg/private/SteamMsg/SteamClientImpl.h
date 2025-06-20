@@ -2,9 +2,9 @@
 #include <string>
 #include <zlib.h>
 #include <zconf.h>
-
+#include <concurrentqueue.h>
 #include "SteamMsg/SteamPacketMessage.h"
-#include "SteamMsg/SteamClient.h"
+#include "SteamMsg/SteamClientInternal.h"
 #include "SteamMsg/SteamJobManager.h"
 #include "SteamMsg/SteamAuthSession.h"
 
@@ -25,6 +25,7 @@ public:
     void Disconnect() override;
     void CancelRequest(FCommonHandlePtr) override;
     FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFailedDelegate, std::error_code&) override;
+    FCommonHandlePtr RegisterKey(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     void Tick(float delta) override;
 
     void ClientHello(std::error_code&);
@@ -32,7 +33,7 @@ public:
 private:
     bool Connect();
     bool Logon();
-    void OnRequestFailed(std::shared_ptr<SteamRequestHandle_t>, FSteamRequestFailedDelegate, ESteamClientError);
+    void OnRequestFinished(std::shared_ptr<SteamRequestHandle_t>, FSteamRequestFinishedDelegate, ESteamClientError);
     void OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWSClient, const char* content, size_t len);
     FSteamGlobalID& GetNextJobID() {
         JobID.SetSequentialCount(++SequentialCount);
@@ -70,4 +71,15 @@ private:
     std::vector<uint8_t> UncompressMessageBodyBuf;
     utilpp::steam::CMsgMulti MsgMulti;
     z_stream ZS{};
+
+    std::shared_ptr<SteamRequestHandle_t> GetNewRequestHandle() {
+        std::shared_ptr<SteamRequestHandle_t> ptr;
+        if(!RequestPool.try_dequeue(ptr)) {
+            ptr = std::make_shared<SteamRequestHandle_t>();
+        }
+        ptr->bFinished = false;
+        return ptr;
+    }
+    moodycamel::ConcurrentQueue<std::shared_ptr<SteamRequestHandle_t>> RequestPool;
+    moodycamel::ConcurrentQueue<std::shared_ptr<SteamRequestHandle_t>> FinishedRequests;
 };
