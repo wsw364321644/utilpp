@@ -1,5 +1,6 @@
 #pragma once
 #include <system_error>
+#include <atomic>
 #include <handle.h>
 #include <google/protobuf/service.h>
 #include "SteamMsg/SteamClient.h"
@@ -36,6 +37,6 @@ typedef struct SteamRequestHandle_t : ICommonHandle {
     bool IsValid() const override {
         return !bFinished;
     }
-    bool bFinished{ true };
+    std::atomic_bool bFinished{ true };
     uint64_t SourceJobID{ 0 };
 }SteamRequestHandle_t;

@@ -25,6 +25,7 @@ public:
     void Disconnect() override;
     void CancelRequest(FCommonHandlePtr) override;
     FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFailedDelegate, std::error_code&) override;
+    void InputSteamGuardCode(std::string_view) override;
     FCommonHandlePtr RegisterKey(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     void Tick(float delta) override;
 

@@ -55,6 +55,7 @@ public:
     virtual void CancelRequest(FCommonHandlePtr) = 0;
     typedef std::function<void()> FSteamLoginDelegate;
     virtual FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFailedDelegate, std::error_code&) = 0;
+    virtual void InputSteamGuardCode(std::string_view) = 0;
     virtual FCommonHandlePtr RegisterKey(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) = 0;
     virtual void Tick(float delta) = 0;
     DEFINE_EVENT(OnConnected);
@@ -62,6 +63,8 @@ public:
 
     DEFINE_EVENT_ONE_PARAM(OnLogin,const SteamAccoutnInfo_t&);
     DEFINE_EVENT_ONE_PARAM(OnLogout, const std::error_code&);
+
+    DEFINE_EVENT(OnRequestSteamGuardCode);
 };
 
 STEAM_MSG_EXPORT ISteamClient* GetSteamClientSingleton();

@@ -74,6 +74,11 @@ FCommonHandlePtr FSteamClient::Login(std::string_view account, std::string_view 
     return SteamAuthSession.BeginAuthSessionViaCredentials(account, password, FailedDelegate, ec);
 }
 
+void FSteamClient::InputSteamGuardCode(std::string_view codeView)
+{
+    SteamAuthSession.InputSteamGuardCode(codeView);
+}
+
 FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamRequestFinishedDelegate Delegate, std::error_code& ec)
 {
     if (LogStatus!= ELogStatus::Logon) {

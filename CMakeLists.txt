@@ -35,7 +35,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG f2475b3370b751f8d3fa914e191daabc7a764e32
+  GIT_TAG b3a22bc226b954577e1e7fff4a15cfa2f20d0297
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -142,6 +142,36 @@ if(UTILPP_ENABLE_STEAM)
 endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
+  if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
+    set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator)
+
+    execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_GENERATOR_ARGV} .
+      WORKING_DIRECTORY ${WORKING_DIRECTORY})
+    execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install --config Release
+      WORKING_DIRECTORY ${WORKING_DIRECTORY})
+
+    ResourceDownload(
+      SteamKit
+      GIT_REPOSITORY https://github.com/SteamRE/SteamKit.git
+      GIT_TAG 47fa00b0a1886dfdb24a59c24ebd4d4555ebcb2d
+    )
+
+    execute_process(COMMAND ${WORKING_DIRECTORY}/rundir/bin/SteamLanguageParser.exe
+      ${SteamKit_DIR}/Resources/SteamLanguage/steammsg.steamd
+      -o ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_msg/generated/SteamMsg
+      -e ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_util/generated/SteamLanguage.h
+      WORKING_DIRECTORY ${SteamKit_DIR}/Resources/SteamLanguage)
+    set(GEN_STEAM_LANGUAGE FALSE CACHE BOOL "Generate Steam Language C++ files" FORCE)
+  endif()
+
+  set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    jwt-cpp
+    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+    GIT_TAG e71e0c2d584baff06925bbb3aad683f677e4d498
+  )
+  FetchContent_MakeAvailable(jwt-cpp)
+
   add_subdirectory(src/steam_protobufs)
   add_subdirectory(src/steam_msg)
 endif()

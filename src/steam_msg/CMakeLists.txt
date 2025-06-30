@@ -1,5 +1,6 @@
 NewTargetSource()
 AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
+AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/generated")
 AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
@@ -15,6 +16,7 @@ function(add_lib TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE OpenSSL::Crypto)
     target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE jwt-cpp::jwt-cpp)
 
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)
