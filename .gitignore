@@ -20,6 +20,13 @@
 *.cso
 *.aps
 *.vcxproj*
+*.obj
+*.sln
+*.recipe
+*.lib
+*.pdb
+*.exp
+*.dll
 
 CMakeSettings.json
 Doxyfile
@@ -42,3 +49,4 @@ node_modules/
 *docs/
 additional_install_files/
 generated/
+rundir/

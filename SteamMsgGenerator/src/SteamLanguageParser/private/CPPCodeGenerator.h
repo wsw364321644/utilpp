@@ -24,7 +24,7 @@ inline std::string_view GetCPPBuildInTypeView(EBuildInType type) {
 
 class FCPPCodeGenerator : public ICodeGenerator {
 public:
-    void EmitSourceFile(std::ostream* stream, std::vector<std::string>& IncludeHeaders, std::vector<std::shared_ptr<FTypeNode>>& Types) override;
+    void EmitSourceFile(std::ostream* stream, std::vector<std::string>& IncludeHeaders, NamespaceNode_t& Types) override;
     FCommonHandlePtr BeginNamespace(std::ostream* stream, std::string_view spaceName) override;
     void EmitType(std::ostream* stream, FTypeNode* node) override;
 

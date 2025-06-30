@@ -4,6 +4,7 @@
 #include <memory>
 #include <variant>
 #include <filesystem>
+#include <unordered_map>
 
 enum class EBuildInType {
     BIT_NONE = 0,
@@ -68,10 +69,18 @@ public:
 
 class FEnumNode :public FTypeNode {
 public:
-    std::variant< EBuildInType, std::string_view> Type{ EBuildInType ::BIT_NONE};
+    std::variant< EBuildInType, std::string_view> Type{ EBuildInType::BIT_NONE };
     bool bFlag;
 };
 
+
+typedef struct NamespaceNode_t {
+    std::string Name;
+    std::unordered_map<std::string_view, std::shared_ptr<NamespaceNode_t>> SubNamespaces;
+    std::vector<std::shared_ptr<FTypeNode>> Types;
+}NamespaceNode_t;
+
+typedef std::unordered_map<std::string_view, std::shared_ptr<NamespaceNode_t>> FNamespaceTypes;
 typedef struct SourceFileInfo_t {
     std::string PathStr;
     std::filesystem::path FilePath;
@@ -79,5 +88,5 @@ typedef struct SourceFileInfo_t {
     std::string_view FileContentView;
 
     std::vector<std::string> IncludeHeaders;
-    std::vector<std::shared_ptr<FTypeNode>> Types;
+    NamespaceNode_t NamespaceNode;
 } SourceFileInfo_t;

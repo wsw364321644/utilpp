@@ -22,7 +22,7 @@ FSteamClient::FSteamClient() :SteamAuthSession(this)
     JobID.SetStartTime(std::chrono::system_clock::now());
     OSInfo_t OSInfo;
     GetOsInfo(&OSInfo);
-    OSType = EOSType(OSInfo.OSCoreType);
+    OSType = utilpp::steam::EOSType(OSInfo.OSCoreType);
 }
 
 bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManager, HttpManagerPtr _pHttpManager)
@@ -87,7 +87,7 @@ FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamReque
 
     PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
     PacketMsg.bProtoBuf = true;
-    PacketMsg.MsgType = EMsg::ServiceMethodCallFromClient;
+    PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClient;
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(PacketMsg.Header);
     header.set_jobid_source(GetNextJobID().GetValue());
     header.set_target_job_name("Store.RegisterCDKey#1");
@@ -116,50 +116,50 @@ FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamReque
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RequestErrFromServer);
                 return;
             }
-            auto result=(EResult)body.mutable_purchase_receipt_info()->purchase_status();
-            auto purchaseResultDetail = (EPurchaseResultDetail)body.purchase_result_details();
+            auto result=(utilpp::steam::EResult)body.mutable_purchase_receipt_info()->purchase_status();
+            auto purchaseResultDetail = (utilpp::steam::EPurchaseResultDetail)body.purchase_result_details();
             switch (purchaseResultDetail) {
-            case EPurchaseResultDetail::AccountLocked: {
+            case utilpp::steam::EPurchaseResultDetail::AccountLocked: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RequestErrFromServer);
                 break;
             }
-            case EPurchaseResultDetail::AlreadyPurchased: {
+            case utilpp::steam::EPurchaseResultDetail::AlreadyPurchased: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_AlreadyPurchased);
                 break;
             }
-            case EPurchaseResultDetail::CannotRedeemCodeFromClient: {
+            case utilpp::steam::EPurchaseResultDetail::CannotRedeemCodeFromClient: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_CannotRedeemCodeFromClient);
                 break;
             }
-            case EPurchaseResultDetail::DoesNotOwnRequiredApp: {
+            case utilpp::steam::EPurchaseResultDetail::DoesNotOwnRequiredApp: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_DoesNotOwnRequiredApp);
                 break;
             }
-            case EPurchaseResultDetail::NoWallet: {
+            case utilpp::steam::EPurchaseResultDetail::NoWallet: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_NoWallet);
                 break;
             }
-            case EPurchaseResultDetail::RestrictedCountry: {
+            case utilpp::steam::EPurchaseResultDetail::RestrictedCountry: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RestrictedCountry);
                 break;
             }
-            case EPurchaseResultDetail::Timeout: {
+            case utilpp::steam::EPurchaseResultDetail::Timeout: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RequestTimeout);
                 break;
             }
-            case EPurchaseResultDetail::BadActivationCode: {
+            case utilpp::steam::EPurchaseResultDetail::BadActivationCode: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_BadActivationCode);
                 break;
             }
-            case EPurchaseResultDetail::DuplicateActivationCode: {
+            case utilpp::steam::EPurchaseResultDetail::DuplicateActivationCode: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_DuplicateActivationCode);
                 break;
             }
-            case EPurchaseResultDetail::NoDetail: {
+            case utilpp::steam::EPurchaseResultDetail::NoDetail: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_OK);
                 break;
             }
-            case EPurchaseResultDetail::RateLimited: {
+            case utilpp::steam::EPurchaseResultDetail::RateLimited: {
                 OnRequestFinished(RequestHandlePtr, Delegate, ESteamClientError::SCE_RateLimited);
                 break;
             }
@@ -234,7 +234,7 @@ void FSteamClient::ClientHello(std::error_code& ec)
     auto bodyLen = body.ByteSizeLong();
     PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
     PacketMsg.bProtoBuf = true;
-    PacketMsg.MsgType = EMsg::ClientHello;
+    PacketMsg.MsgType = utilpp::steam::EMsg::ClientHello;
     auto [bufview, bres] = PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CMsgClientHello::SerializeToOstream, &body, std::placeholders::_1));
     if (!bres) {
         return;
@@ -252,7 +252,7 @@ void FSteamClient::HeartBeat(std::error_code& ec)
     auto bodyLen = body.ByteSizeLong();
     PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
     PacketMsg.bProtoBuf = true;
-    PacketMsg.MsgType = EMsg::ClientHeartBeat;
+    PacketMsg.MsgType = utilpp::steam::EMsg::ClientHeartBeat;
     auto [bufview, bres] = PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CMsgClientHello::SerializeToOstream, &body, std::placeholders::_1));
     if (!bres) {
         return;
@@ -293,11 +293,11 @@ bool FSteamClient::Logon()
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(PacketMsgInCB.Header);
     header.set_client_sessionid(0);
     steamIDSetting.SetAccountInstance(FSteamID::DesktopInstance);
-    steamIDSetting.SetAccountUniverse(EUniverse::Public);
-    steamIDSetting.SetAccountType(EAccountType::Individual);
+    steamIDSetting.SetAccountUniverse(utilpp::steam::EUniverse::Public);
+    steamIDSetting.SetAccountType(utilpp::steam::EAccountType::Individual);
     header.set_steamid(steamIDSetting.GetValue());
     PacketMsgInCB.bProtoBuf = true;
-    PacketMsgInCB.MsgType = EMsg::ClientLogon;
+    PacketMsgInCB.MsgType = utilpp::steam::EMsg::ClientLogon;
 
     utilpp::steam::CMsgClientLogon body;
     auto pMsgIPAddress = new  utilpp::steam::CMsgIPAddress;
@@ -358,7 +358,7 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
         return;
     }
     switch (msg.GetMsgType()) {
-    case EMsg::Multi: {
+    case utilpp::steam::EMsg::Multi: {
         if (!msg.IsProtoBuf()) {
             return;
         }
@@ -407,11 +407,11 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             cursor += length;
         }
     }
-    case EMsg::ClientServerUnavailable: {
+    case utilpp::steam::EMsg::ClientServerUnavailable: {
         //todo MsgClientServerUnavailable
         break;
     }
-    case EMsg::ClientSessionToken: { // am session token
+    case utilpp::steam::EMsg::ClientSessionToken: { // am session token
         utilpp::steam::CMsgClientSessionToken body;
         auto bres = body.ParseFromArray(bodyView.data(), bodyView.size());
         if (!bres) {
@@ -420,23 +420,23 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
         SessionToken = body.token();
         break;
     }
-    case EMsg::JobHeartbeat: {
+    case utilpp::steam::EMsg::JobHeartbeat: {
         JobManager.JobHeartBeat(msg.GetTargetJobID());
         break;
     }
-    case EMsg::DestJobFailed: {
+    case utilpp::steam::EMsg::DestJobFailed: {
         JobManager.JobFailed(msg.GetTargetJobID());
         break;
     }
-    case EMsg::ServiceMethodResponse: {
+    case utilpp::steam::EMsg::ServiceMethodResponse: {
         JobManager.JobCompleted(msg, bodyView);
         break;
     }
-    case EMsg::ServiceMethod: {
+    case utilpp::steam::EMsg::ServiceMethod: {
         //todo notification
         break;
     }
-    case EMsg::ClientLogOnResponse: { // we handle this to get the SteamID/SessionID and to setup heartbeating
+    case utilpp::steam::EMsg::ClientLogOnResponse: { // we handle this to get the SteamID/SessionID and to setup heartbeating
         if (!msg.IsProtoBuf()) {
             LogStatus = ELogStatus::Error;
             return;
@@ -448,8 +448,8 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             LogStatus = ELogStatus::Error;
             return;
         }
-        auto res = EResult(MsgClientLogonResponse.eresult());
-        if (res == EResult::OK) {
+        auto res = utilpp::steam::EResult(MsgClientLogonResponse.eresult());
+        if (res == utilpp::steam::EResult::OK) {
             SessionID = header.client_sessionid();
             SteamAccoutnInfo.SteamID = header.steamid();
             CellID = MsgClientLogonResponse.cell_id();
@@ -464,12 +464,12 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             HeartBeatSecCount = 0;
             LogStatus = ELogStatus::Logon;
         }
-        else if (res == EResult::TryAnotherCM || res == EResult::ServiceUnavailable) {
+        else if (res == utilpp::steam::EResult::TryAnotherCM || res == utilpp::steam::EResult::ServiceUnavailable) {
             LogStatus = ELogStatus::NotConnect;
         }
         break;
     }
-    case EMsg::ClientLoggedOff: { // to stop heartbeating when we get logged off
+    case utilpp::steam::EMsg::ClientLoggedOff: { // to stop heartbeating when we get logged off
         LogStatus = ELogStatus::Logout;
         SessionID = 0;
         SteamAccoutnInfo.SteamID = 0;
@@ -484,8 +484,8 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
                 LogStatus = ELogStatus::Error;
                 return;
             }
-            auto logoffResult = EResult(body.eresult());
-            if (logoffResult == EResult::TryAnotherCM || logoffResult == EResult::ServiceUnavailable)
+            auto logoffResult = utilpp::steam::EResult(body.eresult());
+            if (logoffResult == utilpp::steam::EResult::TryAnotherCM || logoffResult == utilpp::steam::EResult::ServiceUnavailable)
             {
                 LogStatus = ELogStatus::NotConnect;
             }

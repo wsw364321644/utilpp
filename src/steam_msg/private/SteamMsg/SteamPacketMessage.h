@@ -12,8 +12,8 @@ public:
 
     virtual uint64_t GetTargetJobID() const = 0;
     virtual uint64_t GetSourceJobID() const = 0;
-    virtual EMsg GetMsgType() const = 0;
-    virtual void SetMsgType(EMsg) = 0;
+    virtual utilpp::steam::EMsg GetMsgType() const = 0;
+    virtual void SetMsgType(utilpp::steam::EMsg) = 0;
     virtual bool IsProtoBuf() const = 0;
     virtual void SetProtoBuf(bool bProtoBuf) = 0;
 };
@@ -40,10 +40,10 @@ public:
 
     std::tuple<std::string_view, bool> Parse(const char* data, int32_t len) override;
     std::tuple<std::string_view, bool> SerializeToOstream(uint32_t bodyLen, std::function<bool(std::ostream*)> bodySerializeFunc);
-    EMsg GetMsgType() const override {
+    utilpp::steam::EMsg GetMsgType() const override {
         return MsgType;
     }
-    void SetMsgType(EMsg inMsgType) override {
+    void SetMsgType(utilpp::steam::EMsg inMsgType) override {
         MsgType = inMsgType;
     }
     bool IsProtoBuf() const override {
@@ -81,7 +81,7 @@ public:
         }
     }
 
-    EMsg MsgType;
+    utilpp::steam::EMsg MsgType;
     bool bProtoBuf;
     std::variant<utilpp::steam::CMsgProtoBufHeader, MsgHeader_t, ExtendedClientMsgHeader_t>Header;
 

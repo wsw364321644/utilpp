@@ -36,7 +36,7 @@ void FSteamAuthSession::Tick(float delta)
             header.set_jobid_source(Owner->GetNextJobID().GetValue());
             header.set_target_job_name("Authentication.GetPasswordRSAPublicKey#1");
             Owner->PacketMsg.bProtoBuf = true;
-            Owner->PacketMsg.MsgType = EMsg::ServiceMethodCallFromClientNonAuthed;
+            Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
             utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request body;
             body.set_account_name(Account);
             auto bodyLen = body.ByteSizeLong();
@@ -71,7 +71,7 @@ void FSteamAuthSession::Tick(float delta)
                 header.set_jobid_source(Owner->GetNextJobID().GetValue());
                 header.set_target_job_name("Authentication.UpdateAuthSessionWithSteamGuardCode#1");
                 Owner->PacketMsg.bProtoBuf = true;
-                Owner->PacketMsg.MsgType = EMsg::ServiceMethodCallFromClientNonAuthed;
+                Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
                 utilpp::steam::CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request body;
                 body.set_client_id(ClientID);
                 body.set_steamid(Owner->SteamAccoutnInfo.SteamID);
@@ -127,7 +127,7 @@ void FSteamAuthSession::PollAuthSessionStatus()
         header.set_jobid_source(Owner->GetNextJobID().GetValue());
         header.set_target_job_name("Authentication.PollAuthSessionStatus#1");
         Owner->PacketMsg.bProtoBuf = true;
-        Owner->PacketMsg.MsgType = EMsg::ServiceMethodCallFromClientNonAuthed;
+        Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
         utilpp::steam::CAuthentication_PollAuthSessionStatus_Request body;
         body.set_client_id(ClientID);
         body.set_request_id(RequestID);
@@ -284,7 +284,7 @@ bool FSteamAuthSession::OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMs
     header.set_jobid_source(Owner->GetNextJobID().GetValue());
     header.set_target_job_name("Authentication.BeginAuthSessionViaCredentials#1");
     Owner->PacketMsgInCB.bProtoBuf = true;
-    Owner->PacketMsgInCB.MsgType = EMsg::ServiceMethodCallFromClientNonAuthed;
+    Owner->PacketMsgInCB.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
     utilpp::steam::CAuthentication_BeginAuthSessionViaCredentials_Request body;
     body.set_account_name(Account);
     body.set_persistence(utilpp::steam::k_ESessionPersistence_Persistent);
@@ -342,8 +342,8 @@ void FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponse(FSteamPacketMsg
 bool FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponseInternal(FSteamPacketMsg& msg, std::string_view bodyView)
 {
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);
-    auto res = EResult(header.eresult());
-    if (res != EResult::OK) {
+    auto res = utilpp::steam::EResult(header.eresult());
+    if (res != utilpp::steam::EResult::OK) {
         return false;
     }
     utilpp::steam::CAuthentication_BeginAuthSessionViaCredentials_Response resp;
@@ -388,7 +388,7 @@ void FSteamAuthSession::OnPollAuthSessionStatusResponse(FSteamPacketMsg& msg, st
 bool FSteamAuthSession::OnPollAuthSessionStatusResponseInternal(FSteamPacketMsg& msg, std::string_view bodyView)
 {
     auto& respheader = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);
-    if (EResult(respheader.eresult()) != EResult::OK) {
+    if (utilpp::steam::EResult(respheader.eresult()) != utilpp::steam::EResult::OK) {
         return false;
     }
     utilpp::steam::CAuthentication_PollAuthSessionStatus_Response resp;
@@ -425,8 +425,8 @@ void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPack
         }
     );
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);
-    auto res = EResult(header.eresult());
-    if (res != EResult::OK && res != EResult::DuplicateRequest) {
+    auto res = utilpp::steam::EResult(header.eresult());
+    if (res != utilpp::steam::EResult::OK && res != utilpp::steam::EResult::DuplicateRequest) {
         return;
     }
     utilpp::steam::CAuthentication_UpdateAuthSessionWithSteamGuardCode_Response resp;

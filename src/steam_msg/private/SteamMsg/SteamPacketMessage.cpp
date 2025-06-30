@@ -13,13 +13,13 @@ std::tuple< std::string_view, bool> FSteamPacketMsg::Parse(const char* data, int
     stream.read((char*)&MsgType, sizeof(int32_t));
     readLen += stream.gcount();
     bProtoBuf = std::to_underlying(MsgType) & ProtoMask;
-    MsgType = EMsg(std::to_underlying(MsgType) & ~ProtoMask);
+    MsgType = utilpp::steam::EMsg(std::to_underlying(MsgType) & ~ProtoMask);
 
     switch (MsgType)
     {
-    case EMsg::ChannelEncryptRequest:
-    case EMsg::ChannelEncryptResponse:
-    case EMsg::ChannelEncryptResult: {
+    case utilpp::steam::EMsg::ChannelEncryptRequest:
+    case utilpp::steam::EMsg::ChannelEncryptResponse:
+    case utilpp::steam::EMsg::ChannelEncryptResult: {
         Header = MsgHeader_t();
         auto& MsgHeader = std::get<MsgHeader_t>(Header);
         stream.read((char*)&MsgHeader.TargetJobID, sizeof(MsgHeader.TargetJobID));
@@ -73,9 +73,9 @@ std::tuple<std::string_view, bool> FSteamPacketMsg::SerializeToOstream(uint32_t 
     auto pExtendedClientMsgHeader = std::get_if<ExtendedClientMsgHeader_t>(&Header);
     switch (MsgType)
     {
-    case EMsg::ChannelEncryptRequest:
-    case EMsg::ChannelEncryptResponse:
-    case EMsg::ChannelEncryptResult: {
+    case utilpp::steam::EMsg::ChannelEncryptRequest:
+    case utilpp::steam::EMsg::ChannelEncryptResponse:
+    case utilpp::steam::EMsg::ChannelEncryptResult: {
         if (!pMsgHeader) {
             return { "",false };
         }
@@ -103,9 +103,9 @@ std::tuple<std::string_view, bool> FSteamPacketMsg::SerializeToOstream(uint32_t 
 
     switch (MsgType)
     {
-    case EMsg::ChannelEncryptRequest:
-    case EMsg::ChannelEncryptResponse:
-    case EMsg::ChannelEncryptResult: {
+    case utilpp::steam::EMsg::ChannelEncryptRequest:
+    case utilpp::steam::EMsg::ChannelEncryptResponse:
+    case utilpp::steam::EMsg::ChannelEncryptResult: {
         stream.write((char*)&MsgType, sizeof(int32_t));
         auto& MsgHeader = *pMsgHeader;
         stream.write((char*)&MsgHeader.TargetJobID, sizeof(MsgHeader.TargetJobID));

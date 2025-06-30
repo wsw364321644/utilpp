@@ -8,6 +8,10 @@
 #include <string_view>
 FSteamLanguageParser::FSteamLanguageParser() :re(TOKEN_PATTERN)
 {
+    IgnoredTypes.insert("EPersonaStateFlag");
+    IgnoredTypes.insert("EPublishedFileInappropriateProvider");
+    IgnoredTypes.insert("EPublishedFileInappropriateResult");
+    IgnoredTypes.insert("EPublishedFileQueryType");
 }
 bool FSteamLanguageParser::Init(std::u8string_view projectDirView,std::u8string_view OutDirView)
 {
@@ -44,6 +48,7 @@ bool FSteamLanguageParser::Init(std::u8string_view projectDirView,std::u8string_
     if (!pCodeGenerator) {
         return false;
     }
+
     return true;
 }
 bool FSteamLanguageParser::EmitEnumToOneFile(std::u8string_view enumFileView)
@@ -94,30 +99,56 @@ bool FSteamLanguageParser::Parse()
 bool FSteamLanguageParser::EmitCode()
 {
     std::error_code ec;
-    std::vector<std::shared_ptr<FTypeNode>> types;
-    std::vector<std::shared_ptr<FTypeNode>> EnumFileTypes;
-    for (const auto& [filePath, pFileInfo] : FilesToParse) {
-        types.clear();
-        for (auto& type : pFileInfo->Types) {
+    NamespaceNode_t OutNSNode;
+    NamespaceNode_t EnumNSNode;
+    auto ItrNSNodeFunc = [&](this auto&& self, NamespaceNode_t& NSNode , NamespaceNode_t& OutNSNode, NamespaceNode_t& EnumNSNode)->void {
+        for (auto type : NSNode.Types) {
             if (!type->bEmit) {
-                continue; 
+                continue;
             }
             auto pClassNode = dynamic_cast<FClassNode*>(type.get());
             auto pEnumNode = dynamic_cast<FEnumNode*>(type.get());
-            
             if (pEnumNode) {
                 if (!EnumFilePath.empty()) {
-                    EnumFileTypes.push_back(type);
+                    EnumNSNode.Types.push_back(type);
                 }
                 else {
-                    types.push_back(type);
+                    OutNSNode.Types.push_back(type);
                 }
             }
             else {
-                types.push_back(type);
+                OutNSNode.Types.push_back(type);
             }
         }
-        if (types.size() <= 0) {
+
+        for (auto& [ns, pNamespaceNode] : NSNode.SubNamespaces) {
+            std::shared_ptr<NamespaceNode_t> pOutSubNSNode;
+            auto tres= OutNSNode.SubNamespaces.try_emplace(ns, std::make_shared<NamespaceNode_t>());
+            pOutSubNSNode = tres.first->second;
+            if (tres.second) {
+                pOutSubNSNode->Name = ns;
+            }
+            auto& OutSubNSNode = *pOutSubNSNode;
+
+            std::shared_ptr<NamespaceNode_t> pEnumSubNSNode;
+            tres = EnumNSNode.SubNamespaces.try_emplace(ns, std::make_shared<NamespaceNode_t>());
+            pEnumSubNSNode = tres.first->second;
+            if (tres.second) {
+                pEnumSubNSNode->Name = ns;
+            }
+            auto& EnumSubNSNode = *pEnumSubNSNode;
+
+            self(*pNamespaceNode, OutSubNSNode, EnumSubNSNode);
+            if (OutSubNSNode.Types.size() <= 0&& OutSubNSNode.SubNamespaces.size()<=0) {
+                OutNSNode.SubNamespaces.erase(ns);
+            }
+        }
+        };
+    for (const auto& [filePath, pFileInfo] : FilesToParse) {
+        OutNSNode.SubNamespaces.clear();
+        OutNSNode.Types.clear();
+        ItrNSNodeFunc(pFileInfo->NamespaceNode, OutNSNode, EnumNSNode);
+        if (OutNSNode.Types.size() <= 0&& OutNSNode.SubNamespaces.size()<=0) {
             continue;
         }
         auto outCPPPath= OutDir/pFileInfo->FilePath.lexically_relative(ProjectDir);
@@ -130,15 +161,15 @@ bool FSteamLanguageParser::EmitCode()
         if (!ofs.is_open()) {
             return false; // Failed to open output file
         }
-        pCodeGenerator->EmitSourceFile(&ofs, pFileInfo->IncludeHeaders, pFileInfo->Types);
+        pCodeGenerator->EmitSourceFile(&ofs, pFileInfo->IncludeHeaders, OutNSNode);
     }
-    if (EnumFileTypes.size() > 0) {
+    if (!EnumFilePath.empty()) {
         std::ofstream ofs(EnumFilePath, std::ios_base::trunc);
         if (!ofs.is_open()) {
             return false; // Failed to open output file
         }
         std::vector<std::string> IncludeHeaders;
-        pCodeGenerator->EmitSourceFile(&ofs, IncludeHeaders, EnumFileTypes);
+        pCodeGenerator->EmitSourceFile(&ofs, IncludeHeaders, EnumNSNode);
     }
     return true;
 }
@@ -181,6 +212,16 @@ bool FSteamLanguageParser::ParseFile(std::shared_ptr<SourceFileInfo_t> pFileInfo
     info.FileContentView = std::string_view(info.FileContent.data(), fileSize);
     absl::string_view fileContentView = info.FileContentView;
 
+    auto nsNode = std::make_shared< NamespaceNode_t>();
+    nsNode->Name = "utilpp";
+    auto tres=info.NamespaceNode.SubNamespaces.try_emplace(nsNode->Name, nsNode);
+    auto itr = tres.first;
+
+    nsNode = std::make_shared< NamespaceNode_t>();
+    nsNode->Name = "steam";
+    tres=itr->second->SubNamespaces.try_emplace(nsNode->Name, nsNode);
+    itr = tres.first;
+    auto& types = nsNode->Types;
     while (fileContentView.size() > 0) {
         bres = GetNextToken(fileContentView, startSkipIndexsSpan, invalidIndex);
         if (!bres) {
@@ -191,8 +232,10 @@ bool FSteamLanguageParser::ParseFile(std::shared_ptr<SourceFileInfo_t> pFileInfo
             if(!ptr){
                 return false;
             }
-            Types.try_emplace(ptr->Name, ptr);
-            pFileInfo->Types.push_back(ptr);
+            if (IgnoredTypes.find(ptr->Name) != IgnoredTypes.end()) {
+                continue; // Skip ignored types
+            }
+            types.push_back(ptr);
         }
         else if (!matchRes[preprocessIndex].empty()) {
             auto& view = matchRes[preprocessIndex];
@@ -268,7 +311,7 @@ inline std::shared_ptr<FTypeNode> FSteamLanguageParser::ParseType(absl::string_v
     auto view = matchRes[identifierIndex];
     switch (ctcrc32(view)) {
     case ctcrc32("class"): {
-        auto pClassNode = std::make_shared< FClassNode>();
+        auto pClassNode = std::make_shared<FClassNode>();
         auto& classNode = *pClassNode;
         if (!GetNextToken(fileContentView, skipIndexsSpan, identifierIndex)) {
             return nullptr;
@@ -299,7 +342,7 @@ inline std::shared_ptr<FTypeNode> FSteamLanguageParser::ParseType(absl::string_v
         break;
     }
     case ctcrc32("enum"): {
-        auto pNode = std::make_shared< FEnumNode>();
+        auto pNode = std::make_shared<FEnumNode>();
         auto& node = *pNode;
         if (!GetNextToken(fileContentView, skipIndexsSpan, identifierIndex)) {
             return nullptr;

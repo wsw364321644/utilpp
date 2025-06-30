@@ -31,38 +31,38 @@ public:
     uint32_t GetAccountInstance() const {
         return Value.template GetBitSet<uint32_t>(AccountInstanceBitOffset, AccountInstanceBitLen);
     }
-    void SetAccountUniverse(EUniverse val) {
+    void SetAccountUniverse(utilpp::steam::EUniverse val) {
         Value.SetBitSet(std::to_underlying(val), AccountUniverseBitOffset, AccountUniverseBitLen);
     }
-    EUniverse GetAccountUniverse() const {
-        return Value.template GetBitSet<EUniverse>(AccountUniverseBitOffset, AccountUniverseBitLen);
+    utilpp::steam::EUniverse GetAccountUniverse() const {
+        return Value.template GetBitSet<utilpp::steam::EUniverse>(AccountUniverseBitOffset, AccountUniverseBitLen);
     }
-    void SetAccountType(EAccountType val) {
+    void SetAccountType(utilpp::steam::EAccountType val) {
         Value.SetBitSet(std::to_underlying(val), AccountTypeBitOffset, AccountTypeBitLen);
     }
-    EAccountType GetAccountType() const {
-        return Value.template GetBitSet<EAccountType>(AccountTypeBitOffset, AccountTypeBitLen);
+    utilpp::steam::EAccountType GetAccountType() const {
+        return Value.template GetBitSet<utilpp::steam::EAccountType>(AccountTypeBitOffset, AccountTypeBitLen);
     }
     bool Isvalis() {
-        if (GetAccountType() <= EAccountType::Invalid || GetAccountType() > EAccountType::AnonUser)
+        if (GetAccountType() <= utilpp::steam::EAccountType::Invalid || GetAccountType() > utilpp::steam::EAccountType::AnonUser)
             return false;
 
-        if (GetAccountUniverse() <= EUniverse::Invalid || GetAccountUniverse() > EUniverse::Dev)
+        if (GetAccountUniverse() <= utilpp::steam::EUniverse::Invalid || GetAccountUniverse() > utilpp::steam::EUniverse::Dev)
             return false;
 
-        if (GetAccountType() == EAccountType::Individual)
+        if (GetAccountType() == utilpp::steam::EAccountType::Individual)
         {
             if (GetAccountID() == 0 || GetAccountInstance() > WebInstance)
                 return false;
         }
 
-        if (GetAccountType() == EAccountType::Clan)
+        if (GetAccountType() == utilpp::steam::EAccountType::Clan)
         {
             if (GetAccountID() == 0 || GetAccountInstance() != 0)
                 return false;
         }
 
-        if (GetAccountType() == EAccountType::GameServer)
+        if (GetAccountType() == utilpp::steam::EAccountType::GameServer)
         {
             if (GetAccountID() == 0)
                 return false;

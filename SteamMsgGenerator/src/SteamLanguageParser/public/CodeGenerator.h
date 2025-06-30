@@ -8,7 +8,7 @@
 extern const char CPP_CODE_GEN_NAME[];
 class ICodeGenerator:public TNamedClassRegister<ICodeGenerator> {
 public:
-    virtual void EmitSourceFile(std::ostream* stream, std::vector<std::string>& IncludeHeaders, std::vector<std::shared_ptr<FTypeNode>>& Types) = 0;
+    virtual void EmitSourceFile(std::ostream* stream, std::vector<std::string>& IncludeHeaders, NamespaceNode_t& Types) = 0;
     virtual FCommonHandlePtr BeginNamespace(std::ostream* stream, std::string_view spaceName) = 0;
     virtual void EmitType(std::ostream* stream, FTypeNode* type) = 0;
 

@@ -55,7 +55,7 @@ private:
     int64_t SessionToken{ 0 };
     FSteamJobManager JobManager{};
     FSteamAuthSession SteamAuthSession;
-    EOSType OSType;
+    utilpp::steam::EOSType OSType;
 
     SteamAccoutnInfo_t SteamAccoutnInfo;
     //from log on

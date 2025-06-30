@@ -7,7 +7,7 @@ source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 set(TARGET_NAME SteamLanguageParser)
 add_executable(${TARGET_NAME})
 set_target_properties(${TARGET_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
-target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
+target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
 
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::net_util)

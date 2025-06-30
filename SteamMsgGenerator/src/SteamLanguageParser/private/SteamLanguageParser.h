@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <variant>
+#include <unordered_set>
 
 constexpr char TOKEN_PATTERN[] = R"((?m)(?<whitespace>\s+)|(?<terminator>[;])|[\"](?<string>.+?)[\"]|\/\/(?<comment>.*)$|(?<identifier>-?[a-zA-Z_0-9][a-zA-Z0-9_:.]*)|[#](?<preprocess>[a-zA-Z]*)|(?<operator>[{}<>\]=|])|(?<invalid>[^\s]+))";
 
@@ -26,12 +27,12 @@ public:
     bool Parse();
     bool EmitCode();
 
-    std::unordered_map<std::string_view,std::shared_ptr<FTypeNode>> Types;
     std::unordered_map<std::u8string_view,std::shared_ptr<SourceFileInfo_t>> FilesToParse;
     std::filesystem::path OutDir;
     std::filesystem::path ProjectDir;
     std::filesystem::path EnumFilePath;
     std::shared_ptr <ICodeGenerator> pCodeGenerator;
+    std::unordered_set<std::string_view, string_hash> IgnoredTypes;
 private:
     std::tuple<std::shared_ptr<SourceFileInfo_t>, bool> AddFileToParseInternal(std::u8string_view path);
     bool ParseFile(std::shared_ptr<SourceFileInfo_t> pFileInfo);
