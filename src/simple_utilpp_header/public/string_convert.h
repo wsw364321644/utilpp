@@ -330,3 +330,7 @@ inline std::u8string_view ConvertStringToU8View(const std::string& str) {
 inline std::string ConvertU8ViewToString(std::u8string_view view) {
     return std::string((const char*)view.data(), view.size());
 }
+
+inline std::u8string_view ConvertViewToU8View(std::string_view view) {
+    return std::u8string_view((const char8_t*)view.data(), view.size());
+}
