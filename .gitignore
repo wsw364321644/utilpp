@@ -19,11 +19,15 @@
 *.nupkg
 *.cso
 *.aps
+*.vcxproj*
 
 CMakeSettings.json
 Doxyfile
 sonkwo_version.h
+CmakeCache.txt
 
+_deps
+CMakeFiles/
 .vshistory/
 .vs/
 Bin/
