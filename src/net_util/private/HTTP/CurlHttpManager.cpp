@@ -8,7 +8,7 @@
 #include <regex>
 constexpr char CURL_HTTP_MANAGER_NAME[] = "Curl";
 
-static TNamedClassAutoRegister_t<FCurlHttpManager> NamedClassAutoRegister(CURL_HTTP_MANAGER_NAME);
+volatile static TNamedClassAutoRegister_t<FCurlHttpManager> NamedClassAutoRegister(CURL_HTTP_MANAGER_NAME);
 
 FCurlHttpManager::CurlRequestOptions_t FCurlHttpManager::CurlRequestOptions;
 FCurlHttpManager::FCurlHttpManager()
