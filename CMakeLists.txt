@@ -35,7 +35,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG b3a22bc226b954577e1e7fff4a15cfa2f20d0297
+  GIT_TAG 19a4ce92ee46d92ae95b2781b827d108324bf4a5
+  GIT_SHALLOW TRUE
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -49,6 +50,7 @@ FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
   GIT_TAG 8e5613379f5140fefb0b60412fbf1f5406e7c7f8 # 1.15.0
+  GIT_SHALLOW TRUE
 )
 
 set(JSON_Install TRUE)
@@ -56,6 +58,7 @@ FetchContent_Declare(
   nlohmann-json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 # 3.11.3
+  GIT_SHALLOW TRUE
 )
 
 set(JSON_VALIDATOR_INSTALL TRUE)
@@ -64,6 +67,7 @@ FetchContent_Declare(
   json-schema-validator
   GIT_REPOSITORY https://github.com/pboettch/json-schema-validator.git
   GIT_TAG 349cba9f7e3cb423bbc1811bdd9f6770f520b468 # 2.3.0
+  GIT_SHALLOW TRUE
 )
 
 # FetchContent_Declare(
@@ -79,17 +83,20 @@ FetchContent_Declare(
   taskflow
   GIT_REPOSITORY https://github.com/taskflow/taskflow.git
   GIT_TAG 12f8bd4e970ab27fd3dee3bffa24b5b48b54ba39 # 3.6.0
+  GIT_SHALLOW TRUE
 )
 
 FetchContent_Declare(
   concurrentqueue
   GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
   GIT_TAG 24b78782bd6ca5a5853ef46917708806112dc142
+  GIT_SHALLOW TRUE
 )
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow concurrentqueue)
 include(ResourceDownload)
 include(ProjectImport)
+include(ProgramImport)
 
 set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -137,11 +144,6 @@ if(UTILPP_ENABLE_WEBSOCKET)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
-  add_subdirectory(src/steam_util)
-endif()
-
-if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
   if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
     set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator)
 
@@ -164,14 +166,11 @@ if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
     set(GEN_STEAM_LANGUAGE FALSE CACHE BOOL "Generate Steam Language C++ files" FORCE)
   endif()
 
-  set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  FetchContent_Declare(
-    jwt-cpp
-    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
-    GIT_TAG e71e0c2d584baff06925bbb3aad683f677e4d498
-  )
-  FetchContent_MakeAvailable(jwt-cpp)
+  ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
+  add_subdirectory(src/steam_util)
+endif()
 
+if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
   add_subdirectory(src/steam_protobufs)
   add_subdirectory(src/steam_msg)
 endif()

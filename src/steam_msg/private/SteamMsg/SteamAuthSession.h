@@ -16,6 +16,7 @@ enum class EAuthSessionStatus {
     CreattingSeesion,
     PollingAuthSessionStatus,
     Authenticated,
+    Error,
 };
 
 class FSteamClient;
@@ -55,12 +56,15 @@ public:
     std::string AccountName;
 
     ////cache
-    std::string Account;
+
     std::string Password;
     std::shared_ptr<SteamRequestHandle_t> AuthRequestHandlePtr;
     std::atomic_bool bHasSteamGuardCode;
+    bool bReqSteamGuardCode{ false };
     std::string SteamGuardCode;
 private:
+    bool CheckAccountCache();
+    bool UpdateAccountCache();
     void PollAuthSessionStatus();
     void OnGetPasswordRSAPublicKeyResponse(FSteamPacketMsg& msg, std::string_view bodyView);
     bool OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMsg& msg, std::string_view bodyView);

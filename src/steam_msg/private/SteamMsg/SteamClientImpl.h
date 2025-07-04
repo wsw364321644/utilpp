@@ -2,12 +2,13 @@
 #include <string>
 #include <zlib.h>
 #include <zconf.h>
+
 #include <concurrentqueue.h>
 #include "SteamMsg/SteamPacketMessage.h"
 #include "SteamMsg/SteamClientInternal.h"
 #include "SteamMsg/SteamJobManager.h"
 #include "SteamMsg/SteamAuthSession.h"
-
+#include "SteamMsg/STEAMUSER.h"
 enum class ELogStatus {
     NotConnect,
     Connecting,
@@ -21,6 +22,7 @@ class FSteamClient :public ISteamClient {
 public:
     friend class FSteamAuthSession;
     FSteamClient();
+    ~FSteamClient();
     bool Init(IWebsocketConnectionManager*, HttpManagerPtr) override;
     void Disconnect() override;
     void CancelRequest(FCommonHandlePtr) override;
@@ -31,6 +33,8 @@ public:
 
     void ClientHello(std::error_code&);
     void HeartBeat(std::error_code&);
+
+    sqlpp::sqlite3::pooled_connection& GetDBConnection();
 private:
     bool Connect();
     bool Logon();
@@ -44,6 +48,12 @@ private:
     HttpManagerPtr pHttpManager;
     IWebsocketConnectionManager* pWSManager{nullptr};
     std::shared_ptr<IWebsocketClient> pWSClient;
+    sqlpp::sqlite3::connection_pool DBConnectionPool;
+    inline static thread_local std::optional<sqlpp::sqlite3::pooled_connection> DBConnection;
+    utilpp::steam::STEAMUSER SteamUserTable;
+    //sqlite3* pSQLite{ nullptr };
+    //sqlite3_stmt* pSelectAccountPSO{ nullptr };
+    //sqlite3_stmt* pInsertAccountPSO{ nullptr };
 
     FSteamGlobalID JobID;
 
@@ -83,4 +93,5 @@ private:
     }
     moodycamel::ConcurrentQueue<std::shared_ptr<SteamRequestHandle_t>> RequestPool;
     moodycamel::ConcurrentQueue<std::shared_ptr<SteamRequestHandle_t>> FinishedRequests;
+
 };

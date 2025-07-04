@@ -1,14 +1,17 @@
 #include "SteamMsg/SteamAuthSession.h"
 #include "SteamMsg/SteamClientImpl.h"
+
 #include <FunctionExitHelper.h>
 #include <LoggerHelper.h>
 #include <os_sock_helper.h>
 #include <os_info_helper.h>
 #include <SteamLanguageInternal.h>
+
 #include <steam/steammessages_clientserver_login.pb.h>
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/param_build.h>
+#include <jwt-cpp/jwt.h>
 
 bool FSteamAuthSession::OnSteamPackageReceived(FSteamPacketMsg& msg, std::string_view bodyView)
 {
@@ -38,7 +41,7 @@ void FSteamAuthSession::Tick(float delta)
             Owner->PacketMsg.bProtoBuf = true;
             Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
             utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request body;
-            body.set_account_name(Account);
+            body.set_account_name(AccountName);
             auto bodyLen = body.ByteSizeLong();
             auto [bufview, bres] = Owner->PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request::SerializeToOstream, &body, std::placeholders::_1));
             if (!bres) {
@@ -65,29 +68,35 @@ void FSteamAuthSession::Tick(float delta)
             if (AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode)) {
                 GuardType = utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode;
             }
-            if (GuardType != utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_Unknown && bHasSteamGuardCode) {
-                Owner->PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
-                auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(Owner->PacketMsg.Header);
-                header.set_jobid_source(Owner->GetNextJobID().GetValue());
-                header.set_target_job_name("Authentication.UpdateAuthSessionWithSteamGuardCode#1");
-                Owner->PacketMsg.bProtoBuf = true;
-                Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
-                utilpp::steam::CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request body;
-                body.set_client_id(ClientID);
-                body.set_steamid(Owner->SteamAccoutnInfo.SteamID);
-                body.set_code(SteamGuardCode);
-                body.set_code_type(GuardType);
-                auto bodyLen = body.ByteSizeLong();
-                auto [bufview, bres] = Owner->PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request::SerializeToOstream, &body, std::placeholders::_1));
-                if (!bres) {
-                    break;
+            if (GuardType != utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_Unknown) {
+                if (bHasSteamGuardCode) {
+                    Owner->PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
+                    auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(Owner->PacketMsg.Header);
+                    header.set_jobid_source(Owner->GetNextJobID().GetValue());
+                    header.set_target_job_name("Authentication.UpdateAuthSessionWithSteamGuardCode#1");
+                    Owner->PacketMsg.bProtoBuf = true;
+                    Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
+                    utilpp::steam::CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request body;
+                    body.set_client_id(ClientID);
+                    body.set_steamid(Owner->SteamAccoutnInfo.SteamID);
+                    body.set_code(SteamGuardCode);
+                    body.set_code_type(GuardType);
+                    auto bodyLen = body.ByteSizeLong();
+                    auto [bufview, bres] = Owner->PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request::SerializeToOstream, &body, std::placeholders::_1));
+                    if (!bres) {
+                        break;
+                    }
+                    Owner->pWSClient->SendData(bufview.data(), bufview.size());
+                    AuthRequestHandlePtr->SourceJobID = Owner->PacketMsg.GetSourceJobID();
+                    Owner->JobManager.AddJob(PollJobID,
+                        std::bind(&FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse, this, std::placeholders::_1, std::placeholders::_2),
+                        std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
+                    );
                 }
-                Owner->pWSClient->SendData(bufview.data(), bufview.size());
-                AuthRequestHandlePtr->SourceJobID = Owner->PacketMsg.GetSourceJobID();
-                Owner->JobManager.AddJob(PollJobID,
-                    std::bind(&FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse, this, std::placeholders::_1, std::placeholders::_2),
-                    std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
-                );
+                if (bReqSteamGuardCode) {
+                    Owner->TriggerOnRequestSteamGuardCodeDelegates();
+                    bReqSteamGuardCode = false;
+                }
             }
         }
         if (AllowedConfirmations.contains(utilpp::steam::k_EAuthSessionGuardType_DeviceConfirmation)) {
@@ -98,7 +107,8 @@ void FSteamAuthSession::Tick(float delta)
 }
 FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, ISteamClient::FSteamRequestFailedDelegate FailedDelegate, std::error_code& ec)
 {
-    if (Account == account && Password == password) {
+
+    if (AccountName == account && Password == password) {
         if (AuthRequestHandlePtr) {
             return AuthRequestHandlePtr;
         }
@@ -110,13 +120,113 @@ FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_v
     if (AuthRequestHandlePtr) {
         AuthRequestHandlePtr->bFinished = true;
     }
-    Account = account;
+    AccountName = account;
     Password = password;
     SteamRequestFailedDelegate = FailedDelegate;
     AuthRequestHandlePtr = std::make_shared<SteamRequestHandle_t>();
+
+    if (CheckAccountCache()) {
+        AuthSessionStatus = EAuthSessionStatus::Authenticated;
+        return AuthRequestHandlePtr;
+    }
+
     AuthRequestHandlePtr->bFinished = false;
     AuthSessionStatus = EAuthSessionStatus::WaittingConnection;
     return AuthRequestHandlePtr;
+}
+
+bool FSteamAuthSession::CheckAccountCache()
+{
+    //int ires;
+    //ires = sqlite3_clear_bindings(Owner->pSelectAccountPSO);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_reset(Owner->pSelectAccountPSO);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_bind_text(Owner->pSelectAccountPSO, 1, AccountName.data(), static_cast<int>(AccountName.size()), SQLITE_TRANSIENT);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //while (sqlite3_step(Owner->pSelectAccountPSO) != SQLITE_DONE) {
+    //    int i;
+    //    int num_cols = sqlite3_column_count(Owner->pSelectAccountPSO);
+    //    for (i = 0; i < num_cols; i++)
+    //    {
+    //        switch (sqlite3_column_type(Owner->pSelectAccountPSO, i))
+    //        {
+    //        case (SQLITE3_TEXT):
+    //            RefreshToken = (char*)sqlite3_column_text(Owner->pSelectAccountPSO, i);
+    //            break;
+    //        case (SQLITE_INTEGER):
+    //            break;
+    //        case (SQLITE_FLOAT):
+    //            break;
+    //        default:
+    //            break;
+    //        }
+    //    }
+    //}
+    for (const auto& row : Owner->GetDBConnection()(sqlpp::select(Owner->SteamUserTable.RefreshToken)
+        .from(Owner->SteamUserTable)
+        .where(Owner->SteamUserTable.AccountName == AccountName))
+        ) {
+        RefreshToken = row.RefreshToken.value();
+        break;
+    }
+    
+    if (!RefreshToken.empty()) {
+        auto decoded = jwt::decode(RefreshToken);
+        if (std::chrono::system_clock::now().time_since_epoch().count() + 60 * 5 > decoded.get_expires_at().time_since_epoch().count()) {
+            RefreshToken.clear();
+        }
+    }
+    if (!RefreshToken.empty()) {
+        return true;
+    }
+    return false;
+}
+
+bool FSteamAuthSession::UpdateAccountCache()
+{
+    //int ires;
+    //ires = sqlite3_clear_bindings(Owner->pInsertAccountPSO);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_reset(Owner->pInsertAccountPSO);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_bind_int64(Owner->pInsertAccountPSO, 1, Owner->SteamAccoutnInfo.SteamID);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_bind_text(Owner->pInsertAccountPSO, 2, AccountName.data(), static_cast<int>(AccountName.size()), SQLITE_STATIC);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_bind_text(Owner->pInsertAccountPSO, 3, AccessToken.data(), static_cast<int>(AccessToken.size()), SQLITE_STATIC);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_bind_text(Owner->pInsertAccountPSO, 4, RefreshToken.data(), static_cast<int>(RefreshToken.size()), SQLITE_STATIC);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+
+    //while (sqlite3_step(Owner->pInsertAccountPSO) != SQLITE_DONE) {
+    //}
+
+    Owner->GetDBConnection()(sqlpp::sqlite3::insert_or_replace().into(Owner->SteamUserTable)
+        .set(Owner->SteamUserTable.SteamID = Owner->SteamAccoutnInfo.SteamID,
+            Owner->SteamUserTable.AccountName = AccountName,
+            Owner->SteamUserTable.AccessToken = AccessToken,
+            Owner->SteamUserTable.RefreshToken = RefreshToken)
+        );
+    return true;
 }
 
 void FSteamAuthSession::PollAuthSessionStatus()
@@ -286,7 +396,7 @@ bool FSteamAuthSession::OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMs
     Owner->PacketMsgInCB.bProtoBuf = true;
     Owner->PacketMsgInCB.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
     utilpp::steam::CAuthentication_BeginAuthSessionViaCredentials_Request body;
-    body.set_account_name(Account);
+    body.set_account_name(AccountName);
     body.set_persistence(utilpp::steam::k_ESessionPersistence_Persistent);
     body.set_website_id("Client");
     body.set_encrypted_password(std::string_view((char*)base64Output, base64Len));
@@ -333,9 +443,7 @@ void FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponse(FSteamPacketMsg
         return;
     }
     AuthRequestHandlePtr->SourceJobID = 0;
-    if (AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_DeviceCode) || AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode)) {
-        Owner->TriggerOnRequestSteamGuardCodeDelegates();
-    }
+    bReqSteamGuardCode = true;
     SIMPLELOG_LOGGER_DEBUG(nullptr, "BeginAuthSessionViaCredentialsResponse seccess");
 }
 
@@ -382,6 +490,9 @@ void FSteamAuthSession::OnPollAuthSessionStatusResponse(FSteamPacketMsg& msg, st
         return;
     }
     AuthRequestHandlePtr.reset();
+    if (!UpdateAccountCache()) {
+        AuthSessionStatus = EAuthSessionStatus::Error;
+    }
     SIMPLELOG_LOGGER_DEBUG(nullptr, "PollAuthSessionStatusResponse success");
 }
 
@@ -421,6 +532,7 @@ void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPack
             if (!bres) {
                 AuthRequestHandlePtr->SourceJobID = 0;
                 bHasSteamGuardCode = false;
+                bReqSteamGuardCode = true;
             }
         }
     );

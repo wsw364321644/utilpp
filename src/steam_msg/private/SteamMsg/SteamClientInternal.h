@@ -1,6 +1,7 @@
 #pragma once
 #include <system_error>
 #include <atomic>
+#include <sqlpp23/sqlite3/sqlite3.h>
 #include <handle.h>
 #include <google/protobuf/service.h>
 #include "SteamMsg/SteamClient.h"
@@ -40,3 +41,33 @@ typedef struct SteamRequestHandle_t : ICommonHandle {
     std::atomic_bool bFinished{ true };
     uint64_t SourceJobID{ 0 };
 }SteamRequestHandle_t;
+
+constexpr char SQL_FILE_NAME[] = "steamclient.db";
+constexpr char SQL_CREATE_STEAM_USER_TABLE[] = R"(
+CREATE TABLE  IF NOT EXISTS STEAMUSER(
+SteamID             INT   PRIMARY KEY     NOT NULL,
+AccountName         TEXT  UNIQUE, 
+AccessToken         TEXT,
+RefreshToken        TEXT
+);
+)";
+
+constexpr char SQL_SELECT_FROM_STEAM_USER_BY_ACCOUNTNAME[] = R"(SELECT {} FROM STEAMUSER WHERE AccountName=?1 LIMIT 1;)";
+
+constexpr char SQL_INSERT_STEAM_USER[] = R"(
+INSERT OR REPLACE INTO STEAMUSER (SteamID,AccountName,AccessToken,RefreshToken)  
+VALUES (?1, ?2, ?3, ?4); 
+)";
+
+constexpr char SQL_UPDATE_STEAM_USER_REFRESHTOEKN[] = R"(
+UPDATE STEAMUSER set RefreshToken = ?1 where SteamID=?2;
+)";
+
+static int SqliteCB(void* NotUsed, int argc, char** argv, char** azColName) {
+    int i;
+    for (i = 0; i < argc; i++) {
+        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+    return 0;
+}

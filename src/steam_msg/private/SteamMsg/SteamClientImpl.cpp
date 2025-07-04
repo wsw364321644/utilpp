@@ -10,6 +10,7 @@
 #include <string_convert.h>
 #include <os_sock_helper.h>
 
+
 #include <steam/steammessages_clientserver_login.pb.h>
 #include <steam/steammessages_clientserver.pb.h>
 #include <steam/steammessages_store.steamclient.pb.h>
@@ -23,6 +24,18 @@ FSteamClient::FSteamClient() :SteamAuthSession(this)
     OSInfo_t OSInfo;
     GetOsInfo(&OSInfo);
     OSType = utilpp::steam::EOSType(OSInfo.OSCoreType);
+
+}
+
+FSteamClient::~FSteamClient()
+{
+    //if (pSelectAccountPSO) {
+    //    sqlite3_finalize(pSelectAccountPSO);
+    //}
+
+    //if (pSQLite) {
+    //    sqlite3_close(pSQLite);
+    //}
 }
 
 bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManager, HttpManagerPtr _pHttpManager)
@@ -55,6 +68,29 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
             TriggerOnDisconnectedDelegates(ec);
         }
     );
+    //auto ires= sqlite3_open_v2(SQL_FILE_NAME, &pSQLite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //char* zErrMsg = 0;
+    //ires = sqlite3_exec(pSQLite, SQL_CREATE_STEAM_USER_TABLE, SqliteCB, 0, &zErrMsg);
+    //if (ires != SQLITE_OK) {
+    //    auto msg = sqlite3_errmsg(pSQLite);
+    //    return false;
+    //}
+    //auto selectSql=std::format(SQL_SELECT_FROM_STEAM_USER_BY_ACCOUNTNAME, "RefreshToken");
+    //ires = sqlite3_prepare_v2(pSQLite, selectSql.c_str(), -1, &pSelectAccountPSO, 0);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //ires = sqlite3_prepare_v2(pSQLite, SQL_INSERT_STEAM_USER, -1, &pInsertAccountPSO, 0);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    auto config = std::make_shared<sqlpp::sqlite3::connection_config>();
+    config->path_to_database = SQL_FILE_NAME;
+    config->flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+    DBConnectionPool.initialize(config, 10);
     return true;
 }
 
@@ -258,6 +294,14 @@ void FSteamClient::HeartBeat(std::error_code& ec)
         return;
     }
     pWSClient->SendData(bufview.data(), bufview.size());
+}
+
+sqlpp::sqlite3::pooled_connection& FSteamClient::GetDBConnection()
+{
+    if (!DBConnection.has_value()) {
+        DBConnection = DBConnectionPool.get();
+    }
+    return DBConnection.value();
 }
 
 bool FSteamClient::Connect()
