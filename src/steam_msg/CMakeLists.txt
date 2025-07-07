@@ -17,6 +17,7 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(sqlpp23)
+
 if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
     ImportProgram(Python3 URL https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip)
     find_package(Python3 REQUIRED)
@@ -28,7 +29,13 @@ if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
     execute_process(COMMAND ${Python3_EXECUTABLE} ${sqlpp23_SOURCE_DIR}/scripts/ddl2cpp -split-tables
         ${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg
         utilpp::steam
+        RESULT_VARIABLE result
     )
+
+    if(NOT ${result} EQUAL 0)
+        message(FATAL_ERROR "Failed to gen steamlanguage")
+    endif()
+
     set(GEN_SQLPP_STRUCT FALSE CACHE BOOL "Generate SQLPP orm C++ files" FORCE)
 endif()
 

@@ -36,7 +36,6 @@ FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
   GIT_TAG 19a4ce92ee46d92ae95b2781b827d108324bf4a5
-  GIT_SHALLOW TRUE
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -89,8 +88,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   concurrentqueue
   GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
-  GIT_TAG 24b78782bd6ca5a5853ef46917708806112dc142
-  GIT_SHALLOW TRUE
+  GIT_TAG c68072129c8a5b4025122ca5a0c82ab14b30cb03
 )
 
 FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow concurrentqueue)
@@ -144,13 +142,30 @@ if(UTILPP_ENABLE_WEBSOCKET)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
-    set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_msg/generated/SteamMsg)
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_util/generated)
 
-    execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_GENERATOR_ARGV} .
-      WORKING_DIRECTORY ${WORKING_DIRECTORY})
+  if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
+    set(WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+    execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_GENERATOR_ARGV} ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator
+      -B BuildSteamMsgGenerator
+      WORKING_DIRECTORY ${WORKING_DIRECTORY}
+      RESULT_VARIABLE result
+    )
+
+    if(NOT ${result} EQUAL 0)
+      message(FATAL_ERROR "Failed to generate SteamMsgGenerator")
+    endif()
+
+    set(WORKING_DIRECTORY ${WORKING_DIRECTORY}/BuildSteamMsgGenerator)
     execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install --config Release
-      WORKING_DIRECTORY ${WORKING_DIRECTORY})
+      WORKING_DIRECTORY ${WORKING_DIRECTORY}
+      RESULT_VARIABLE result
+    )
+
+    if(NOT ${result} EQUAL 0)
+      message(FATAL_ERROR "Failed to build SteamMsgGenerator")
+    endif()
 
     ResourceDownload(
       SteamKit
@@ -162,7 +177,14 @@ if(UTILPP_ENABLE_STEAM)
       ${SteamKit_DIR}/Resources/SteamLanguage/steammsg.steamd
       -o ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_msg/generated/SteamMsg
       -e ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_util/generated/SteamLanguage.h
-      WORKING_DIRECTORY ${SteamKit_DIR}/Resources/SteamLanguage)
+      WORKING_DIRECTORY ${SteamKit_DIR}/Resources/SteamLanguage
+      RESULT_VARIABLE result
+    )
+
+    if(NOT ${result} EQUAL 0)
+      message(FATAL_ERROR "Failed to gen steamlanguage")
+    endif()
+
     set(GEN_STEAM_LANGUAGE FALSE CACHE BOOL "Generate Steam Language C++ files" FORCE)
   endif()
 

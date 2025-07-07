@@ -9,6 +9,7 @@ ResourceDownload(
 set(ProtobufCPPOutPath ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
 if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
+    file(MAKE_DIRECTORY ${ProtobufCPPOutPath})
     file(DOWNLOAD
         https://raw.githubusercontent.com/SteamRE/SteamKit/157eb2b01a518bb75fa74c4e2a22dbab181deb11/Resources/ProtobufGen/protos.csv
         ${CMAKE_CURRENT_BINARY_DIR}/protos.csv
@@ -181,8 +182,6 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
     foreach(FILE ${ProtobufFiles})
         message(STATUS "Generating C++ files from ${FILE}")
 
-        # set(ProtobufCPPOutPath ${CMAKE_CURRENT_SOURCE_DIR}/public/${ProtobufFileRelativePath})
-        # file(MAKE_DIRECTORY ${ProtobufCPPOutPath})
         execute_process(
             COMMAND ${Protobuf_PROTOC_EXECUTABLE}
             --proto_path=${Protobuf_INCLUDE_DIR}
