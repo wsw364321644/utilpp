@@ -5,7 +5,6 @@
 #include <cxxopts.hpp>
 #include <filesystem>
 int main(int argc, char** argv) {
-    std::filesystem::current_path(std::filesystem::path(R"(C:\Project\sonkwo_client_runtime\build\_deps\steamkit-src\Resources\SteamLanguage)"));
     bool bShowHelp{ false };
     std::string cwd = ConvertU8ViewToString(std::filesystem::current_path().u8string());
     cxxopts::Options options("SteamLanguageParser", "generator c++ files");
