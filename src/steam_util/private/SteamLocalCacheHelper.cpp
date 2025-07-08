@@ -151,7 +151,7 @@ bool FSteamLocalCacheHelper::StartMonitor()
             delete[] buf;
         }
     );
-    auto len = PATH_MAX;
+    uint32_t len = PATH_MAX;
     if (!GetSteamClientPath(buf, &len)) {
         return false;
     }
