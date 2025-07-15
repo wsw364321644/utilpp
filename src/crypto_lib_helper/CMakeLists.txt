@@ -1,0 +1,41 @@
+find_package(MbedTLS)
+find_package(OpenSSL)
+
+if(MbedTLS_FOUND OR OpenSSL_FOUND)
+    NewTargetSource()
+    AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
+    AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
+    source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
+
+    function(add_simple_util TARGET_NAME)
+        set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
+        set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
+        set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
+
+        find_package(MbedTLS)
+
+        if(MbedTLS_FOUND)
+            target_compile_definitions(${TARGET_NAME} PRIVATE -DHAS_MbedTLS)
+            target_link_libraries(${TARGET_NAME} PRIVATE MbedTLS::mbedcrypto)
+        elseif(OpenSSL_FOUND)
+            target_compile_definitions(${TARGET_NAME} PRIVATE -DHAS_OpenSSL)
+            target_link_libraries(${TARGET_NAME} PRIVATE OpenSSL::Crypto)
+        endif()
+
+        AddTargetInclude(${TARGET_NAME})
+        AddTargetInstall(${TARGET_NAME} UTILPP)
+    endfunction()
+
+    set(TARGET_NAME crypto_lib_helper)
+    add_library(${TARGET_NAME} SHARED ${SourceFiles})
+    target_compile_definitions(${TARGET_NAME} PRIVATE -DCRYPTO_LIB_HELPER_API_EXPORTS)
+    target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp)
+    add_simple_util(${TARGET_NAME})
+
+    set(TARGET_NAME crypto_lib_helper_a)
+    add_library(${TARGET_NAME} STATIC ${SourceFiles})
+    target_compile_definitions(${TARGET_NAME} PUBLIC -DCRYPTO_LIB_HELPER_API_NODLL)
+    target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp_a)
+    add_simple_util(${TARGET_NAME})
+endif()
