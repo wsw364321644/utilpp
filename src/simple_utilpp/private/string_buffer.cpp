@@ -10,17 +10,11 @@ FCharBuffer::FCharBuffer() : bufSize(0), cursor(0), readCursor(0), pBuf(nullptr)
 }
 FCharBuffer::FCharBuffer(FCharBuffer &&mbuf)noexcept : FCharBuffer()
 {
-    pBuf = mbuf.pBuf;
-    mbuf.pBuf = nullptr;
-    bufSize = mbuf.bufSize;
-    cursor = mbuf.cursor;
-    readCursor = mbuf.readCursor;
-    freeptr = mbuf.freeptr;
-    mallocptr = mbuf.mallocptr;
+    Swap(*this, mbuf);
 }
-FCharBuffer::FCharBuffer(FCharBuffer &mbuf) : FCharBuffer()
+FCharBuffer::FCharBuffer(const FCharBuffer &buf) : FCharBuffer()
 {
-    Assign(mbuf.CStr(), mbuf.Length());
+    operator=(buf);
 }
 FCharBuffer::FCharBuffer(const char *cstr) : FCharBuffer()
 {
@@ -37,12 +31,22 @@ FCharBuffer::~FCharBuffer()
         freeptr(pBuf);
     }
 }
-FCharBuffer &FCharBuffer::operator()(const char *cstr)
+FCharBuffer& FCharBuffer::operator()(const char *cstr)
 {
     Assign(cstr, strlen(cstr));
     return *this;
 }
-
+FCharBuffer& FCharBuffer::operator=(FCharBuffer&& r)noexcept {
+    Swap(*this, r);
+    return *this;
+}
+FCharBuffer& FCharBuffer::operator=(const FCharBuffer& r)noexcept {
+    freeptr = r.freeptr;
+    mallocptr = r.mallocptr;
+    Assign(r.CStr(), r.Length());
+    readCursor = r.readCursor;
+    return *this;
+}
 void Swap(FCharBuffer& l, FCharBuffer& r) {
     std::swap(l.bufSize,r.bufSize);
     std::swap(l.cursor,r.cursor);

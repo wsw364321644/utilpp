@@ -2,7 +2,7 @@ set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     jwt-cpp
     GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
-    GIT_TAG e71e0c2d584baff06925bbb3aad683f677e4d498
+    GIT_TAG v0.7.1
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(jwt-cpp)
@@ -13,7 +13,7 @@ set(BUILD_SQLITE3_CONNECTOR OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     sqlpp23
     GIT_REPOSITORY https://github.com/rbock/sqlpp23.git
-    GIT_TAG 9b686f345d2777de68e067c7e0383944d9ed4dde # 0.66
+    GIT_TAG 0.66
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(sqlpp23)

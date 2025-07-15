@@ -3,11 +3,11 @@
 #include <unordered_map>
 #include <filesystem>
 #include <optional>
-#include <nlohmann/json.hpp>
 #include "rpc_definition.h"
 
-#define GetParamsNlohmannJson(Request) nlohmann::json::parse((Request).GetParams().data(), nullptr, false)
-#define GetResultNlohmannJson(Response) nlohmann::json::parse((Response).GetResult().data(), nullptr, false)
+//#include <nlohmann/json.hpp>
+//#define GetParamsNlohmannJson(Request) nlohmann::json::parse((Request).GetParams().data(), nullptr, false)
+//#define GetResultNlohmannJson(Response) nlohmann::json::parse((Response).GetResult().data(), nullptr, false)
 
 #pragma warning(push)
 #pragma warning(disable:4251)
@@ -44,7 +44,7 @@ public:
         return *this;
     }
     ERPCParseError CheckParams()const;
-    FCharBuffer ToBytes() override;
+    void ToBytes(FCharBuffer&) override;
 
 };
 class RPC_PARSER_EXPORT JsonRPCResponse :public RPCResponse {
@@ -75,7 +75,7 @@ public:
     }
 
     ERPCParseError CheckResult(const char* Method) const;
-    FCharBuffer ToBytes() override;
+    void ToBytes(FCharBuffer&) override;
     bool IsError()const override{
         return OptError.has_value()? OptError.value():true;
     }
@@ -104,8 +104,8 @@ public:
     std::shared_ptr<RPCResponse> GetMethodNotFoundResponse(std::optional<uint32_t> id) override;
     std::shared_ptr<RPCResponse> GetErrorParseResponse(ERPCParseError error) override;
     static ParseResult StaticParse(const char* data, int len);
-    static FCharBuffer ToByte(const JsonRPCRequest&);
-    static FCharBuffer ToByte(const JsonRPCResponse&);
+    static void ToByte(const JsonRPCRequest&, FCharBuffer&);
+    static void ToByte(const JsonRPCResponse&, FCharBuffer&);
     static std::string RPCTypeToString(ERPCType type);
 private:
     static std::filesystem::path GetParamsFilePath(const char* method);

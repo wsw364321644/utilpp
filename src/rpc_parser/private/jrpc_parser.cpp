@@ -3,13 +3,19 @@
 #include "JsonRPCError.h"
 #include <LoggerHelper.h>
 #include <std_ext.h>
-#include <delegate_macros.h>
+#include <string_convert.h>
+#include <FunctionExitHelper.h>
+
 #include <memory>
 #include <stdint.h>
 #include <shared_mutex>
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json-schema.hpp>
+
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/schema.h>
 
 const char JsonVersionStr[] = "2.0";
 const char SpecificationStr[] = "specification";
@@ -111,9 +117,14 @@ const char* RespondSchemaStr = R"(
 }
 )";
 
-static nlohmann::json_schema::json_validator reqValidator;
-static nlohmann::json_schema::json_validator respValidator;
-
+static rapidjson::Document tempDoc;
+static rapidjson::SchemaDocument reqSchemaDocument(tempDoc);
+static rapidjson::SchemaValidator reqValidator(reqSchemaDocument);
+static rapidjson::SchemaDocument respSchemaDocument(tempDoc);
+static rapidjson::SchemaValidator respValidator(respSchemaDocument);
+//static thread_local simdjson::ondemand::parser simdjsonParser;
+static thread_local std::vector<char> threadBuf;
+static thread_local rapidjson::StringBuffer rapidjsonBuf;
 
 ERPCParseError JsonRPCResponse::CheckResult(const char* Method) const
 {
@@ -121,30 +132,39 @@ ERPCParseError JsonRPCResponse::CheckResult(const char* Method) const
     if (!std::filesystem::exists(path)) {
         return ERPCParseError::OK;
     }
-    std::ifstream ifs(path, std::ios::binary);
-    auto schemaDoc=nlohmann::json::parse(ifs, nullptr, false);
-    if (schemaDoc.is_discarded()) {
-        return  ERPCParseError::InternalError;
+    auto pathStru8 = path.u8string();
+    FILE* fp = fopen(ConvertU8StringToView(pathStru8).data(), "rb");
+    if (!fp) {
+        return ERPCParseError::InternalError;
     }
-    nlohmann::json_schema::json_validator validator;
-    nlohmann::json_schema::basic_error_handler err;
-    try {
-        validator.set_root_schema(schemaDoc);
+    FunctionExitHelper_t fpHelper(
+        [&]() {
+            fclose(fp);
+        }
+    );
+    threadBuf.reserve(1<<16);
+    rapidjson::Document sdoc;
+    rapidjson::FileReadStream is(fp, threadBuf.data(), threadBuf.capacity());
+    sdoc.ParseStream(is);
+    if (sdoc.HasParseError()) {
+        return ERPCParseError::ParseError;
     }
-    catch (const std::exception& e) {
-        SIMPLELOG_LOGGER_ERROR(nullptr,"Validation of {} Result failed, here is why: {}", Method, e.what());
-        return  ERPCParseError::InternalError;;
+    rapidjson::SchemaDocument schemaDoc(sdoc);
+    rapidjson::SchemaValidator validator(schemaDoc);
+    rapidjson::Document rdoc;
+    rdoc.Parse(GetResult().data());
+    if (rdoc.HasParseError()) {
+        return ERPCParseError::InvalidRequest;
     }
-    validator.validate(GetResultNlohmannJson(*this), err);
-    if (err) {
-        return  ERPCParseError::ParseError;
+    if (!rdoc.Accept(validator)) {
+        return ERPCParseError::InvalidRequest;
     }
     return ERPCParseError::OK;
 }
 
-FCharBuffer JsonRPCResponse::ToBytes()
+void JsonRPCResponse::ToBytes(FCharBuffer& buf)
 {
-    return JRPCPaser::ToByte(*this);
+    return JRPCPaser::ToByte(*this, buf);
 }
 
 ERPCParseError JsonRPCRequest::CheckParams()const
@@ -153,30 +173,39 @@ ERPCParseError JsonRPCRequest::CheckParams()const
     if (!std::filesystem::exists(path)) {
         return ERPCParseError::OK;
     }
-    std::ifstream ifs(path, std::ios::binary);
-    auto schemaDoc = nlohmann::json::parse(ifs, nullptr, false);
-    if (schemaDoc.is_discarded()) {
-        return  ERPCParseError::InternalError;
+    auto pathStru8 = path.u8string();
+    FILE* fp = fopen(ConvertU8StringToView(pathStru8).data(), "rb");
+    if (!fp) {
+        return ERPCParseError::InternalError;
     }
-    nlohmann::json_schema::json_validator validator;
-    nlohmann::json_schema::basic_error_handler err;
-    try {
-        validator.set_root_schema(schemaDoc);
+    FunctionExitHelper_t fpHelper(
+        [&]() {
+            fclose(fp);
+        }
+    );
+    threadBuf.reserve(1 << 16);
+    rapidjson::Document sdoc;
+    rapidjson::FileReadStream is(fp, threadBuf.data(), threadBuf.capacity());
+    sdoc.ParseStream(is);
+    if (sdoc.HasParseError()) {
+        return ERPCParseError::ParseError;
     }
-    catch (const std::exception& e) {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "Validation of {} Params failed, here is why: {}", Method, e.what());
-        return  ERPCParseError::InternalError;;
+    rapidjson::SchemaDocument schemaDoc(sdoc);
+    rapidjson::SchemaValidator validator(schemaDoc);
+    rapidjson::Document doc;
+    doc.Parse(GetParams().data());
+    if (doc.HasParseError()) {
+        return ERPCParseError::InvalidRequest;
     }
-    validator.validate(GetParamsNlohmannJson(*this), err);
-    if (err) {
-        return  ERPCParseError::ParseError;
+    if (!doc.Accept(validator)) {
+        return ERPCParseError::InvalidRequest;
     }
     return ERPCParseError::OK;
 }
 
-FCharBuffer JsonRPCRequest::ToBytes()
+void JsonRPCRequest::ToBytes(FCharBuffer& buf)
 {
-    return JRPCPaser::ToByte(*this);
+    return JRPCPaser::ToByte(*this, buf);
 }
 
 
@@ -185,29 +214,20 @@ std::unordered_map<std::string, RPCInfo_t>  JRPCPaser::rpcFuncMap;
 bool JRPCPaser::bInited = JRPCPaser::Init();
 bool JRPCPaser::Init()
 {
-    auto reqSchema=nlohmann::json::parse(ReqSchemaStr, nullptr, false);
-    if (reqSchema.is_discarded()) {
+    tempDoc.Parse(ReqSchemaStr);
+    if (tempDoc.HasParseError()) {
         return false;
     }
-    try {
-        reqValidator.set_root_schema(reqSchema);
-    }
-    catch (const std::exception& e) {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "ReqSchema init failed, here is why: {}", e.what());
-        return false;
-    }
+    new(&reqSchemaDocument) rapidjson::SchemaDocument(tempDoc);
+    new(&reqValidator) rapidjson::SchemaValidator(reqSchemaDocument);
 
-    auto respSchema = nlohmann::json::parse(RespondSchemaStr, nullptr, false);
-    if (respSchema.is_discarded()) {
+    tempDoc.Parse(RespondSchemaStr);
+    if (tempDoc.HasParseError()) {
         return false;
     }
-    try {
-        respValidator.set_root_schema(respSchema);
-    }
-    catch (const std::exception& e) {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "RespSchema init failed, here is why: {}", e.what());
-        return false;
-    }
+    new(&respSchemaDocument) rapidjson::SchemaDocument(tempDoc);
+    new(&respValidator) rapidjson::SchemaValidator(respSchemaDocument);
+
     //todo
     //std::filesystem::path spepath = std::filesystem::current_path() / SpecificationStr;
     //if (!std::filesystem::exists(spepath)) {
@@ -292,101 +312,116 @@ std::shared_ptr<RPCResponse> JRPCPaser::GetErrorParseResponse(ERPCParseError err
 JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
 {
     ParseResult res(ERPCParseError::ParseError);
-    std::string_view view(data, len);
-    auto doc=nlohmann::json::parse(view, nullptr, false);
-    if (doc.is_discarded()) {
+    rapidjson::Document doc;
+    doc.Parse(data, len);
+    if (doc.HasParseError()) {
         return res;
     }
     res = ERPCParseError::InvalidRequest;
-    nlohmann::json_schema::basic_error_handler err;
-    reqValidator.validate(doc, err);
-    if (!err) {
+    reqValidator.Reset();
+    respValidator.Reset();
+    if (doc.Accept(reqValidator)) {
         auto preq = std::make_shared<JsonRPCRequest>();
-        if (doc.find(IDFieldStr)!=doc.end() && doc[IDFieldStr].is_number()) {
-            preq->ID.emplace((uint32_t)doc[IDFieldStr].get_ref<nlohmann::json::number_unsigned_t&>());
+        if (doc.HasMember(IDFieldStr)&& doc[IDFieldStr].IsNumber()) {
+            preq->SetID(doc[IDFieldStr].GetUint());
         }
-        preq->Method = doc[MethodFieldStr].get_ref<nlohmann::json::string_t&>();
-        if (doc.find(ParamsFieldStr)!=doc.end()) {
-            preq->Params = doc[ParamsFieldStr].dump();
+        if (doc.HasMember(ParamsFieldStr)) {
+            rapidjson::Writer<FCharBuffer> writer(preq->GetParamsBuf());
+            if (!doc[ParamsFieldStr].Accept(writer)) {
+                return res;
+            }
         }
+        preq->SetMethod(doc[MethodFieldStr].GetString());
         return preq;
     }
-
-    err.reset();
-    respValidator.validate(doc, err);
-    if (!err) {
+    else if (doc.Accept(respValidator)) {
         auto presponse = std::make_shared<JsonRPCResponse>();
         auto& response = *presponse;
-        if (doc[IDFieldStr].is_number()) {
-            response.SetID( (uint32_t)doc[IDFieldStr].get_ref<nlohmann::json::number_unsigned_t&>());
+        if (doc[IDFieldStr].IsNumber()) {
+            response.SetID(doc[IDFieldStr].GetUint());
         }
-
-        if (doc.find(ResultFieldStr)!=doc.end()) {
-            response.SetError( false);
-            response.SetResult( doc[ResultFieldStr].dump());
+        if (doc.HasMember(ResultFieldStr)) {
+            response.SetError(false);
+            rapidjsonBuf.Clear();
+            rapidjson::Writer<rapidjson::StringBuffer> writer(rapidjsonBuf);
+            if (doc[ResultFieldStr].Accept(writer)) {
+                response.SetResult(rapidjsonBuf.GetString());
+            }
         }
         else {
             response.SetError(true);
-            response.ErrorCode = doc[ErrorFieldStr][ErrorCodeFieldStr].get_ref<nlohmann::json::number_integer_t&>();
-            response.SetErrorMsg(doc[ErrorFieldStr][ErrorMsgFieldStr].get_ref<nlohmann::json::string_t&>());
-            if (doc[ErrorFieldStr].find(ErrorDataFieldStr)!= doc[ErrorFieldStr].end()) {
-                response.SetErrorData(doc[ErrorFieldStr][ErrorDataFieldStr].get_ref<nlohmann::json::string_t&>());
+            response.ErrorCode = doc[ErrorFieldStr][ErrorCodeFieldStr].GetInt64();
+            response.SetErrorMsg(doc[ErrorFieldStr][ErrorMsgFieldStr].GetString());
+            if (doc[ErrorFieldStr].HasMember(ErrorDataFieldStr)) {
+                response.SetErrorData(doc[ErrorFieldStr][ErrorDataFieldStr].GetString());
             }
         }
         return presponse;
     }
+    //simdjsonBuf.reserve(len+ simdjson::SIMDJSON_PADDING);
+    //memcpy(simdjsonBuf.data(), data, len);
+    //simdjson::ondemand::document doc = simdjsonParser.iterate(data, len, simdjsonBuf.capacity());
     return res;
 }
 
-FCharBuffer JRPCPaser::ToByte(const JsonRPCRequest& req)
+void JRPCPaser::ToByte(const JsonRPCRequest& req, FCharBuffer& buf)
 {
-    FCharBuffer buffer;
-    nlohmann::json doc(nlohmann::json::value_t::object);
-    doc[MethodFieldStr] = req.Method;
-    auto Paramsnode=GetParamsNlohmannJson(req);
-    if (!Paramsnode.empty()) {
-        doc[ParamsFieldStr] = Paramsnode;
-    }
+    rapidjson::Document doc(rapidjson::kObjectType);
+    doc.AddMember(MethodFieldStr, rapidjson::StringRef(req.GetMethod().data(), req.GetMethod().size()), doc.GetAllocator());
     if (req.ID.has_value()) {
-        doc[IDFieldStr]= req.ID.value();
+        doc.AddMember(IDFieldStr, req.ID.value(), doc.GetAllocator());
     }
     else {
-        doc[IDFieldStr] = nlohmann::json(nlohmann::json::value_t::null);
+        doc.AddMember(IDFieldStr, rapidjson::Value(rapidjson::Type::kNullType), doc.GetAllocator());
     }
-    auto str=doc.dump();
-    buffer.Assign(str.c_str(), str.size());
-    return buffer;
+    if (!req.GetParams().empty()) {
+        rapidjson::Document paramsNode;
+        paramsNode.Parse(req.GetParams().data());
+        if (paramsNode.HasParseError()) {
+            return;
+        }
+        doc.AddMember(ParamsFieldStr, paramsNode, doc.GetAllocator());
+    }
+    buf.Clear();
+    rapidjson::Writer<FCharBuffer> writer(buf);
+    doc.Accept(writer);
+    return;
 }
 
-FCharBuffer JRPCPaser::ToByte(const JsonRPCResponse& res)
+void JRPCPaser::ToByte(const JsonRPCResponse& res, FCharBuffer& buf)
 {
-    FCharBuffer buffer;
-    nlohmann::json doc(nlohmann::json::value_t::object);
+    rapidjson::Document doc(rapidjson::kObjectType);
+    auto& allocator = doc.GetAllocator();
     if (!res.IsValiad()) {
-        return buffer;
+        return;
     }
     if (res.HasID()) {
-        doc[IDFieldStr] = res.GetID();
+        doc.AddMember(IDFieldStr, res.GetID(), allocator);
     }
     else {
-        doc[IDFieldStr] = nlohmann::json(nlohmann::json::value_t::null);
+        doc.AddMember(IDFieldStr, rapidjson::Value(rapidjson::Type::kNullType), allocator);
     }
     if (res.IsError()) {
-        nlohmann::json errNode(nlohmann::json::value_t::object);
-        errNode[ErrorCodeFieldStr] = res.ErrorCode;
-        errNode[ErrorMsgFieldStr]=res.GetErrorMsg();
+        rapidjson::Value errNode(rapidjson::kObjectType);
+        errNode.AddMember(ErrorCodeFieldStr, res.ErrorCode, allocator);
+        errNode.AddMember(ErrorMsgFieldStr, rapidjson::StringRef(res.GetErrorMsg().data(), res.GetErrorMsg().size()), allocator);
         if (!res.GetErrorData().empty()) {
-            errNode[ErrorDataFieldStr]= res.GetErrorData();
+            errNode.AddMember(ErrorDataFieldStr, rapidjson::StringRef(res.GetErrorData().data(), res.GetErrorData().size()), allocator);
         }
-        doc[ErrorFieldStr] = errNode;
+        doc.AddMember(ErrorFieldStr, errNode, allocator);
     }
     else {
-        auto resNode = GetResultNlohmannJson(res);
-        doc[ResultFieldStr]= resNode;
+        rapidjson::Document resNode;
+        resNode.Parse(res.GetResult().data());
+        if (resNode.HasParseError()) {
+            return;
+        }
+        doc.AddMember(ParamsFieldStr, resNode, allocator);
     }
-    auto str = doc.dump();
-    buffer.Assign(str.c_str(), str.size());
-    return buffer;
+    buf.Clear();
+    rapidjson::Writer<FCharBuffer> writer(buf);
+    doc.Accept(writer);
+    return;
 }
 
 std::string JRPCPaser::RPCTypeToString(ERPCType type)

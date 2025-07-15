@@ -13,6 +13,8 @@
 #include <filesystem>
 #include <fstream>
 
+static thread_local FCharBuffer SendBuf;
+static FCharBuffer Recevbuf;
 
 RPCProcesser::RPCProcesser(MessageProcesser* inp) :msgprocesser(inp)
 {
@@ -83,16 +85,18 @@ void RPCProcesser::OnRecevRPC(const char* str, uint32_t len)
             }
         }
         else {
-            auto buf = rpcParserInterface->GetMethodNotFoundResponse(request->GetID())->ToBytes();
-            msgprocesser->SendContent(buf.CStr(), buf.Length());
+            Recevbuf.Clear();
+            rpcParserInterface->GetMethodNotFoundResponse(request->GetID())->ToBytes(Recevbuf);
+            msgprocesser->SendContent(Recevbuf.CStr(), Recevbuf.Length());
             TriggerOnMethoedNotFoundDelegates(request);
         }
         return;
     }
 
     auto ParseError = std::get<ERPCParseError>(parseResult);
-    auto buf = rpcParserInterface->GetErrorParseResponse(ParseError)->ToBytes();
-    msgprocesser->SendContent(buf.CStr(), buf.Length());
+    Recevbuf.Clear();
+    rpcParserInterface->GetErrorParseResponse(ParseError)->ToBytes(Recevbuf);
+    msgprocesser->SendContent(Recevbuf.CStr(), Recevbuf.Length());
 }
 
 void RPCProcesser::OnRecevPacket(MessagePacket_t* p)
@@ -109,8 +113,9 @@ RPCHandle_t RPCProcesser::SendRequest(std::shared_ptr<RPCRequest> request)
     if (res.second) {
         auto handle = res.first->first;
         request->SetID( handle.ID);
-        const auto& str = request->ToBytes();
-        if (msgprocesser->SendContent(str.CStr(), (uint32_t)str.Length())) {
+        SendBuf.Clear();
+        request->ToBytes(SendBuf);
+        if (msgprocesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length())) {
             return handle;
         }
         else {
@@ -143,12 +148,14 @@ std::shared_ptr<RPCRequest> RPCProcesser::CancelRequest(RPCHandle_t handle)
 }
 bool RPCProcesser::SendEvent(std::shared_ptr<RPCRequest> request)
 {
-    const auto& str = request->ToBytes();
-    return msgprocesser->SendContent(str.CStr(), (uint32_t)str.Length());
+    SendBuf.Clear();
+    request->ToBytes(SendBuf);
+    return msgprocesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length());
 }
 bool RPCProcesser::SendResponse(RPCHandle_t handle, std::shared_ptr<RPCResponse> response)
 {
     response->SetID(handle.ID);
-    const auto str = response->ToBytes();
-    return msgprocesser->SendContent(str.CStr(), (uint32_t)str.Length());
+    SendBuf.Clear();
+    response->ToBytes(SendBuf);
+    return msgprocesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length());
 }

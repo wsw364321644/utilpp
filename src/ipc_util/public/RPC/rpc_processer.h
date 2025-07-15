@@ -3,7 +3,7 @@
 #include <set>
 #include <unordered_map>
 #include <optional>
-
+#include <string_buffer.h>
 
 #include "rpc_interface.h"
 #include "message_processer.h"
@@ -57,4 +57,5 @@ private:
     std::unordered_map<RPCHandle_t, std::shared_ptr<RPCRequest>> requestMap;
     std::mutex requestMapMutex;
     CommonHandle_t OnPacketRecvHandle{NullHandle};
+
 };

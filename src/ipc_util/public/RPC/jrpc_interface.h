@@ -2,6 +2,7 @@
 
 #include "rpc_processer.h"
 #include "message_common.h"
+#include <rapidjson/stringbuffer.h>
 
 class IPC_EXPORT IGroupJRPC :public IGroupRPC
 {

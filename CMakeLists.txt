@@ -15,6 +15,18 @@ option(UTILPP_WITH_STATIC_LIBCURL "net_util use static libcurl" OFF)
 option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
 option(UTILPP_ENABLE_WEBSOCKET "enable websocket_util" OFF)
 
+if(UTILPP_STATIC_CRT)
+  set(STATIC_CRT STATIC_CRT)
+else()
+  unset(STATIC_CRT)
+endif()
+
+if(UTILPP_GIT_SSH)
+  set(SSH SSH)
+else()
+  unset(SSH)
+endif()
+
 # option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 if(PROJECT_IS_TOP_LEVEL)
   if(UTILPP_STATIC_CRT)
@@ -35,7 +47,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 19a4ce92ee46d92ae95b2781b827d108324bf4a5
+  GIT_TAG 86b5cdb9e1d7cf31ea92d5173e1143c9d31ca0ce
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -48,24 +60,7 @@ set(SPDLOG_BUILD_PIC ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG 8e5613379f5140fefb0b60412fbf1f5406e7c7f8 # 1.15.0
-  GIT_SHALLOW TRUE
-)
-
-set(JSON_Install TRUE)
-FetchContent_Declare(
-  nlohmann-json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03 # 3.11.3
-  GIT_SHALLOW TRUE
-)
-
-set(JSON_VALIDATOR_INSTALL TRUE)
-set(nlohmann_json_schema_validator_SHARED_LIBS OFF)
-FetchContent_Declare(
-  json-schema-validator
-  GIT_REPOSITORY https://github.com/pboettch/json-schema-validator.git
-  GIT_TAG 349cba9f7e3cb423bbc1811bdd9f6770f520b468 # 2.3.0
+  GIT_TAG v1.15.3
   GIT_SHALLOW TRUE
 )
 
@@ -81,22 +76,33 @@ set(TF_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   taskflow
   GIT_REPOSITORY https://github.com/taskflow/taskflow.git
-  GIT_TAG 12f8bd4e970ab27fd3dee3bffa24b5b48b54ba39 # 3.6.0
+  GIT_TAG v3.10.0
   GIT_SHALLOW TRUE
 )
 
 FetchContent_Declare(
   concurrentqueue
   GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
-  GIT_TAG c68072129c8a5b4025122ca5a0c82ab14b30cb03
+  GIT_TAG origin/master
+  GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(OCmakeUtil spdlog nlohmann-json json-schema-validator taskflow concurrentqueue)
+set(BUILD_SHARED_LIBS ON CACHE INTERNAL "")
+set(SIMDJSON_BUILD_STATIC_LIB ON CACHE INTERNAL "")
+FetchContent_Declare(
+  simdjson
+  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+  GIT_TAG v3.13.0
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(OCmakeUtil spdlog taskflow concurrentqueue simdjson)
 include(ResourceDownload)
 include(ProjectImport)
 include(ProgramImport)
 
-set_target_properties(nlohmann_json_schema_validator PROPERTIES POSITION_INDEPENDENT_CODE ON)
+#ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v3.13.0)
+ImportProject(RapidJSON ${SSH} TAG origin/master)
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
@@ -104,25 +110,14 @@ add_subdirectory(src/simple_utilpp)
 add_subdirectory(src/simple_logger)
 add_subdirectory(src/task_manager)
 add_subdirectory(src/rpc_parser)
+add_subdirectory(src/crypto_lib_helper)
 
 if(WIN32)
   add_subdirectory(src/windows_util)
 endif()
 
-if(UTILPP_STATIC_CRT)
-  set(STATIC_CRT STATIC_CRT)
-else()
-  unset(STATIC_CRT)
-endif()
-
-if(UTILPP_GIT_SSH)
-  set(SSH SSH)
-else()
-  unset(SSH)
-endif()
-
 if(UTILPP_ENABLE_IPC)
-  ImportProject(libuv ${STATIC_CRT} ${SSH} FIND TAG be6b81a352d17513c95be153afcb3148f1a451cd) # 1.47.0
+  ImportProject(libuv ${STATIC_CRT} ${SSH} TAG be6b81a352d17513c95be153afcb3148f1a451cd) # 1.47.0
   add_subdirectory(src/ipc_util)
 endif()
 
@@ -133,7 +128,7 @@ if(UTILPP_ENABLE_NET)
     unset(STATIC)
   endif()
 
-  ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} FIND TAG 45d2ff6f8521524cbfa22e8be6a71a55578ccc4c) # 8.4.0
+  ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} TAG 45d2ff6f8521524cbfa22e8be6a71a55578ccc4c) # 8.4.0
   add_subdirectory(src/net_util)
 endif()
 
@@ -190,9 +185,9 @@ if(UTILPP_ENABLE_STEAM)
 
   ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
   add_subdirectory(src/steam_util)
+  add_subdirectory(src/steam_protobufs)
 endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
-  add_subdirectory(src/steam_protobufs)
   add_subdirectory(src/steam_msg)
 endif()

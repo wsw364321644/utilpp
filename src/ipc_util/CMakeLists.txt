@@ -17,6 +17,7 @@ function(add_ipc_util TARGET_NAME)
     else()
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv)
     endif()
+    target_link_libraries(${TARGET_NAME} PUBLIC RapidJSON)
 
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)

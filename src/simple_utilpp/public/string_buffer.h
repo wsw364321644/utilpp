@@ -11,12 +11,13 @@ class SIMPLE_UTIL_EXPORT FCharBuffer
 public:
     FCharBuffer();
     FCharBuffer(FCharBuffer &&)noexcept;
-    FCharBuffer(FCharBuffer &);
+    FCharBuffer(const FCharBuffer &);
     FCharBuffer(const char *cstr);
     FCharBuffer(const char *cstr, size_t size);
     ~FCharBuffer();
-    FCharBuffer &operator()(const char *cstr);
-
+    FCharBuffer& operator()(const char *cstr);
+    FCharBuffer& operator=(FCharBuffer&& r) noexcept;
+    FCharBuffer& operator=(const FCharBuffer& r)noexcept;
     friend void Swap(FCharBuffer& l, FCharBuffer& r);
 
     // template <typename T,
@@ -73,14 +74,14 @@ public:
 private:
 
 
-    void(*freeptr)(void *const block);
-    void *(*mallocptr)(size_t _Size);
+    void(*freeptr)(void* const block) { nullptr };
+    void* (*mallocptr)(size_t _Size) { nullptr };
     uint64_t GetIncreasedSize()
     {
         return (bufSize == 0 ? 64 : bufSize) * 2;
     };
-    uint64_t bufSize;
-    char *pBuf;
-    uint64_t cursor;
-    uint64_t readCursor;
+    uint64_t bufSize{ 0 };
+    char* pBuf{nullptr};
+    uint64_t cursor{ 0 };
+    uint64_t readCursor{ 0 };
 };

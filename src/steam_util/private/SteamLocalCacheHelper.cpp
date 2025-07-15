@@ -1,7 +1,7 @@
 #include "SteamLocalCacheHelper.h"
 #include "steam_application_info.h"
 #include <dir_util.h>
-#include <nlohmann/json.hpp>
+
 #include <string_convert.h>
 #include <FunctionExitHelper.h>
 #include <vdf_parser.hpp>
@@ -38,9 +38,21 @@ typedef struct SteamAppInfoStringTable_t {
     uint32_t StringCount{ 0 };
     std::vector<std::string> StringPool;
 }SteamAppInfoStringTable_t;
+
+struct SteamPropertyCache_t;
+typedef std::unordered_map<std::string, std::shared_ptr<SteamPropertyCache_t>> FSteamPropertyTable;
+typedef struct SteamColor_t {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+}SteamColor_t;
+typedef struct SteamPropertyCache_t {
+    std::variant<std::string, std::wstring, int32_t, float, uint64_t, FSteamPropertyTable, SteamColor_t> Property;
+}SteamPropertyCache_t;
+
 typedef struct SteamAppInfoCache_t {
     uint32_t AppId;
-    nlohmann::json PropertyTable{ nlohmann::json::value_t::object};
+    FSteamPropertyTable PropertyTable;
 }SteamAppInfoCache_t;
 typedef struct SteamCachedLibrary_t
 {
@@ -381,8 +393,7 @@ std::shared_ptr<SteamCachedLibrary_t> FSteamLocalCacheHelper::ReadLibraryCache(s
         int32_t int32Value;
         float floatValue;
         uint64_t uint64Value;
-        uint8_t uint8Value;
-        auto ReadPropertyTable = [&](this const auto& self, nlohmann::json& obj)->void {
+        auto ReadPropertyTable = [&](this const auto& self, FSteamPropertyTable& PropertyTable)->void {
             std::string PropertyNameBuf;
             while (true) {
                 int8_t type;
@@ -404,48 +415,44 @@ std::shared_ptr<SteamCachedLibrary_t> FSteamLocalCacheHelper::ReadLibraryCache(s
                 switch (ESteamAppPropertyType(type))
                 {
                 case ESteamAppPropertyType::SAPT_Table: {
-                    nlohmann::json childObj{ nlohmann::json::value_t::object };
-                    self(childObj);
-                    obj[*pPropertyName] = childObj;
+                    FSteamPropertyTable child;
+                    self(child);
+                    PropertyTable.try_emplace(*pPropertyName , std::make_shared<SteamPropertyCache_t>(child));
                     break;
                 }
                 case ESteamAppPropertyType::SAPT_String: {
                     std::getline(file, StringValue, '\0');
-                    obj[*pPropertyName] = StringValue;
+                    PropertyTable.try_emplace(*pPropertyName, std::make_shared<SteamPropertyCache_t>(StringValue));
                     break;
                 }
                 case ESteamAppPropertyType::SAPT_WString: {
                     wif.seekg(file.tellg());
                     std::getline(wif, WStringValue, L'\0');
-                    obj[*pPropertyName] = WStringValue;
+                    PropertyTable.try_emplace(*pPropertyName, std::make_shared<SteamPropertyCache_t>(WStringValue));
                     file.seekg(wif.tellg());
                     break;
                 }
                 case ESteamAppPropertyType::SAPT_Int32: {
-
                     file.read((char*)&int32Value, sizeof(int32Value));
-                    obj[*pPropertyName] = int32Value;
+                    PropertyTable.try_emplace(*pPropertyName, std::make_shared<SteamPropertyCache_t>(int32Value));
                     break;
                 }
                 case ESteamAppPropertyType::SAPT_Float: {
                     file.read((char*)&floatValue, sizeof(floatValue));
-                    obj[*pPropertyName] = floatValue;
+                    PropertyTable.try_emplace(*pPropertyName, std::make_shared<SteamPropertyCache_t>(floatValue));
                     break;
                 }
                 case ESteamAppPropertyType::SAPT_Color: {
-                    nlohmann::json arr{ nlohmann::json::value_t::array };
-                    file.read((char*)&uint8Value, sizeof(uint8Value));
-                    arr.push_back(uint8Value);
-                    file.read((char*)&uint8Value, sizeof(uint8Value));
-                    arr.push_back(uint8Value);
-                    file.read((char*)&uint8Value, sizeof(uint8Value));
-                    arr.push_back(uint8Value);
-                    obj[*pPropertyName] = arr;
+                    SteamColor_t color;
+                    file.read((char*)&color.r, sizeof(color.r));
+                    file.read((char*)&color.g, sizeof(color.g));
+                    file.read((char*)&color.b, sizeof(color.b));
+                    PropertyTable.try_emplace(*pPropertyName, std::make_shared<SteamPropertyCache_t>(color));
                     break;
                 }
                 case ESteamAppPropertyType::SAPT_Uint64: {
                     file.read((char*)&uint64Value, sizeof(uint64Value));
-                    obj[*pPropertyName] = uint64Value;
+                    PropertyTable.try_emplace(*pPropertyName, std::make_shared<SteamPropertyCache_t>(uint64Value));
                     break;
                 }
                 }

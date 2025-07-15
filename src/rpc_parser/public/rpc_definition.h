@@ -23,14 +23,17 @@ class RPC_PARSER_EXPORT RPCRequest {
     friend class JRPCPaser;
 public:
     virtual ~RPCRequest() = default;
-    virtual FCharBuffer ToBytes() = 0;
-    void SetParams(const std::string& str) {
-        Params = str;
-    }
+    virtual void ToBytes(FCharBuffer&) = 0;
     void SetParams(const char* cstr) {
-        Params.assign(cstr);
+        Params.Assign(cstr, strlen(cstr));
+    }
+    void SetParams(const char* cstr,size_t len) {
+        Params.Assign(cstr,len);
     }
     std::string_view GetParams()const {
+        return std::string_view(Params.CStr(),Params.Size());
+    }
+    FCharBuffer& GetParamsBuf(){
         return Params;
     }
 
@@ -56,21 +59,23 @@ public:
 protected:
     std::optional<uint32_t> ID;
     std::string Method;
-    std::string Params;
+    FCharBuffer Params;
 };
 class RPC_PARSER_EXPORT RPCResponse {
 public:
     virtual ~RPCResponse() = default;
-    virtual FCharBuffer ToBytes() = 0;
+    virtual void ToBytes(FCharBuffer&) = 0;
     virtual bool IsError()const=0;
-
-    void SetResult(const std::string& str) {
-        Result = str;
-    }
     void SetResult(const char* cstr) {
-        Result.assign(cstr);
+        Result.Assign(cstr, strlen(cstr));
+    }
+    void SetResult(const char* cstr, size_t len) {
+        Result.Assign(cstr, len);
     }
     std::string_view GetResult()const {
+        return std::string_view(Result.CStr(), Result.Size());
+    }
+    FCharBuffer& GetResultBuf() {
         return Result;
     }
 
@@ -113,7 +118,7 @@ protected:
     
     std::string ErrorMsg;
     std::string ErrorData;
-    std::string Result;
+    FCharBuffer Result;
 };
 class IRPCPaser {
 public:

@@ -1,8 +1,10 @@
 #pragma once
 #include <memory>
+#include <string_view>
 #include <set>
 #include <unordered_map>
 #include <optional>
+#include <cassert>
 
 #include "message_processer.h"
 #include "delegate_macros.h"
@@ -170,7 +172,7 @@ namespace std {
 }
 #pragma warning(pop)
 
-typedef std::function<void(RPCHandle_t,int64_t,const char*, const char*)> TRPCErrorDelegate;
+typedef std::function<void(RPCHandle_t,int64_t, std::string_view, std::string_view)> TRPCErrorDelegate;
 
 
 

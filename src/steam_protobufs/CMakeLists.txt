@@ -1,14 +1,15 @@
 ImportProject(absl ${STATIC_CRT} SSH FIND TAG bc257a88f7c1939f24e0379f14a3589e926c950c) # 20250512.0
 ImportProject(Protobuf ${STATIC_CRT} SSH FIND TAG 3d4adad5c4c4e6a6f9f038769b8c90716065b0e4) # v31.0
 
-ResourceDownload(
-    SteamDBProtobufs
-    GIT_REPOSITORY https://github.com/SteamDatabase/Protobufs.git
-    GIT_TAG 9ff05344b6088c0b923eef1f2545f0e7b97a2738
-)
 set(ProtobufCPPOutPath ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
 if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
+    ResourceDownload(
+        SteamDBProtobufs
+        GIT_REPOSITORY https://github.com/SteamDatabase/Protobufs.git
+        GIT_TAG origin/master
+    )
+
     file(MAKE_DIRECTORY ${ProtobufCPPOutPath})
     file(DOWNLOAD
         https://raw.githubusercontent.com/SteamRE/SteamKit/157eb2b01a518bb75fa74c4e2a22dbab181deb11/Resources/ProtobufGen/protos.csv
@@ -45,8 +46,18 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         list(APPEND ProtobufFiles ${SteamDBProtobufs_DIR}/${ProtoDir}/${ProtoFileName})
     endforeach()
 
+    set(INDEX 0)
+
     # fix file content
-    foreach(FILE ${ProtobufFiles})
+    while(TRUE)
+        list(LENGTH ProtobufFiles ProtobufFilesLength)
+
+        if(INDEX EQUAL ProtobufFilesLength OR INDEX GREATER ProtobufFilesLength)
+            break()
+        endif()
+
+        list(GET ProtobufFiles ${INDEX} FILE)
+
         if(NOT EXISTS ${FILE})
             message(WARNING "Protobuf file ${FILE} does not exist, skipping.")
             list(REMOVE_ITEM ProtobufFiles ${FILE})
@@ -59,6 +70,7 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
             continue()
         endif()
 
+        MATH(EXPR INDEX "${INDEX}+1")
         cmake_path(GET FILE PARENT_PATH ProtobufFileParentPath)
         cmake_path(
             RELATIVE_PATH ProtobufFileParentPath
@@ -81,7 +93,6 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
                 continue()
             endif()
 
-            set(regex [=[import \"[^"]+\"\;]=])
             string(REGEX MATCH "\"([^\"]+)\"" MATCH_RESULT ${MATCH})
             string(FIND ${MATCH_RESULT} "${ProtobufFileRelativePath}/" pos)
 
@@ -177,7 +188,7 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         if(FILE_CONTENTS_SET)
             file(WRITE ${FILE} "${FILE_CONTENTS}")
         endif()
-    endforeach()
+    endwhile()
 
     foreach(FILE ${ProtobufFiles})
         message(STATUS "Generating C++ files from ${FILE}")

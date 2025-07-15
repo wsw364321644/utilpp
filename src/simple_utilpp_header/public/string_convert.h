@@ -323,6 +323,10 @@ inline std::string U32ToU8(const char32_t* u32Str,size_t num) {
     return out;
 }
 
+inline std::string_view ConvertU8StringToView(const std::u8string& str) {
+    return std::string_view((const char*)str.c_str(), str.size());
+}
+
 inline std::u8string_view ConvertStringToU8View(const std::string& str) {
     return std::u8string_view((const char8_t*)str.c_str(), str.size());
 }

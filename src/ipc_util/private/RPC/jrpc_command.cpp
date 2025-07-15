@@ -2,6 +2,10 @@
 #include "RPC/message_common.h"
 #include "jrpc_parser.h"
 #include "rpc_definition.h"
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
 #include <memory>
 #include <stdint.h>
 #include <shared_mutex>
@@ -55,11 +59,14 @@ RPCHandle_t JRPCCommandAPI::SetChannel(uint8_t index, EMessagePolicy policy, TSe
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
     req->SetMethod (SetChannelName);
 
-    nlohmann::json doc(nlohmann::json::value_t::object);
-    doc["index"] = index;
-    doc["policy"] = EMessagePolicyInfo::ToString(policy);
-    req->SetParams (doc.dump());
-
+    rapidjson::Writer<FCharBuffer> writer(req->GetParamsBuf());
+    rapidjson::Document doc;
+    auto& a = doc.GetAllocator();
+    doc.AddMember("index", index, a);
+    doc.AddMember("policy", rapidjson::Value(EMessagePolicyInfo::ToString(policy),a), a);
+    if (!doc.Accept(writer)) {
+        return NullHandle;
+    }
     auto handle = processer->SendRequest(req);
     if (handle.IsValid()) {
         AddSetChannelSendDelagate(req->GetID(), inDelegate, errDelegate);
