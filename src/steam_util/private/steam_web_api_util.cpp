@@ -1,6 +1,8 @@
 #ifdef STEAM_UTIL_HAS_NET
 #include "steam_web_api_util.h"
-#include <nlohmann/json.hpp>
+#include <simdjson.h>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
 namespace utilpp {
     HttpRequestPtr SteamRegisterKey(HttpManagerPtr pHttpManager, std::string_view sessionID, std::string_view key, FSteamRegisterKeyDelagate Delagate) {
         if (!pHttpManager) {
@@ -12,10 +14,16 @@ namespace utilpp {
         }
         pReq->SetURL(R"(https://store.steampowered.com/account/ajaxregisterkey/)");
         pReq->SetVerb(VERB_POST);
-        nlohmann::json json{ nlohmann::json::value_t::object };
-        json["product_key"] = key;
-        json["sessionid"] = sessionID;
-        pReq->SetContentAsString(json.dump());
+        rapidjson::Document doc(rapidjson::kObjectType);
+        auto& a = doc.GetAllocator();
+        doc.AddMember("product_key", rapidjson::Value(key.data(), key.size(), a), a);
+        doc.AddMember("sessionid", rapidjson::Value(sessionID.data(), sessionID.size(), a), a);
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer writer(buf);
+        if (!doc.Accept(writer)) {
+            return nullptr;
+        }
+        pReq->SetContentAsString(std::string_view(buf.GetString(), buf.GetSize()));
         pReq->OnProcessRequestComplete() =
             [=](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
             Delagate(res);
@@ -26,38 +34,57 @@ namespace utilpp {
         return pReq;
     }
 
-    bool GetCMListForConnectResp_t::Parse(std::u8string_view view)
+    bool GetCMListForConnectResp_t::Parse(FCharBuffer& buf)
     {
-        auto obj = nlohmann::json::parse(nlohmann::detail::span_input_adapter((const char*)view.data(), view.size())
-            , nullptr, false, false);
-        if (obj.is_discarded()) {
+        buf.Reverse(buf.Length() + simdjson::SIMDJSON_PADDING);
+        simdjson::ondemand::parser parser;
+        simdjson::ondemand::document doc = parser.iterate(buf.Data(), buf.Length(), buf.Capacity());
+        auto ores = doc["response"].get_object();
+        if (ores.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
-        auto itr = obj.find("response");
-        if (itr == obj.end()) {
-            return false;
-        }
-        auto respItr = itr.value().find("serverlist");
-        if (respItr == itr.value().end() || !respItr.value().is_array()) {
+        auto ares=ores["serverlist"].get_array();
+        if (ares.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         EndpointDetails.clear();
-        for (int i = 0; i < respItr.value().size(); i++) {
+        for (auto item : ares) {
             EndpointDetail_t detail;
-            auto& servernode = respItr.value()[i];
-            auto& Endpoint = servernode.at("endpoint").get_ref<nlohmann::json::string_t&>();
-            auto splitText = Endpoint | std::views::split(':');
+            ores=item.get_object();
+            if (ores.error() != simdjson::error_code::SUCCESS) {
+                return false;
+            }
+            auto sres=ores["endpoint"].get_string();
+            if (sres.error() != simdjson::error_code::SUCCESS) {
+                return false;
+            }
+            auto splitText = sres.value_unsafe() | std::views::split(':');
             auto itr = splitText.begin();
             detail.Host = std::string_view(*itr);
             std::advance(itr, 1);
             auto portView = std::string_view(*itr);
             std::from_chars(portView.data(), portView.data() + portView.size(), detail.Port);
 
-            detail.Type = servernode.at("type").get_ref<nlohmann::json::string_t&>();
-            detail.Load = servernode.at("load").get_ref<nlohmann::json::number_integer_t&>();
-            detail.WeightedTotalDemandLoad = servernode.at("wtd_load").get_ref<nlohmann::json::number_float_t&>();
+            sres = ores["type"].get_string();
+            if (sres.error() != simdjson::error_code::SUCCESS) {
+                return false;
+            }
+            detail.Type = sres.value_unsafe();
+
+            auto ures = ores["load"].get_uint64();
+            if (ures.error() != simdjson::error_code::SUCCESS) {
+                return false;
+            }
+            detail.Load = ures.value_unsafe();
+
+            auto dres = ores["wtd_load"].get_double();
+            if (dres.error() != simdjson::error_code::SUCCESS) {
+                return false;
+            }
+            detail.WeightedTotalDemandLoad = dres.value_unsafe();
             EndpointDetails.emplace_back(std::move(detail));
         }
+
         return true;
     }
 
@@ -78,10 +105,11 @@ namespace utilpp {
         pReq->OnProcessRequestComplete() =
             [=](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
             if (res) {
-                Delagate(res, rep->GetContentAsString());
+                Delagate(res, &rep->GetContent());
             }
             else {
-                Delagate(res, u8"");
+                FCharBuffer buf;
+                Delagate(res, nullptr);
             }
             };
         if (!pHttpManager->ProcessRequest(pReq)) {

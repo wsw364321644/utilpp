@@ -12,6 +12,7 @@ function(add_lib TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PRIVATE ValveFileVDF::ValveFileVDF)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON)
 
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)
@@ -20,6 +21,7 @@ endfunction()
 set(TARGET_NAME steam_util)
 add_library(${TARGET_NAME} SHARED ${SourceFiles})
 target_compile_definitions(${TARGET_NAME} PRIVATE -DSTEAM_UTIL_API_EXPORTS)
+target_link_libraries(${TARGET_NAME} PRIVATE simdjson::simdjson)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp)
 
 if(TARGET UTILPP::net_util)
@@ -36,6 +38,7 @@ add_lib(${TARGET_NAME})
 set(TARGET_NAME steam_util_a)
 add_library(${TARGET_NAME} STATIC ${SourceFiles})
 target_compile_definitions(${TARGET_NAME} PUBLIC -DSTEAM_UTIL_API_NODLL)
+target_link_libraries(${TARGET_NAME} PRIVATE simdjson::simdjson_static)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp_a)
 
 if(TARGET UTILPP::net_util_a)
