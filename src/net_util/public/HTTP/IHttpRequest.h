@@ -1,8 +1,10 @@
 #pragma once
+#include <string_buffer.h>
 #include <vector>
 #include <string>
 #include <functional>
 #include <memory>
+
 
 #define InfiniteRange std::numeric_limits<uint64_t>::max()
 typedef std::shared_ptr<class IHttpRequest> HttpRequestPtr;
@@ -45,7 +47,7 @@ public:
      *
      * @return the URL string.
      */
-    virtual std::string_view GetURL() = 0;
+    virtual std::string_view GetURL() const = 0;
 
     /**
      * Gets an URL parameter.
@@ -55,28 +57,28 @@ public:
      * @param ParameterName - the parameter to request.
      * @return the parameter value string.
      */
-    virtual std::string_view GetURLParameter(const std::string_view ParameterName) = 0;
+    virtual std::string_view GetURLParameter(std::string_view ParameterName) const = 0;
 
     /**
      * Gets the value of a header, or empty string if not found.
      *
      * @param HeaderName - name of the header to set.
      */
-    virtual std::string_view GetHeader(const std::string_view HeaderName) = 0;
+    virtual std::string_view GetHeader(std::string_view HeaderName)const = 0;
 
     /**
      * Return all headers in an array in "Name: Value" format.
      *
      * @return the header array of strings
      */
-    virtual std::vector<std::string> GetAllHeaders() = 0;
+    virtual std::vector<std::string> GetAllHeaders()const = 0;
 
     /**
      * Shortcut to get the Content-Type header value (if available)
      *
      * @return the content type.
      */
-    virtual std::string_view GetContentType() = 0;
+    virtual std::string_view GetContentType()const = 0;
 
     /**
      * Shortcut to get the Content-Length header value. Will not always return non-zero.
@@ -84,14 +86,14 @@ public:
      *
      * @return the content length (if available)
      */
-    virtual int64_t GetContentLength() = 0;
+    virtual int64_t GetContentLength()const = 0;
 
     /**
      * Get the content payload of the request or response.
      *
      * @param Content - array that will be filled with the content.
      */
-    virtual const std::vector<uint8_t>& GetContent() = 0;
+    virtual FCharBuffer& GetContent() = 0;
 
     virtual std::vector<MimePart_t> GetAllMime() = 0;
     /**
@@ -111,7 +113,7 @@ public:
      *
      * @return the verb string
      */
-    virtual std::string_view GetVerb() = 0;
+    virtual std::string_view GetVerb()const = 0;
 
     /**
      * Sets the verb used by the request.
@@ -121,7 +123,7 @@ public:
      *
      * @param Verb - verb to use.
      */
-    virtual void SetVerb(const std::string_view Verb) = 0;
+    virtual void SetVerb(std::string_view Verb) = 0;
 
     /**
      * Sets the URL for the request
@@ -130,13 +132,13 @@ public:
      *
      * @param URL - URL to use.
      */
-    virtual void SetURL(const std::string_view URL) = 0;
+    virtual void SetURL(std::string_view URL) = 0;
 
-    virtual void SetHost(const std::string_view Host) = 0;
-    virtual void SetPath(const std::string_view Path) = 0;
-    virtual void SetScheme(const std::string_view Scheme) = 0;
+    virtual void SetHost(std::string_view Host) = 0;
+    virtual void SetPath(std::string_view Path) = 0;
+    virtual void SetScheme(std::string_view Scheme) = 0;
     virtual void SetPortNum(uint32_t port) = 0;
-    virtual void SetQuery(const std::string_view QueryName, const std::string_view QueryValue) = 0;
+    virtual void SetQuery(std::string_view QueryName, std::string_view QueryValue) = 0;
     virtual void SetRange(uint64_t begin, uint64_t end = InfiniteRange) = 0;
     /**
      * Sets the content of the request (optional data).
@@ -144,14 +146,14 @@ public:
      *
      * @param ContentPayload - payload to set.
      */
-    virtual void SetContent(const std::vector<uint8_t>& ContentPayload) = 0;
+    virtual void SetContent(std::string_view ContentPayload) = 0;
 
     /**
      * Sets the content of the request as a string encoded as UTF8.
      *
      * @param ContentString - payload to set.
      */
-    virtual void SetContentAsString(const std::string_view ContentString) = 0;
+    virtual void SetContentAsString(std::string_view ContentString) = 0;
 
     /**
      * Sets optional header info.
@@ -164,7 +166,7 @@ public:
      * @param HeaderName - Name of the header (ie, Content-Type)
      * @param HeaderValue - Value of the header
      */
-    virtual void SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue) = 0;
+    virtual void SetHeader(std::string_view HeaderName, std::string_view HeaderValue) = 0;
 
     /**
     * Appends to the value already set in the header.
@@ -177,7 +179,7 @@ public:
     * @param AdditionalHeaderValue - Value to add to the existing contents of the specified header.
     *	comma is inserted between old value and new value, per HTTP specifications
     */
-    virtual void AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue) = 0;
+    virtual void AppendToHeader(std::string_view HeaderName, std::string_view AdditionalHeaderValue) = 0;
 
     /**
     * Set Mime Data(ie form-data)

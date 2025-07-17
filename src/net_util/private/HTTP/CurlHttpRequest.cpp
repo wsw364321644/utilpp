@@ -1,33 +1,34 @@
 #include "HTTP/CurlHttpRequest.h"
 #include "HTTP/CurlHttpManager.h"
+#include <LoggerHelper.h>
 #include <algorithm>
 #include <iterator>
 #include <uri.h>
 #include <string_view>
 #include <ranges>
-#include <LoggerHelper.h>
 
 
-template <typename Out>
-void split(const std::string& str, const char* delimstr, Out result) {
-    //using std::operator""sv;
-    //constexpr auto delim{ "&"sv};
-    //auto delim = std::string_view{ delimstr, strlen(delimstr) };
-    //for (const auto word : std::views::split(s, delimstr)) {
-        //*result++ = std::string(std::string_view(word));
-        //std::string(std::string_view(word));
-    //}
 
-
-    size_t pos = 0, cursor = 0;
-    std::string token;
-    while ((pos = str.find(delimstr, cursor)) != std::string::npos) {
-        token = str.substr(cursor, pos);
-        *result++ = token;
-        cursor = pos + strlen(delimstr);
-    }
-}
-
+//
+//template <typename Out>
+//void split(const std::string& str, const char* delimstr, Out result) {
+//    //using std::operator""sv;
+//    //constexpr auto delim{ "&"sv};
+//    //auto delim = std::string_view{ delimstr, strlen(delimstr) };
+//    //for (const auto word : std::views::split(s, delimstr)) {
+//        //*result++ = std::string(std::string_view(word));
+//        //std::string(std::string_view(word));
+//    //}
+//
+//
+//    size_t pos = 0, cursor = 0;
+//    std::string token;
+//    while ((pos = str.find(delimstr, cursor)) != std::string::npos) {
+//        token = str.substr(cursor, pos);
+//        *result++ = token;
+//        cursor = pos + strlen(delimstr);
+//    }
+//}
 
 
 FCurlHttpRequest::FCurlHttpRequest(FCurlHttpManager* inManager) : Manager(inManager)
@@ -40,30 +41,32 @@ FCurlHttpRequest::~FCurlHttpRequest()
 
 }
 
-std::string_view FCurlHttpRequest::GetURL()
+std::string_view FCurlHttpRequest::GetURL() const
 {
     return URL;
 }
 
-std::string_view FCurlHttpRequest::GetURLParameter(const std::string_view ParameterName)
+std::string_view FCurlHttpRequest::GetURLParameter(std::string_view ParameterName) const
 {
+    using std::operator""sv;
     ParsedURL_t res;
-    ParseUrl(URL, &res);
-    if (res.outQuery) {
-        std::vector<std::string> pairs;
-        split(*res.outQuery, "&", std::back_inserter(pairs));
-        for (auto pair : pairs) {
-            std::vector<std::string> kv;
-            split(pair, "=", std::back_inserter(kv));
-            if (kv[0] == ParameterName) {
-                return kv[1];
+    ParseUrl(URL, res);
+    if (!res.outQuery.empty()) {
+        auto t = std::views::split(res.outQuery, "&"sv);
+        for (const auto kv : std::views::split(res.outQuery, "&"sv)) {
+            auto sres=std::views::split(std::string_view(kv), "="sv);
+            if (std::ranges::distance(sres)!=2) {
+                continue;
+            }
+            if (ParameterName.compare((*sres.begin()).data()) == 0) {
+                return (*sres.begin()++).data();
             }
         }
     }
-    return std::string();
+    return std::string_view();
 }
 
-std::string_view FCurlHttpRequest::GetHeader(const std::string_view HeaderName)
+std::string_view FCurlHttpRequest::GetHeader(std::string_view HeaderName)const
 {
     auto itr = Headers.find(std::string(HeaderName));
     if (itr != Headers.end()) {
@@ -72,25 +75,25 @@ std::string_view FCurlHttpRequest::GetHeader(const std::string_view HeaderName)
     return std::string();
 }
 
-std::vector<std::string> FCurlHttpRequest::GetAllHeaders()
+std::vector<std::string> FCurlHttpRequest::GetAllHeaders()const
 {
     std::vector<std::string> out;
     std::transform(Headers.begin(), Headers.end(), std::back_inserter(out), [](auto& kv) { return kv.first + ":" + kv.second; });
     return out;
 }
 
-std::string_view FCurlHttpRequest::GetContentType()
+std::string_view FCurlHttpRequest::GetContentType()const
 {
     return GetHeader("Content-Type");
 }
 
 
-int64_t FCurlHttpRequest::GetContentLength()
+int64_t FCurlHttpRequest::GetContentLength()const
 {
-    return Content.size();
+    return Content.Length();
 }
 
-const std::vector<uint8_t>& FCurlHttpRequest::GetContent()
+FCharBuffer& FCurlHttpRequest::GetContent()
 {
     return Content;
 }
@@ -100,32 +103,32 @@ std::vector<MimePart_t> FCurlHttpRequest::GetAllMime()
     return MimeParts;
 }
 
-std::string_view FCurlHttpRequest::GetVerb()
+std::string_view FCurlHttpRequest::GetVerb()const
 {
     return Verb;
 }
 
-void FCurlHttpRequest::SetVerb(const std::string_view _Verb)
+void FCurlHttpRequest::SetVerb(std::string_view _Verb)
 {
     Verb = _Verb;
 }
 
-void FCurlHttpRequest::SetURL(const std::string_view _URL)
+void FCurlHttpRequest::SetURL(std::string_view _URL)
 {
     URL = _URL;
 }
 
-void FCurlHttpRequest::SetHost(const std::string_view _Host)
+void FCurlHttpRequest::SetHost(std::string_view _Host)
 {
     Host = _Host;
 }
 
-void FCurlHttpRequest::SetPath(const std::string_view _Path)
+void FCurlHttpRequest::SetPath(std::string_view _Path)
 {
     Path = _Path;
 }
 
-void FCurlHttpRequest::SetScheme(const std::string_view _Scheme)
+void FCurlHttpRequest::SetScheme(std::string_view _Scheme)
 {
     Scheme = _Scheme;
 }
@@ -135,28 +138,28 @@ void FCurlHttpRequest::SetPortNum(uint32_t _Port)
     Port = _Port;
 }
 
-void FCurlHttpRequest::SetQuery(const std::string_view QueryName, const std::string_view QueryValue)
+void FCurlHttpRequest::SetQuery(std::string_view QueryName, std::string_view QueryValue)
 {
     Queries[std::string(QueryName)] = QueryValue;
 }
 
-void FCurlHttpRequest::SetContent(const std::vector<uint8_t>& ContentPayload)
+void FCurlHttpRequest::SetContent(std::string_view ContentPayload)
 {
-    Content = ContentPayload;
+    Content.ReverseAssign(ContentPayload.data(), ContentPayload.size());
 }
 
-void FCurlHttpRequest::SetContentAsString(const std::string_view ContentString)
+void FCurlHttpRequest::SetContentAsString(std::string_view ContentString)
 {
-    Content.assign(ContentString.begin(), ContentString.end());
+    Content.ReverseAssign(ContentString.data(), ContentString.size());
 }
 
 
-void FCurlHttpRequest::SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue)
+void FCurlHttpRequest::SetHeader(std::string_view HeaderName, std::string_view HeaderValue)
 {
     Headers[std::string(HeaderName)] = HeaderValue;
 }
 
-void FCurlHttpRequest::AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue)
+void FCurlHttpRequest::AppendToHeader(std::string_view HeaderName, std::string_view AdditionalHeaderValue)
 {
     auto itr = Headers.find(std::string(HeaderName));
     if (itr == Headers.end()) {
@@ -171,7 +174,7 @@ void FCurlHttpRequest::AppendToHeader(const std::string_view HeaderName, const s
 void FCurlHttpRequest::SetMimePart(InMimePart_t part)
 {
     std::string str(part.FileData);
-    MimeParts.emplace_back(MimePart{ .Name = std::string(part.Name) ,.Data= std::string(part.Data),.FileName= std::string(part.FileName),.FileData = std::string(part.FileData), });
+    MimeParts.emplace_back(MimePart{ .Name = std::string(part.Name) ,.Data = std::string(part.Data),.FileName = std::string(part.FileName),.FileData = std::string(part.FileData), });
 }
 
 
@@ -219,7 +222,7 @@ bool FCurlHttpRequest::ProcessRequest()
 
 void FCurlHttpRequest::Clear()
 {
-    Content.clear();
+    Content.Clear();
     Headers.clear();
     Queries.clear();
     Verb.clear();
@@ -280,7 +283,7 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
 
     case CURLINFO_HEADER_IN:
     {
-        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received header: ({} bytes) - {}", (void*)this, DebugInfoSize ,std::string_view(DebugInfo, DebugInfoSize));
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received header: ({} bytes) - {}", (void*)this, DebugInfoSize, std::string_view(DebugInfo, DebugInfoSize));
     }
     break;
     case CURLINFO_HEADER_OUT:
@@ -327,7 +330,7 @@ size_t FCurlHttpRequest::StaticDebugCallback(CURL* Handle, curl_infotype DebugIn
 }
 
 
-std::string_view FCurlHttpResponse::GetHeader(const std::string_view HeaderName)
+std::string_view FCurlHttpResponse::GetHeader(std::string_view HeaderName) const
 {
     auto itr = Headers.find(std::string(HeaderName));
     if (itr != Headers.end()) {
@@ -336,7 +339,7 @@ std::string_view FCurlHttpResponse::GetHeader(const std::string_view HeaderName)
     return std::string_view();
 }
 
-std::vector<std::string> FCurlHttpResponse::GetAllHeaders()
+std::vector<std::string> FCurlHttpResponse::GetAllHeaders() const
 {
     std::vector<std::string> out;
     std::transform(Headers.begin(), Headers.end(), std::back_inserter(out), [](auto& kv) { return kv.first + ";" + kv.second; });
@@ -348,19 +351,19 @@ std::vector<MimePart_t> FCurlHttpResponse::GetAllMime()
     return std::vector<MimePart_t>();
 }
 
-std::string_view FCurlHttpResponse::GetContentType()
+std::string_view FCurlHttpResponse::GetContentType() const
 {
     return GetHeader("Content-Type");
 }
 
-const std::vector<uint8_t>& FCurlHttpResponse::GetContent()
+FCharBuffer& FCurlHttpResponse::GetContent()
 {
     return Content;
 }
 
 std::u8string_view FCurlHttpResponse::GetContentAsString()
 {
-    return std::u8string_view((const char8_t*)Content.data(), Content.size());
+    return std::u8string_view((const char8_t*)Content.Data(), Content.Size());
 }
 
 void FCurlHttpResponse::SetContentBuf(void* Ptr, int64_t Len)
@@ -379,10 +382,7 @@ void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
         }
     }
     else {
-        Content.reserve(iTotalBytesRead + Len);
-        auto itr = Content.begin();
-        itr += iTotalBytesRead;
-        Content.insert(itr, Data, Data + Len + 1);
+        Content.Append(Data, Len);
     }
     TotalBytesRead += Len;
 }
@@ -390,7 +390,7 @@ void FCurlHttpResponse::ContentAppend(char* Data, size_t Len)
 void FCurlHttpResponse::Clear()
 {
     Headers.clear();
-    Content.clear();
+    Content.Clear();
     EffectiveUrl.clear();
     bSucceeded = false;
     bIsReady = false;

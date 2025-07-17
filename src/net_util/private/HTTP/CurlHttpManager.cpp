@@ -158,7 +158,7 @@ size_t FCurlHttpManager::UploadCallback(void* Ptr, size_t SizeInBlocks, size_t B
 {
     creq->TimeSinceLastResponse = 0.0f;
 
-    size_t SizeToSend = creq->Content.size() - creq->BytesSent;
+    size_t SizeToSend = creq->Content.Size() - creq->BytesSent;
     size_t SizeToSendThisTime = 0;
 
     if (SizeToSend != 0)
@@ -167,12 +167,12 @@ size_t FCurlHttpManager::UploadCallback(void* Ptr, size_t SizeInBlocks, size_t B
         if (SizeToSendThisTime != 0)
         {
             // static cast just ensures that this is uint8* in fact
-            memcpy(Ptr, creq->Content.data() + creq->BytesSent, SizeToSendThisTime);
+            memcpy(Ptr, creq->Content.Data() + creq->BytesSent, SizeToSendThisTime);
             creq->BytesSent += SizeToSendThisTime;
         }
     }
     SIMPLELOG_LOGGER_ERROR(nullptr, "{}: UploadCallback: {} bytes out of {} sent. (SizeInBlocks={}, BlockSizeInBytes={}, SizeToSend={}, SizeToSendThisTime={} (<-this will get returned from the callback))",
-        (void*)creq, creq->BytesSent, creq->Content.size(), SizeInBlocks, BlockSizeInBytes, SizeToSend, SizeToSendThisTime
+        (void*)creq, creq->BytesSent, creq->Content.Size(), SizeInBlocks, BlockSizeInBytes, SizeToSend, SizeToSendThisTime
     );
     return SizeToSendThisTime;
 }
@@ -419,12 +419,12 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         }
         else {
             curl_easy_setopt(creq->EasyHandle, CURLOPT_POST, 1L);
-            curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDS, creq->Content.data());
-            curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDSIZE, creq->Content.size());
+            curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDS, creq->Content.Data());
+            curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDSIZE, creq->Content.Size());
             // content-length should be present https://www.rfc-editor.org/rfc/rfc9110.html#name-content-length
             if (creq->GetHeader("Content-Length").empty())
             {
-                creq->SetHeader("Content-Length", std::to_string(creq->Content.size()));
+                creq->SetHeader("Content-Length", std::to_string(creq->Content.Size()));
             }
         }
     }
@@ -434,7 +434,7 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         // this pointer will be passed to read function
         curl_easy_setopt(creq->EasyHandle, CURLOPT_READDATA, creq.get());
         curl_easy_setopt(creq->EasyHandle, CURLOPT_READFUNCTION, FCurlHttpManager::StaticUploadCallback);
-        curl_easy_setopt(creq->EasyHandle, CURLOPT_INFILESIZE, creq->Content.size());
+        curl_easy_setopt(creq->EasyHandle, CURLOPT_INFILESIZE, creq->Content.Size());
 
         // reset the counter
         creq->BytesSent = 0;
@@ -453,8 +453,8 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     else if (creq->Verb == VERB_DELETE)
     {
         curl_easy_setopt(creq->EasyHandle, CURLOPT_CUSTOMREQUEST, creq->Verb.c_str());
-        curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDS, creq->Content.data());
-        curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDSIZE, creq->Content.size());
+        curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDS, creq->Content.Data());
+        curl_easy_setopt(creq->EasyHandle, CURLOPT_POSTFIELDSIZE, creq->Content.Size());
     }
     else
     {

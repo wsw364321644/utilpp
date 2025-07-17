@@ -12,28 +12,28 @@ class FCurlHttpRequest :public IHttpRequest {
 
 public:
     ~FCurlHttpRequest() override;
-    std::string_view GetURL() override;
-    std::string_view GetURLParameter(const std::string_view ParameterName) override;
-    std::string_view GetHeader(const std::string_view HeaderName) override;
-    std::vector<std::string> GetAllHeaders() override;
-    std::string_view GetContentType() override;
-    int64_t GetContentLength() override;
-    const std::vector<uint8_t>& GetContent() override;
+    std::string_view GetURL()const override;
+    std::string_view GetURLParameter(std::string_view ParameterName)const override;
+    std::string_view GetHeader(std::string_view HeaderName)const override;
+    std::vector<std::string> GetAllHeaders()const override;
+    std::string_view GetContentType()const override;
+    int64_t GetContentLength()const override;
+    FCharBuffer& GetContent() override;
     std::vector<MimePart_t> GetAllMime() override;
 
-    std::string_view GetVerb() override;
-    void SetVerb(const std::string_view Verb) override;
-    void SetURL(const std::string_view URL) override;
-    void SetHost(const std::string_view) override;
-    void SetPath(const std::string_view Path) override;
-    void SetScheme(const std::string_view Scheme) override;
+    std::string_view GetVerb()const override;
+    void SetVerb(std::string_view Verb) override;
+    void SetURL(std::string_view URL) override;
+    void SetHost(std::string_view) override;
+    void SetPath(std::string_view Path) override;
+    void SetScheme(std::string_view Scheme) override;
     void SetPortNum(uint32_t Port) override;
-    void SetQuery(const std::string_view QueryName, const std::string_view QueryValue) override;
-    void SetContent(const std::vector<uint8_t>& ContentPayload) override;
-    void SetContentAsString(const std::string_view ContentString) override;
+    void SetQuery(std::string_view QueryName, std::string_view QueryValue) override;
+    void SetContent(std::string_view ContentPayload) override;
+    void SetContentAsString(std::string_view ContentString) override;
 
-    void SetHeader(const std::string_view HeaderName, const std::string_view HeaderValue) override;
-    void AppendToHeader(const std::string_view HeaderName, const std::string_view AdditionalHeaderValue) override;
+    void SetHeader(std::string_view HeaderName, std::string_view HeaderValue) override;
+    void AppendToHeader(std::string_view HeaderName, std::string_view AdditionalHeaderValue) override;
     void SetMimePart(InMimePart_t part)override;
     void SetRange(uint64_t begin, uint64_t end)override;
     bool ProcessRequest() override;
@@ -77,7 +77,7 @@ private:
     std::unordered_map<std::string, std::string> Queries;
     std::unordered_map<std::string, std::string> Headers;
     std::vector<MimePart_t> MimeParts;
-    std::vector<uint8_t> Content;
+    FCharBuffer Content;
 
     uint32_t RequestID{ 0 };
     HttpRequestCompleteDelegateType HttpRequestCompleteDelegate;
@@ -91,14 +91,14 @@ public:
 
     FCurlHttpResponse(FCurlHttpRequest* inCurlRequest) :CurlRequest(inCurlRequest) {};
     ~FCurlHttpResponse() override {};
-    std::string_view GetURL()override { return EffectiveUrl; };
-    std::string_view GetURLParameter(const std::string_view ParameterName)override { return ""; }
-    std::string_view GetHeader(const std::string_view HeaderName)override;
-    std::vector<std::string> GetAllHeaders()override;
+    std::string_view GetURL()const override { return EffectiveUrl; };
+    std::string_view GetURLParameter(std::string_view ParameterName)const override { return ""; }
+    std::string_view GetHeader(std::string_view HeaderName)const override;
+    std::vector<std::string> GetAllHeaders()const override;
     std::vector<MimePart_t> GetAllMime() override;
-    std::string_view GetContentType() override;
-    int64_t GetContentLength() override { return ContentLength; }
-    const std::vector<uint8_t>& GetContent() override;
+    std::string_view GetContentType()const override;
+    int64_t GetContentLength()const override { return ContentLength; }
+    FCharBuffer& GetContent() override;
     FCurlHttpRequest* GetRequest() { return CurlRequest; }
     void SetContentBuf(void* Ptr, int64_t Len) override;
     int32_t GetResponseCode() override { return HttpCode; }
@@ -117,7 +117,7 @@ private:
     std::atomic_int64_t ContentLength{ -1 };
     std::atomic_int64_t TotalBytesRead{ 0 };
     std::unordered_map<std::string, std::string> Headers;
-    std::vector<uint8_t> Content;
+    FCharBuffer Content;
     char* UserBuf{ 0 };
     int64_t UserBufLen{ 0 };
 };
