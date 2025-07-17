@@ -17,23 +17,29 @@ bool FSteamAuthSession::OnSteamPackageReceived(FSteamPacketMsg& msg, std::string
 {
     return false;
 }
-void FSteamAuthSession::InputSteamGuardCode(std::string_view code)
+
+void FSteamAuthSession::InvalidateCurrentAuth()
 {
-    if (AuthSessionStatus != EAuthSessionStatus::PollingAuthSessionStatus) {
-        SIMPLELOG_LOGGER_WARN(nullptr, "InputSteamGuardCode called when AuthSessionStatus is not PollingAuthSessionStatus");
-        return;
+    if (!AccountName.empty()) {
+        InvalidateAccountCache(AccountName);
+        ClearCurrentAuth();
     }
-    if (!bHasSteamGuardCode) {
-        bHasSteamGuardCode = true;
-        SteamGuardCode = code;
-    }
+}
+void FSteamAuthSession::ClearCurrentAuth()
+{
+    AccountName.clear();
+    RefreshToken.clear();
+    Password.clear();
+    AuthRequestHandlePtr.reset();
+    AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
+
 }
 void FSteamAuthSession::Tick(float delta)
 {
     auto CurAuthSessionStatus = AuthSessionStatus.load();
     switch (CurAuthSessionStatus) {
-    case EAuthSessionStatus::WaittingConnection: {
-        if (Owner->LogStatus == ELogStatus::Logout) {
+    case ESteamClientAuthSessionStatus::WaittingConnection: {
+        if (Owner->LogStatus == ESteamClientLogStatus::Logout) {
             Owner->PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
             auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(Owner->PacketMsg.Header);
             header.set_jobid_source(Owner->GetNextJobID().GetValue());
@@ -55,50 +61,11 @@ void FSteamAuthSession::Tick(float delta)
                 std::bind(&FSteamAuthSession::OnGetPasswordRSAPublicKeyResponse, this, std::placeholders::_1, std::placeholders::_2),
                 std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
             );
-            AuthSessionStatus = EAuthSessionStatus::GettingPasswordRSAPublicKey;
+            AuthSessionStatus = ESteamClientAuthSessionStatus::GettingPasswordRSAPublicKey;
         }
         break;
     }
-    case EAuthSessionStatus::PollingAuthSessionStatus: {
-        if (AuthRequestHandlePtr->SourceJobID == 0) {
-            utilpp::steam::EAuthSessionGuardType GuardType{ utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_Unknown };
-            if (AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_DeviceCode)) {
-                GuardType = utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_DeviceCode;
-            }
-            if (AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode)) {
-                GuardType = utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode;
-            }
-            if (GuardType != utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_Unknown) {
-                if (bHasSteamGuardCode) {
-                    Owner->PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
-                    auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(Owner->PacketMsg.Header);
-                    header.set_jobid_source(Owner->GetNextJobID().GetValue());
-                    header.set_target_job_name("Authentication.UpdateAuthSessionWithSteamGuardCode#1");
-                    Owner->PacketMsg.bProtoBuf = true;
-                    Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
-                    utilpp::steam::CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request body;
-                    body.set_client_id(ClientID);
-                    body.set_steamid(Owner->SteamAccoutnInfo.SteamID);
-                    body.set_code(SteamGuardCode);
-                    body.set_code_type(GuardType);
-                    auto bodyLen = body.ByteSizeLong();
-                    auto [bufview, bres] = Owner->PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request::SerializeToOstream, &body, std::placeholders::_1));
-                    if (!bres) {
-                        break;
-                    }
-                    Owner->pWSClient->SendData(bufview.data(), bufview.size());
-                    AuthRequestHandlePtr->SourceJobID = Owner->PacketMsg.GetSourceJobID();
-                    Owner->JobManager.AddJob(PollJobID,
-                        std::bind(&FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse, this, std::placeholders::_1, std::placeholders::_2),
-                        std::bind(&FSteamClient::OnRequestFinished, Owner, AuthRequestHandlePtr, SteamRequestFailedDelegate, std::placeholders::_1)
-                    );
-                }
-                if (bReqSteamGuardCode) {
-                    Owner->TriggerOnRequestSteamGuardCodeDelegates();
-                    bReqSteamGuardCode = false;
-                }
-            }
-        }
+    case ESteamClientAuthSessionStatus::PollingAuthSessionStatus: {
         if (AllowedConfirmations.contains(utilpp::steam::k_EAuthSessionGuardType_DeviceConfirmation)) {
             PollAuthSessionStatus();
         }
@@ -107,9 +74,9 @@ void FSteamAuthSession::Tick(float delta)
 }
 FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, ISteamClient::FSteamRequestFailedDelegate FailedDelegate, std::error_code& ec)
 {
-
     if (AccountName == account && Password == password) {
         if (AuthRequestHandlePtr) {
+            ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
             return AuthRequestHandlePtr;
         }
         else {
@@ -125,17 +92,69 @@ FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_v
     SteamRequestFailedDelegate = FailedDelegate;
     AuthRequestHandlePtr = std::make_shared<SteamRequestHandle_t>();
 
-    if (CheckAccountCache()) {
-        AuthSessionStatus = EAuthSessionStatus::Authenticated;
+    if (ReadAccountCache()) {
+        AuthSessionStatus = ESteamClientAuthSessionStatus::Authenticated;
         return AuthRequestHandlePtr;
     }
 
     AuthRequestHandlePtr->bFinished = false;
-    AuthSessionStatus = EAuthSessionStatus::WaittingConnection;
+    AuthSessionStatus = ESteamClientAuthSessionStatus::WaittingConnection;
     return AuthRequestHandlePtr;
 }
 
-bool FSteamAuthSession::CheckAccountCache()
+FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, ISteamClient::FSteamRequestFinishedDelegate FinishedDelegate, std::error_code& ec)
+{
+    if (AuthSessionStatus != ESteamClientAuthSessionStatus::PollingAuthSessionStatus) {
+        ec = std::error_code(std::to_underlying(ESteamClientError::SCE_ClientStatusError), SteamClientErrorCategory());
+        return nullptr;
+    }
+    if (SteamGuardCodeRequestHandlePtr) {
+        ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
+        return SteamGuardCodeRequestHandlePtr;
+    }
+    SteamGuardCode = code;
+    SteamGuardCodeDelegate = FinishedDelegate;
+
+    utilpp::steam::EAuthSessionGuardType GuardType{ utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_Unknown };
+    if (AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_DeviceCode)) {
+        GuardType = utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_DeviceCode;
+    }
+    if (AllowedConfirmations.contains(utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode)) {
+        GuardType = utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_EmailCode;
+    }
+    if (GuardType == utilpp::steam::EAuthSessionGuardType::k_EAuthSessionGuardType_Unknown) {
+        ec = std::error_code(std::to_underlying(ESteamClientError::SCE_InvalidInput), SteamClientErrorCategory());
+        return nullptr;
+    }
+
+    Owner->PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
+    auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(Owner->PacketMsg.Header);
+    header.set_jobid_source(Owner->GetNextJobID().GetValue());
+    header.set_target_job_name("Authentication.UpdateAuthSessionWithSteamGuardCode#1");
+    Owner->PacketMsg.bProtoBuf = true;
+    Owner->PacketMsg.MsgType = utilpp::steam::EMsg::ServiceMethodCallFromClientNonAuthed;
+    utilpp::steam::CAuthentication_UpdateAuthSessionWithSteamGuardCode_Request body;
+    body.set_client_id(ClientID);
+    body.set_steamid(Owner->SteamAccoutnInfo.SteamID);
+    body.set_code(SteamGuardCode);
+    body.set_code_type(GuardType);
+    auto bodyLen = body.ByteSizeLong();
+    auto [bufview, bres] = Owner->PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CAuthentication_GetPasswordRSAPublicKey_Request::SerializeToOstream, &body, std::placeholders::_1));
+    if (!bres) {
+        ec = std::error_code(std::to_underlying(ESteamClientError::SCE_UnknowError), SteamClientErrorCategory());
+        return nullptr;
+    }
+    SteamGuardCodeRequestHandlePtr = std::make_shared<SteamRequestHandle_t>();
+    Owner->pWSClient->SendData(bufview.data(), bufview.size());
+    SteamGuardCodeRequestHandlePtr->SourceJobID = Owner->PacketMsg.GetSourceJobID();
+    Owner->JobManager.AddJob(PollJobID,
+        std::bind(&FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse, this, std::placeholders::_1, std::placeholders::_2),
+        std::bind(&FSteamClient::OnRequestFinished, Owner, SteamGuardCodeRequestHandlePtr, SteamGuardCodeDelegate, std::placeholders::_1)
+    );
+    return SteamGuardCodeRequestHandlePtr;
+}
+
+bool FSteamAuthSession::ReadAccountCache()
 {
     //int ires;
     //ires = sqlite3_clear_bindings(Owner->pSelectAccountPSO);
@@ -180,6 +199,7 @@ bool FSteamAuthSession::CheckAccountCache()
     if (!RefreshToken.empty()) {
         auto decoded = jwt::decode(RefreshToken);
         if (std::chrono::system_clock::now().time_since_epoch().count() + 60 * 5 > decoded.get_expires_at().time_since_epoch().count()) {
+            InvalidateAccountCache(AccountName);
             RefreshToken.clear();
         }
     }
@@ -187,6 +207,17 @@ bool FSteamAuthSession::CheckAccountCache()
         return true;
     }
     return false;
+}
+
+void FSteamAuthSession::InvalidateAccountCache(std::string_view accountName)
+{
+    //Owner->GetDBConnection()(sqlpp::update(Owner->SteamUserTable)
+    //    .set(Owner->SteamUserTable.RefreshToken = std::nullopt)
+    //    .where(Owner->SteamUserTable.AccountName == accountName)
+    //    );
+    Owner->GetDBConnection()(sqlpp::delete_from(Owner->SteamUserTable)
+        .where(Owner->SteamUserTable.AccountName == accountName)
+        );
 }
 
 bool FSteamAuthSession::UpdateAccountCache()
@@ -258,17 +289,17 @@ void FSteamAuthSession::PollAuthSessionStatus()
 void FSteamAuthSession::OnGetPasswordRSAPublicKeyResponse(FSteamPacketMsg& msg, std::string_view bodyView)
 {
     if (!AuthRequestHandlePtr->IsValid()) {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "GotPasswordRSAPublicKey while AuthRequestHandlePtr invalid");
+        SIMPLELOG_LOGGER_ERROR(nullptr, "OnGetPasswordRSAPublicKeyResponse while AuthRequestHandlePtr invalid");
         return;
     }
     auto bres = OnGetPasswordRSAPublicKeyResponseInternal(msg, bodyView);
     if (bres) {
-        auto ExpectAuthSessionStatus = EAuthSessionStatus::GettingPasswordRSAPublicKey;
-        bres = AuthSessionStatus.compare_exchange_strong(ExpectAuthSessionStatus, EAuthSessionStatus::CreattingSeesion);
+        auto ExpectAuthSessionStatus = ESteamClientAuthSessionStatus::GettingPasswordRSAPublicKey;
+        bres = AuthSessionStatus.compare_exchange_strong(ExpectAuthSessionStatus, ESteamClientAuthSessionStatus::CreattingSeesion);
     }
     if (!bres) {
         SIMPLELOG_LOGGER_DEBUG(nullptr, "GetPasswordRSAPublicKeyResponse failed");
-        AuthSessionStatus = EAuthSessionStatus::Unauthorized;
+        AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
         return;
     }
     SIMPLELOG_LOGGER_DEBUG(nullptr, "GetPasswordRSAPublicKeyResponse success");
@@ -433,18 +464,26 @@ void FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponse(FSteamPacketMsg
     auto bres = OnBeginAuthSessionViaCredentialsResponseInternal(msg, bodyView);
 
     if (bres) {
-        auto ExpectAuthSessionStatus = EAuthSessionStatus::CreattingSeesion;
-        bres = AuthSessionStatus.compare_exchange_strong(ExpectAuthSessionStatus, EAuthSessionStatus::PollingAuthSessionStatus);
+        auto ExpectAuthSessionStatus = ESteamClientAuthSessionStatus::CreattingSeesion;
+        bres = AuthSessionStatus.compare_exchange_strong(ExpectAuthSessionStatus, ESteamClientAuthSessionStatus::PollingAuthSessionStatus);
     }
     if (!bres) {
         SIMPLELOG_LOGGER_DEBUG(nullptr, "BeginAuthSessionViaCredentialsResponse failed");
-        AuthSessionStatus = EAuthSessionStatus::Unauthorized;
+        AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
         Owner->OnRequestFinished(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
         return;
     }
     AuthRequestHandlePtr->SourceJobID = 0;
-    bReqSteamGuardCode = true;
     SIMPLELOG_LOGGER_DEBUG(nullptr, "BeginAuthSessionViaCredentialsResponse seccess");
+
+    std::transform(AllowedConfirmations.cbegin(), AllowedConfirmations.cend(),
+        std::inserter(OutAllowedConfirmations, OutAllowedConfirmations.begin()),
+        [](const std::pair<utilpp::steam::EAuthSessionGuardType, AllowedConfirmation_t>& key_value)
+        {
+            return ESteamClientAuthSessionGuardType(key_value.first);
+        }
+    );
+    Owner->TriggerOnWaitConfirmationDelegates(OutAllowedConfirmations);
 }
 
 bool FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponseInternal(FSteamPacketMsg& msg, std::string_view bodyView)
@@ -452,6 +491,7 @@ bool FSteamAuthSession::OnBeginAuthSessionViaCredentialsResponseInternal(FSteamP
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);
     auto res = utilpp::steam::EResult(header.eresult());
     if (res != utilpp::steam::EResult::OK) {
+        InvalidateCurrentAuth();
         return false;
     }
     utilpp::steam::CAuthentication_BeginAuthSessionViaCredentials_Response resp;
@@ -480,18 +520,18 @@ void FSteamAuthSession::OnPollAuthSessionStatusResponse(FSteamPacketMsg& msg, st
     auto bres = OnPollAuthSessionStatusResponseInternal(msg, bodyView);
     PollJobID = 0;
     if (bres) {
-        auto ExpectAuthSessionStatus = EAuthSessionStatus::PollingAuthSessionStatus;
-        bres = AuthSessionStatus.compare_exchange_strong(ExpectAuthSessionStatus, EAuthSessionStatus::Authenticated);
+        auto ExpectAuthSessionStatus = ESteamClientAuthSessionStatus::PollingAuthSessionStatus;
+        bres = AuthSessionStatus.compare_exchange_strong(ExpectAuthSessionStatus, ESteamClientAuthSessionStatus::Authenticated);
     }
     if (!bres) {
         SIMPLELOG_LOGGER_DEBUG(nullptr, "PollAuthSessionStatusResponse failed");
-        //AuthSessionStatus = EAuthSessionStatus::Unauthorized;
+        //AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
         //Owner->OnRequestFinished(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
         return;
     }
     AuthRequestHandlePtr.reset();
     if (!UpdateAccountCache()) {
-        AuthSessionStatus = EAuthSessionStatus::Error;
+        AuthSessionStatus = ESteamClientAuthSessionStatus::Error;
     }
     SIMPLELOG_LOGGER_DEBUG(nullptr, "PollAuthSessionStatusResponse success");
 }
@@ -522,18 +562,21 @@ bool FSteamAuthSession::OnPollAuthSessionStatusResponseInternal(FSteamPacketMsg&
 
 void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPacketMsg& msg, std::string_view bodyView)
 {
-    if (!AuthRequestHandlePtr->IsValid()) {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "OnUpdateAuthSessionWithSteamGuardCodeResponse while AuthRequestHandlePtr invalid");
+    if (!SteamGuardCodeRequestHandlePtr->IsValid()) {
+        SIMPLELOG_LOGGER_ERROR(nullptr, "OnUpdateAuthSessionWithSteamGuardCodeResponse while SteamGuardCodeRequestHandlePtr invalid");
         return;
     }
     bool bres{ false };
     FunctionExitHelper_t postExitHelper(
         [&]() {
+            SteamGuardCodeRequestHandlePtr->bFinished = true;
             if (!bres) {
-                AuthRequestHandlePtr->SourceJobID = 0;
-                bHasSteamGuardCode = false;
-                bReqSteamGuardCode = true;
+                SteamGuardCodeRequestHandlePtr->FinishCode= std::error_code(std::to_underlying(ESteamClientError::SCE_RequestErrFromServer), SteamClientErrorCategory());
             }
+            else {
+                PollAuthSessionStatus();
+            }
+            SteamGuardCodeDelegate(SteamGuardCodeRequestHandlePtr->FinishCode);
         }
     );
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);
@@ -546,6 +589,6 @@ void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPack
     if (!bres) {
         return;
     }
-    PollAuthSessionStatus();
+
 }
 

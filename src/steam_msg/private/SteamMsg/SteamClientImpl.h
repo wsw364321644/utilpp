@@ -9,14 +9,6 @@
 #include "SteamMsg/SteamJobManager.h"
 #include "SteamMsg/SteamAuthSession.h"
 #include "SteamMsg/STEAMUSER.h"
-enum class ELogStatus {
-    NotConnect,
-    Connecting,
-    Logout,
-    Loggingon,
-    Logon,
-    Error
-};
 
 class FSteamClient :public ISteamClient {
 public:
@@ -26,8 +18,13 @@ public:
     bool Init(IWebsocketConnectionManager*, HttpManagerPtr) override;
     void Disconnect() override;
     void CancelRequest(FCommonHandlePtr) override;
+    ESteamClientLogStatus GetLoginStatus() const override;
+    ESteamClientAuthSessionStatus GetAuthSessionStatus()const override;
+    const SteamAccoutnInfo_t& GetAccoutnInfo()const override;
+    const std::unordered_set<ESteamClientAuthSessionGuardType>& GetAllowedConfirmations() const override;
+
     FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFailedDelegate, std::error_code&) override;
-    void InputSteamGuardCode(std::string_view) override;
+    FCommonHandlePtr SendSteamGuardCode(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     FCommonHandlePtr RegisterKey(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     void Tick(float delta) override;
 
@@ -44,7 +41,7 @@ private:
         JobID.SetSequentialCount(++SequentialCount);
         return JobID;
     }
-    std::atomic< ELogStatus> LogStatus{ ELogStatus::NotConnect };
+    std::atomic< ESteamClientLogStatus> LogStatus{ ESteamClientLogStatus::NotConnect };
     HttpManagerPtr pHttpManager;
     IWebsocketConnectionManager* pWSManager{nullptr};
     std::shared_ptr<IWebsocketClient> pWSClient;

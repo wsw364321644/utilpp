@@ -39,6 +39,8 @@ typedef struct SteamRequestHandle_t : ICommonHandle {
         return !bFinished;
     }
     std::atomic_bool bFinished{ true };
+    bool bSent;
+    std::error_code FinishCode;
     uint64_t SourceJobID{ 0 };
 }SteamRequestHandle_t;
 

@@ -7,7 +7,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(jwt-cpp)
 
-ImportProject(SQLite3 ${STATIC_CRT} FIND URL https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip)
+ImportProject(SQLite3 ${STATIC_CRT} URL https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip)
 
 set(BUILD_SQLITE3_CONNECTOR OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(

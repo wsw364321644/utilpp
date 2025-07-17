@@ -14,6 +14,7 @@ option(UTILPP_ENABLE_NET "enable net_util" OFF)
 option(UTILPP_WITH_STATIC_LIBCURL "net_util use static libcurl" OFF)
 option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
 option(UTILPP_ENABLE_WEBSOCKET "enable websocket_util" OFF)
+option(UTILPP_ENABLE_CPUID "enable system info cpuid feature" OFF)
 
 if(UTILPP_STATIC_CRT)
   set(STATIC_CRT STATIC_CRT)
@@ -47,7 +48,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 86b5cdb9e1d7cf31ea92d5173e1143c9d31ca0ce
+  GIT_TAG 2ebad0c527977b00241a5dd43515d4313dc63876
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -87,22 +88,17 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 
-set(BUILD_SHARED_LIBS ON CACHE INTERNAL "")
-set(SIMDJSON_BUILD_STATIC_LIB ON CACHE INTERNAL "")
-FetchContent_Declare(
-  simdjson
-  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
-  GIT_TAG v3.13.0
-  GIT_SHALLOW TRUE
-)
-
-FetchContent_MakeAvailable(OCmakeUtil spdlog taskflow concurrentqueue simdjson)
+FetchContent_MakeAvailable(OCmakeUtil spdlog taskflow concurrentqueue)
 include(ResourceDownload)
 include(ProjectImport)
 include(ProgramImport)
+include(TargetImport)
 
-#ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v3.13.0)
-ImportProject(RapidJSON ${SSH} TAG origin/master)
+ImportTarget(RapidJSON ${SSH} TAG origin/master)
+
+if(UTILPP_ENABLE_CPUID)
+  ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG 5bb7c32618fb50178462c791f649516ae6a17193) # v0.8.0
+endif()
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
@@ -111,6 +107,7 @@ add_subdirectory(src/simple_logger)
 add_subdirectory(src/task_manager)
 add_subdirectory(src/rpc_parser)
 add_subdirectory(src/crypto_lib_helper)
+add_subdirectory(src/system_info_util)
 
 if(WIN32)
   add_subdirectory(src/windows_util)

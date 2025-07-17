@@ -9,30 +9,25 @@
 #include "SteamMsg/SteamPacketMessage.h"
 #include "SteamMsg/SteamClientInternal.h"
 
-enum class EAuthSessionStatus {
-    Unauthorized,
-    WaittingConnection,
-    GettingPasswordRSAPublicKey,
-    CreattingSeesion,
-    PollingAuthSessionStatus,
-    Authenticated,
-    Error,
-};
-
 class FSteamClient;
 class FSteamAuthSession {
 public:
     FSteamAuthSession(FSteamClient* inOwner) :Owner(inOwner) {}
     bool IsAuthenticated() {
-        return AuthSessionStatus == EAuthSessionStatus::Authenticated;
+        return AuthSessionStatus == ESteamClientAuthSessionStatus::Authenticated;
     }
     bool OnSteamPackageReceived(FSteamPacketMsg& msg, std::string_view bodyView);
-    void InputSteamGuardCode(std::string_view code);
+    
+    void InvalidateCurrentAuth();
+    void ClearCurrentAuth();
     void Tick(float delta);
+
     FCommonHandlePtr BeginAuthSessionViaCredentials(std::string_view, std::string_view, ISteamClient::FSteamRequestFailedDelegate, std::error_code&);
-    ISteamClient::FSteamRequestFailedDelegate SteamRequestFailedDelegate;
+    FCommonHandlePtr SendSteamGuardCode(std::string_view, ISteamClient::FSteamRequestFinishedDelegate, std::error_code&);
+
+
     FSteamClient* Owner;
-    std::atomic< EAuthSessionStatus> AuthSessionStatus{ EAuthSessionStatus ::Unauthorized };
+    std::atomic< ESteamClientAuthSessionStatus> AuthSessionStatus{ ESteamClientAuthSessionStatus ::Unauthorized };
 
     uint64_t PollJobID{ 0 };
     uint64_t DeviceCodeJobID{ 0 };
@@ -48,7 +43,7 @@ public:
         std::string AssociatedMessage;
     }AllowedConfirmation_t;
     std::unordered_map<utilpp::steam::EAuthSessionGuardType,AllowedConfirmation_t> AllowedConfirmations;
-
+    std::unordered_set<ESteamClientAuthSessionGuardType> OutAllowedConfirmations;
     //from poll
     std::string NewGuardData;
     std::string AccessToken;
@@ -59,11 +54,13 @@ public:
 
     std::string Password;
     std::shared_ptr<SteamRequestHandle_t> AuthRequestHandlePtr;
-    std::atomic_bool bHasSteamGuardCode;
-    bool bReqSteamGuardCode{ false };
+    ISteamClient::FSteamRequestFailedDelegate SteamRequestFailedDelegate;
+    std::shared_ptr<SteamRequestHandle_t> SteamGuardCodeRequestHandlePtr;
+    ISteamClient::FSteamRequestFinishedDelegate SteamGuardCodeDelegate;
     std::string SteamGuardCode;
 private:
-    bool CheckAccountCache();
+    bool ReadAccountCache();
+    void InvalidateAccountCache(std::string_view);
     bool UpdateAccountCache();
     void PollAuthSessionStatus();
     void OnGetPasswordRSAPublicKeyResponse(FSteamPacketMsg& msg, std::string_view bodyView);

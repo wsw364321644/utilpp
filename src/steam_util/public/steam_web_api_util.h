@@ -2,6 +2,7 @@
 #ifdef STEAM_UTIL_HAS_NET
 #include <stdbool.h>
 #include <stdint.h>
+#include <optional>
 #include <HTTP/HttpManager.h>
 #include "steam_util_export_defs.h"
 /**
@@ -9,7 +10,7 @@
 * need call Tick on HttpManagerPtr
 */
 namespace utilpp {
-    typedef std::function<void(bool, std::u8string_view)> FCommonBodyDelagate;
+    typedef std::function<void(bool, FCharBuffer*)> FCommonBodyDelagate;
     constexpr char STEAM_API_HOST[] = "api.steampowered.com";
 
     typedef std::function<void(bool)> FSteamRegisterKeyDelagate;
@@ -25,7 +26,7 @@ namespace utilpp {
         float WeightedTotalDemandLoad;
     }EndpointDetail_t;
     typedef struct GetCMListForConnectResp_t {
-        STEAM_UTIL_EXPORT bool Parse(std::u8string_view view);
+        STEAM_UTIL_EXPORT bool Parse(FCharBuffer& buf);
         std::vector<EndpointDetail_t> EndpointDetails;
     }GetCMListForConnectResp_t;
     STEAM_UTIL_EXPORT HttpRequestPtr GetCMListForConnect(HttpManagerPtr pHttpManager, FCommonBodyDelagate Delagate);

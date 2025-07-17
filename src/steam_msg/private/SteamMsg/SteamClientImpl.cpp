@@ -53,10 +53,10 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
             ClientHello(ec);
             if (ec) {
                 Disconnect();
-                LogStatus = ELogStatus::NotConnect;
+                LogStatus = ESteamClientLogStatus::NotConnect;
             }
             else {
-                LogStatus = ELogStatus::Logout;
+                LogStatus = ESteamClientLogStatus::Logout;
                 TriggerOnConnectedDelegates();
             }
         }
@@ -64,7 +64,7 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
     pWSClient->AddOnReceivedDelegate(std::bind(&FSteamClient::OnWSDataReceived, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     pWSClient->AddOnDisconnectedDelegate(
         [&](const std::shared_ptr<IWebsocketClient>&, const std::error_code& ec) {
-            LogStatus = ELogStatus::NotConnect;
+            LogStatus = ESteamClientLogStatus::NotConnect;
             TriggerOnDisconnectedDelegates(ec);
         }
     );
@@ -105,19 +105,39 @@ void FSteamClient::CancelRequest(FCommonHandlePtr CommonHandlePtr)
 {
 }
 
+ESteamClientLogStatus FSteamClient::GetLoginStatus() const
+{
+    return LogStatus;
+}
+
+ESteamClientAuthSessionStatus FSteamClient::GetAuthSessionStatus() const
+{
+    return SteamAuthSession.AuthSessionStatus;
+}
+
+const SteamAccoutnInfo_t& FSteamClient::GetAccoutnInfo() const
+{
+    return SteamAccoutnInfo;
+}
+
+const std::unordered_set<ESteamClientAuthSessionGuardType>& FSteamClient::GetAllowedConfirmations() const
+{
+    return SteamAuthSession.OutAllowedConfirmations;
+}
+
 FCommonHandlePtr FSteamClient::Login(std::string_view account, std::string_view password, FSteamRequestFailedDelegate FailedDelegate,std::error_code& ec)
 {
     return SteamAuthSession.BeginAuthSessionViaCredentials(account, password, FailedDelegate, ec);
 }
 
-void FSteamClient::InputSteamGuardCode(std::string_view codeView)
+FCommonHandlePtr FSteamClient::SendSteamGuardCode(std::string_view code, FSteamRequestFinishedDelegate FinishedDelegate, std::error_code& ec)
 {
-    SteamAuthSession.InputSteamGuardCode(codeView);
+    return SteamAuthSession.SendSteamGuardCode(code, FinishedDelegate, ec);
 }
 
 FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamRequestFinishedDelegate Delegate, std::error_code& ec)
 {
-    if (LogStatus!= ELogStatus::Logon) {
+    if (LogStatus!= ESteamClientLogStatus::Logon) {
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_NotLogin), SteamClientErrorCategory());
     }
 
@@ -213,35 +233,35 @@ FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamReque
 
 void FSteamClient::Tick(float delta)
 {
-    static auto PreLogStatus = ELogStatus::NotConnect;
+    static auto PreLogStatus = ESteamClientLogStatus::NotConnect;
     switch (LogStatus) {
-    case ELogStatus::NotConnect: {
-        if (SteamAuthSession.AuthSessionStatus != EAuthSessionStatus::Unauthorized) {
-            if (SteamAuthSession.AuthSessionStatus != EAuthSessionStatus::Authenticated) {
-                SteamAuthSession.AuthSessionStatus = EAuthSessionStatus::WaittingConnection;
+    case ESteamClientLogStatus::NotConnect: {
+        if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Unauthorized) {
+            if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Authenticated) {
+                SteamAuthSession.AuthSessionStatus = ESteamClientAuthSessionStatus::WaittingConnection;
             }
             if (Connect()) {
-                LogStatus = ELogStatus::Connecting;
+                LogStatus = ESteamClientLogStatus::Connecting;
             }
             else {
-                LogStatus = ELogStatus::Error;
+                LogStatus = ESteamClientLogStatus::Error;
             }
         }
         break;
     }
-    case ELogStatus::Logout: {
-        if (SteamAuthSession.AuthSessionStatus == EAuthSessionStatus::Authenticated) {
+    case ESteamClientLogStatus::Logout: {
+        if (SteamAuthSession.AuthSessionStatus == ESteamClientAuthSessionStatus::Authenticated) {
             if (Logon()) {
-                LogStatus = ELogStatus::Loggingon;
+                LogStatus = ESteamClientLogStatus::Loggingon;
             }
             else {
-                LogStatus = ELogStatus::Error;
+                LogStatus = ESteamClientLogStatus::Error;
             }
         }
         break;
     }
-    case ELogStatus::Logon: {
-        if (PreLogStatus != ELogStatus::Logon) {
+    case ESteamClientLogStatus::Logon: {
+        if (PreLogStatus != ESteamClientLogStatus::Logon) {
             std::error_code ec;
             HeartBeat(ec);
             TriggerOnLoginDelegates(SteamAccoutnInfo);
@@ -307,14 +327,14 @@ sqlpp::sqlite3::pooled_connection& FSteamClient::GetDBConnection()
 bool FSteamClient::Connect()
 {
     auto req=utilpp::GetCMListForConnect(pHttpManager,
-        [&](bool bres, std::u8string_view body) {
+        [&](bool bres, FCharBuffer* pbuf) {
             if (!bres) {
-                LogStatus = ELogStatus::NotConnect;
+                LogStatus = ESteamClientLogStatus::NotConnect;
                 return;
             }
             utilpp::GetCMListForConnectResp_t resp;
-            if (!resp.Parse(body)) {
-                LogStatus = ELogStatus::NotConnect;
+            if (!resp.Parse(*pbuf)) {
+                LogStatus = ESteamClientLogStatus::NotConnect;
                 return;
             }
 
@@ -388,7 +408,8 @@ bool FSteamClient::Logon()
 void FSteamClient::OnRequestFinished(std::shared_ptr<SteamRequestHandle_t> SteamRequestHandle, FSteamRequestFinishedDelegate SteamRequestFailedDelegate, ESteamClientError err)
 {
     SteamRequestHandle->bFinished = true;
-    SteamRequestFailedDelegate(std::error_code(std::to_underlying(err), SteamClientErrorCategory()));
+    SteamRequestHandle->FinishCode = std::error_code(std::to_underlying(err), SteamClientErrorCategory());
+    SteamRequestFailedDelegate(SteamRequestHandle->FinishCode);
 }
 
 void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWSClient, const char* content, size_t len)
@@ -482,14 +503,14 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
     }
     case utilpp::steam::EMsg::ClientLogOnResponse: { // we handle this to get the SteamID/SessionID and to setup heartbeating
         if (!msg.IsProtoBuf()) {
-            LogStatus = ELogStatus::Error;
+            LogStatus = ESteamClientLogStatus::Error;
             return;
         }
         auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);
         utilpp::steam::CMsgClientLogonResponse MsgClientLogonResponse;
         auto bres = MsgClientLogonResponse.ParseFromArray(bodyView.data(), bodyView.size());
         if (!bres) {
-            LogStatus = ELogStatus::Error;
+            LogStatus = ESteamClientLogStatus::Error;
             return;
         }
         auto res = utilpp::steam::EResult(MsgClientLogonResponse.eresult());
@@ -506,15 +527,19 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             }
             HeartBeatSec = MsgClientLogonResponse.heartbeat_seconds();
             HeartBeatSecCount = 0;
-            LogStatus = ELogStatus::Logon;
+            LogStatus = ESteamClientLogStatus::Logon;
         }
         else if (res == utilpp::steam::EResult::TryAnotherCM || res == utilpp::steam::EResult::ServiceUnavailable) {
-            LogStatus = ELogStatus::NotConnect;
+            LogStatus = ESteamClientLogStatus::NotConnect;
+        }
+        else {
+            SteamAuthSession.InvalidateCurrentAuth();
+            LogStatus = ESteamClientLogStatus::Logout;
         }
         break;
     }
     case utilpp::steam::EMsg::ClientLoggedOff: { // to stop heartbeating when we get logged off
-        LogStatus = ELogStatus::Logout;
+        LogStatus = ESteamClientLogStatus::Logout;
         SessionID = 0;
         SteamAccoutnInfo.SteamID = 0;
         CellID = 0;
@@ -525,17 +550,18 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             utilpp::steam::CMsgClientLoggedOff body;
             auto bres = body.ParseFromArray(bodyView.data(), bodyView.size());
             if (!bres) {
-                LogStatus = ELogStatus::Error;
+                LogStatus = ESteamClientLogStatus::Error;
                 return;
             }
             auto logoffResult = utilpp::steam::EResult(body.eresult());
             if (logoffResult == utilpp::steam::EResult::TryAnotherCM || logoffResult == utilpp::steam::EResult::ServiceUnavailable)
             {
-                LogStatus = ELogStatus::NotConnect;
+                LogStatus = ESteamClientLogStatus::NotConnect;
             }
         }
         std::error_code ec;
         TriggerOnLogoutDelegates(ec);
+        SteamAuthSession.ClearCurrentAuth();
         break;
     }
     }
