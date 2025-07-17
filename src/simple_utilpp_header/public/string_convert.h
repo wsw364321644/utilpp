@@ -338,3 +338,9 @@ inline std::string ConvertU8ViewToString(std::u8string_view view) {
 inline std::u8string_view ConvertViewToU8View(std::string_view view) {
     return std::u8string_view((const char8_t*)view.data(), view.size());
 }
+
+inline char* StrCopy(char* dst,std::string_view view) {
+    memcpy(dst, view.data(), view.size());
+    dst[view.size()] = '\0';
+    return dst;
+}

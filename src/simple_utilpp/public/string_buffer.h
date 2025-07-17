@@ -50,6 +50,7 @@ public:
     char *Data();
     size_t Length() const;
     size_t Size() const;
+    size_t Capacity() const;
     typedef char Ch;
 
     //! Read the current character from stream without moving the read cursor.

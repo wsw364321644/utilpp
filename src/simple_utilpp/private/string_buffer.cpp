@@ -284,6 +284,11 @@ size_t FCharBuffer::Length() const
 
 size_t FCharBuffer::Size() const
 {
+    return cursor;
+}
+
+size_t FCharBuffer::Capacity() const
+{
     return bufSize;
 }
 
