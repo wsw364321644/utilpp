@@ -1,10 +1,11 @@
 #include "crypto_lib_base64.h"
+
 #ifdef HAS_MbedTLS
 #include <mbedtls/base64.h>
 #elif defined HAS_OpenSSL
 #include <openssl/evp.h>
 #endif
-
+#include <cstring>
 
 
 bool crypto_lib_base64_encode(const uint8_t* src, size_t insize, uint8_t* const dst, size_t* inoutlen)
@@ -33,7 +34,7 @@ bool crypto_lib_base64_encode(const uint8_t* src, size_t insize, uint8_t* const 
     bool done = false;
     while (!done)
     {
-        ires = BIO_write(b64, src, insize);
+        auto ires = BIO_write(b64, src, insize);
         if (ires <= 0) // if failed
         {
             if (BIO_should_retry(b64)) {
@@ -62,7 +63,7 @@ bool crypto_lib_base64_encode(const uint8_t* src, size_t insize, uint8_t* const 
         return true;
     }
     else {
-        return false
+        return false;
     }
 #endif
 }
@@ -102,7 +103,7 @@ bool crypto_lib_base64_decode(const uint8_t* src, size_t insize, uint8_t* const 
         return true;
     }
     else {
-        return false
+        return false;
     }
 #endif
 }
