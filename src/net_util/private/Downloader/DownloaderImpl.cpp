@@ -572,10 +572,9 @@ void FDownloader::Tick(float delSec)
                                 }
                             }
                             else {
-                                std::string outPathStr;
-                                ParsedURL_t parseRes{.outPath=&outPathStr };
-                                ParseUrl(pfile->URL,&parseRes);
-                                std::filesystem::path urlpath(outPathStr);
+                                ParsedURL_t parseRes;
+                                ParseUrl(pfile->URL,parseRes);
+                                std::filesystem::path urlpath(ConvertViewToU8View(parseRes.outPath));
                                 pfile->Path /= urlpath.filename();
                             }
                         }

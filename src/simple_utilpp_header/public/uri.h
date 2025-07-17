@@ -3,42 +3,42 @@
 #include <regex>
 typedef struct ParsedURL_t
 {
-    std::string* outScheme{ nullptr };
-    std::string* outAuthority{ nullptr };
-    std::string* outPort{ nullptr };
-    std::string* outPath{ nullptr };
-    std::string* outQuery { nullptr };
-    std::string* outFragment  { nullptr };
-    std::smatch url_match_result_t;
+    std::string_view outScheme;
+    std::string_view outAuthority;
+    std::string_view outPort;
+    std::string_view outPath;
+    std::string_view outQuery;
+    std::string_view outFragment;
 }ParsedURL_t;
-inline void ParseUrl(const std::string& inurl, ParsedURL_t* pURL) {
+inline void ParseUrl(std::string_view inurl, ParsedURL_t& ParsedURL) {
     //https://www.rfc-editor.org/rfc/rfc3986#page-50
     std::regex url_regex(
         R"(^(([^:\/?#]+)://)?(([^:\/?#]*)(:([0-9]+))?)?([^:?#]*)(\?([^#]*))?(#(.*))?)",
         std::regex::extended
     );
     int counter = 0;
-    auto& url_match_result = pURL->url_match_result_t;
+    std::cmatch url_match_result;
+
     /*url.assign( R"###(localhost.com/path\?hue\=br\#cool)###");*/
-    if (!std::regex_match(inurl, url_match_result, url_regex)) {
+    if (!std::regex_match(inurl.data(), inurl.data()+ inurl.size(), url_match_result, url_regex)) {
         return;
     }
-    if (pURL->outScheme) {
-        *pURL->outScheme = url_match_result[2];
-    }
-    if (pURL->outAuthority) {
-        *pURL->outAuthority = url_match_result[4];
-    }
-    if (pURL->outPort) {
-        *pURL->outPort = url_match_result[6];
-    }
-    if (pURL->outPath) {
-        *pURL->outPath = url_match_result[7];
-    }
-    if (pURL->outQuery) {
-        *pURL->outQuery = url_match_result[9];
-    }
-    if (pURL->outFragment) {
-        *pURL->outFragment = url_match_result[11];
-    }
+
+    std::csub_match subMatch = url_match_result[2];
+    ParsedURL.outScheme=std::string_view(subMatch.first, subMatch.second);
+
+    subMatch = url_match_result[4];
+    ParsedURL.outAuthority = std::string_view(subMatch.first, subMatch.second);
+
+    subMatch = url_match_result[6];
+    ParsedURL.outPort = std::string_view(subMatch.first, subMatch.second);
+
+    subMatch = url_match_result[7];
+    ParsedURL.outPath = std::string_view(subMatch.first, subMatch.second);
+
+    subMatch = url_match_result[9];
+    ParsedURL.outQuery = std::string_view(subMatch.first, subMatch.second);
+
+    subMatch = url_match_result[11];
+    ParsedURL.outFragment = std::string_view(subMatch.first, subMatch.second);
 }

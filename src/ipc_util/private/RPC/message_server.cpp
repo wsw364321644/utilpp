@@ -52,10 +52,7 @@ bool MessageServerUV::OpenServer(EMessageConnectionType type, const std::string&
     std::string schemestr, authoritystr, portstr;
     url = inurl;
     ParsedURL_t parsedURL;
-    parsedURL.outScheme = &schemestr;
-    parsedURL.outAuthority = &authoritystr;
-    parsedURL.outPort = &portstr;
-    ParseUrl(url, &parsedURL);
+    ParseUrl(url, parsedURL);
 
 
 
@@ -79,7 +76,8 @@ bool MessageServerUV::OpenServer(EMessageConnectionType type, const std::string&
     }
 
     case EMessageConnectionType::EMCT_TCP: {
-        auto port = std::stoi(portstr);
+        int port;
+        std::from_chars(parsedURL.outPort.data(), parsedURL.outPort.data() + parsedURL.outPort.size(), port);
         if (port <= 0) {
             return false;
         }
@@ -102,7 +100,8 @@ bool MessageServerUV::OpenServer(EMessageConnectionType type, const std::string&
         break;
     }
     case EMessageConnectionType::EMCT_UDP: {
-        auto port = std::stoi(portstr);
+        int port;
+        std::from_chars(parsedURL.outPort.data(), parsedURL.outPort.data() + parsedURL.outPort.size(), port);
         if (port <= 0) {
             return false;
         }

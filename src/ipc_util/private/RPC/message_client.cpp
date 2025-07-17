@@ -30,12 +30,9 @@ bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& ur
     uv_loop_init(loop);
 
     messageConnectionType = type;
-    std::string schemestr, authoritystr, portstr;
+
     ParsedURL_t parsedURL;
-    parsedURL.outScheme = &schemestr;
-    parsedURL.outAuthority = &authoritystr;
-    parsedURL.outPort = &portstr;
-    ParseUrl(url, &parsedURL);
+    ParseUrl(url, parsedURL);
 
     switch (messageConnectionType) {
     case EMessageConnectionType::EMCT_IPC: {
@@ -50,7 +47,8 @@ bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& ur
 
     case EMessageConnectionType::EMCT_TCP:
     case EMessageConnectionType::EMCT_UDP: {
-        auto port = std::stoi(portstr);
+        int port;
+        std::from_chars(parsedURL.outPort.data(), parsedURL.outPort.data() + parsedURL.outPort.size(), port);
         if (port <= 0) {
             return false;
         }
@@ -62,6 +60,8 @@ bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& ur
         hints.ai_flags = 0;
         uv_getaddrinfo_t* resolver = new uv_getaddrinfo_t;
         resolver->data = this;
+        std::string authoritystr(parsedURL.outAuthority);
+        std::string portstr(parsedURL.outPort);
         uv_getaddrinfo(loop, resolver, UVCallBack::template UVOnDNSResolved<MessageClientUV>, authoritystr.c_str(), portstr.c_str(), &hints);
         break;
     }
