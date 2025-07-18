@@ -2,7 +2,7 @@
 #include "system_info_inner.h"
 #include <std_ext.h>
 #include <string_convert.h>
-#include <libcpuid.h>
+
 #include <simdjson.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
@@ -10,11 +10,16 @@
 
 #include <cstring>
 #include <memory>
+
+#ifdef HAS_CPUID
+#include <libcpuid.h>
+#endif 
 namespace utilpp {
 
     // CPU 信息
     void GetCpuInfo(CpuInfo_t& info)
     {
+#ifdef HAS_CPUID
         if (!cpuid_present()) {
             GetCpuInfoPlat(info);
         }
@@ -52,6 +57,7 @@ namespace utilpp {
             info.MaximumFrequencyMHz = info.ProcessorBaseFrequencyMHz = cpu_clock();
             info.BusFrequencyMHz = 0;
         }
+#endif
     }
 
 

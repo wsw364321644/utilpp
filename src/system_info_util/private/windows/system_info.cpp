@@ -1,6 +1,9 @@
 #include "system_info.h"
 
-#include <Windows.h>
+
+#include <LoggerHelper.h>
+#include <string_convert.h>
+#include <simple_os_defs.h>
 
 #include <strsafe.h>
 #include <intrin.h>
@@ -8,11 +11,8 @@
 #include <iostream>
 #include <comdef.h>
 #include <Wbemidl.h>
-#include <libcpuid.h>
-#include <LoggerHelper.h>
-#include <string_convert.h>
-
 #include <functional>
+
 #define _WIN32_DCOM
 
 #pragma comment(lib, "wbemuuid.lib")
