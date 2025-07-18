@@ -48,7 +48,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 2ebad0c527977b00241a5dd43515d4313dc63876
+  GIT_TAG 8b5c69e4f0a9ddc14e8d78d9dd9535cbe09e171d
 )
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -97,7 +97,7 @@ include(TargetImport)
 ImportTarget(RapidJSON ${SSH} TAG origin/master)
 
 if(UTILPP_ENABLE_CPUID)
-  ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG 5bb7c32618fb50178462c791f649516ae6a17193) # v0.8.0
+  ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
 endif()
 
 add_subdirectory(src/simple_util)

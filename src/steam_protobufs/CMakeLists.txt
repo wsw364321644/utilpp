@@ -1,5 +1,5 @@
-ImportProject(absl ${STATIC_CRT} SSH FIND TAG bc257a88f7c1939f24e0379f14a3589e926c950c) # 20250512.0
-ImportProject(Protobuf ${STATIC_CRT} SSH FIND TAG 3d4adad5c4c4e6a6f9f038769b8c90716065b0e4) # v31.0
+ImportProject(absl ${STATIC_CRT} STATIC SSH TAG 20250512.0)
+ImportProject(Protobuf ${STATIC_CRT} STATIC SSH TAG v31.1)
 
 set(ProtobufCPPOutPath ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
@@ -15,7 +15,19 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         https://raw.githubusercontent.com/SteamRE/SteamKit/157eb2b01a518bb75fa74c4e2a22dbab181deb11/Resources/ProtobufGen/protos.csv
         ${CMAKE_CURRENT_BINARY_DIR}/protos.csv
         SHOW_PROGRESS
+        STATUS DOWNLOAD_STATUS
     )
+    list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+    list(GET DOWNLOAD_STATUS 1 ERROR_MESSAGE)
+
+    # Check if download was successful.
+    if(${STATUS_CODE} EQUAL 0)
+        message(STATUS "Download completed successfully!")
+    else()
+        # Exit CMake if the download failed, printing the error message.
+        message(FATAL_ERROR "Error occurred during download: ${ERROR_MESSAGE}")
+    endif()
+
     find_package(Protobuf CONFIG REQUIRED)
     find_package(absl CONFIG REQUIRED)
     find_package(ZLIB)
@@ -207,7 +219,7 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         )
 
         if(NOT ${result} EQUAL 0)
-            message(FATAL_ERROR "Failed to generate C++ files from ${FILE} output: ${output}")
+            message(FATAL_ERROR "Failed to generate C++ files from ${FILE} COMMAND ${Protobuf_PROTOC_EXECUTABLE} --proto_path=${Protobuf_INCLUDE_DIR}  --proto_path=${SteamDBProtobufs_DIR} --cpp_out=${ProtobufCPPOutPath}  output: ${output}")
         endif()
     endforeach()
 
@@ -232,7 +244,7 @@ function(add_lib TARGET_NAME)
     )
 
     target_link_libraries(${TARGET_NAME} PUBLIC protobuf::libprotobuf)
-    target_link_libraries(${TARGET_NAME} PUBLIC absl::abseil_dll)
+    #target_link_libraries(${TARGET_NAME} PUBLIC absl::abseil_dll)
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)
 endfunction()

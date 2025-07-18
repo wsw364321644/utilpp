@@ -188,14 +188,18 @@ bool FSteamAuthSession::ReadAccountCache()
     //        }
     //    }
     //}
-    for (const auto& row : Owner->GetDBConnection()(sqlpp::select(Owner->SteamUserTable.RefreshToken)
-        .from(Owner->SteamUserTable)
-        .where(Owner->SteamUserTable.AccountName == AccountName))
-        ) {
-        RefreshToken = row.RefreshToken.value();
-        break;
+    try {
+        for (const auto& row : Owner->GetDBConnection()(sqlpp::select(Owner->SteamUserTable.RefreshToken)
+            .from(Owner->SteamUserTable)
+            .where(Owner->SteamUserTable.AccountName == AccountName))
+            ) {
+            RefreshToken = row.RefreshToken.value();
+            break;
+        }
     }
-    
+    catch (sqlpp::exception e) {
+    }
+
     if (!RefreshToken.empty()) {
         auto decoded = jwt::decode(RefreshToken);
         if (std::chrono::system_clock::now().time_since_epoch().count() + 60 * 5 > decoded.get_expires_at().time_since_epoch().count()) {
@@ -215,9 +219,14 @@ void FSteamAuthSession::InvalidateAccountCache(std::string_view accountName)
     //    .set(Owner->SteamUserTable.RefreshToken = std::nullopt)
     //    .where(Owner->SteamUserTable.AccountName == accountName)
     //    );
-    Owner->GetDBConnection()(sqlpp::delete_from(Owner->SteamUserTable)
-        .where(Owner->SteamUserTable.AccountName == accountName)
-        );
+    try {
+        Owner->GetDBConnection()(sqlpp::delete_from(Owner->SteamUserTable)
+            .where(Owner->SteamUserTable.AccountName == accountName)
+            );
+    }
+    catch (sqlpp::exception e) {
+    }
+
 }
 
 bool FSteamAuthSession::UpdateAccountCache()
@@ -250,13 +259,17 @@ bool FSteamAuthSession::UpdateAccountCache()
 
     //while (sqlite3_step(Owner->pInsertAccountPSO) != SQLITE_DONE) {
     //}
-
-    Owner->GetDBConnection()(sqlpp::sqlite3::insert_or_replace().into(Owner->SteamUserTable)
-        .set(Owner->SteamUserTable.SteamID = Owner->SteamAccoutnInfo.SteamID,
-            Owner->SteamUserTable.AccountName = AccountName,
-            Owner->SteamUserTable.AccessToken = AccessToken,
-            Owner->SteamUserTable.RefreshToken = RefreshToken)
-        );
+    try {
+        Owner->GetDBConnection()(sqlpp::sqlite3::insert_or_replace().into(Owner->SteamUserTable)
+            .set(Owner->SteamUserTable.SteamID = Owner->SteamAccoutnInfo.SteamID,
+                Owner->SteamUserTable.AccountName = AccountName,
+                Owner->SteamUserTable.AccessToken = AccessToken,
+                Owner->SteamUserTable.RefreshToken = RefreshToken)
+            );
+    }
+    catch (sqlpp::exception e) {
+        return false;
+    }
     return true;
 }
 
@@ -571,7 +584,7 @@ void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPack
         [&]() {
             SteamGuardCodeRequestHandlePtr->bFinished = true;
             if (!bres) {
-                SteamGuardCodeRequestHandlePtr->FinishCode= std::error_code(std::to_underlying(ESteamClientError::SCE_RequestErrFromServer), SteamClientErrorCategory());
+                SteamGuardCodeRequestHandlePtr->FinishCode = std::error_code(std::to_underlying(ESteamClientError::SCE_RequestErrFromServer), SteamClientErrorCategory());
             }
             else {
                 PollAuthSessionStatus();

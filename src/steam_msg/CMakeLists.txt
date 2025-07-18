@@ -8,15 +8,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(jwt-cpp)
 
 ImportProject(SQLite3 ${STATIC_CRT} URL https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip)
-
-set(BUILD_SQLITE3_CONNECTOR OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-    sqlpp23
-    GIT_REPOSITORY https://github.com/rbock/sqlpp23.git
-    GIT_TAG 0.66
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(sqlpp23)
+ImportProject(sqlpp23 ${SSH} TAG 0.66)
 
 if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
     ImportProgram(Python3 URL https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip)
