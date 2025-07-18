@@ -182,9 +182,9 @@ if(UTILPP_ENABLE_STEAM)
 
   ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
   add_subdirectory(src/steam_util)
-  add_subdirectory(src/steam_protobufs)
 endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
+  add_subdirectory(src/steam_protobufs)
   add_subdirectory(src/steam_msg)
 endif()
