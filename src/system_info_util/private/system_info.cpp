@@ -501,6 +501,7 @@ namespace utilpp {
             arr.PushBack(arrItem, a);
         }
         obj.AddMember("Drivers", arr, a);
+        arr.SetArray();
         for (int i = 0; i < info.NumLogical; i++) {
             rapidjson::Document arrItem(rapidjson::kObjectType, &a);
             LogicalDriverInfoToJson(info.LogicalDrivers[i], arrItem);
@@ -624,16 +625,22 @@ namespace utilpp {
         rapidjson::Document obj(rapidjson::kObjectType,&a);
         CpuInfoToJson(info.CpuInfo, obj);
         doc.AddMember("CpuInfo", obj, a);
+        obj.SetObject();
         OSInfoToJson(info.OSInfo, obj);
         doc.AddMember("OSInfo", obj, a);
+        obj.SetObject();
         BIOSInfoToJson(info.BIOSInfo, obj);
         doc.AddMember("BIOSInfo", obj, a);
+        obj.SetObject();
         MemInfoToJson(info.MemInfo, obj);
         doc.AddMember("MemInfo", obj, a);
+        obj.SetObject();
         DriverInfosToJson(info.DriverInfos, obj);
         doc.AddMember("DriverInfos", obj, a);
+        obj.SetObject();
         DisplayInfosToJson(info.DisplayInfos, obj);
         doc.AddMember("DisplayInfos", obj, a);
+        obj.SetObject();
         VideoControllerInfosToJson(info.VideoControllerInfos, obj);
         doc.AddMember("VideoControllerInfos", obj, a);
         if (!doc.Accept(writer)) {
