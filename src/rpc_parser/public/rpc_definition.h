@@ -27,8 +27,8 @@ public:
     void SetParams(const char* cstr) {
         Params.Assign(cstr, strlen(cstr));
     }
-    void SetParams(const char* cstr,size_t len) {
-        Params.Assign(cstr,len);
+    void SetParams(std::string_view view) {
+        Params.Assign(view.data(), view.size());
     }
     std::string_view GetParams()const {
         return std::string_view(Params.CStr(),Params.Size());
@@ -37,7 +37,7 @@ public:
         return Params;
     }
 
-    void SetMethod(const std::string& str) {
+    void SetMethod(std::string_view str) {
         Method = str;
     }
     void SetMethod(const char* cstr) {
@@ -69,8 +69,8 @@ public:
     void SetResult(const char* cstr) {
         Result.Assign(cstr, strlen(cstr));
     }
-    void SetResult(const char* cstr, size_t len) {
-        Result.Assign(cstr, len);
+    void SetResult(std::string_view view) {
+        Result.Assign(view.data(), view.size());
     }
     std::string_view GetResult()const {
         return std::string_view(Result.CStr(), Result.Size());
@@ -79,7 +79,7 @@ public:
         return Result;
     }
 
-    void SetErrorMsg(const std::string& str) {
+    void SetErrorMsg(std::string_view str) {
         ErrorMsg = str;
     }
     void SetErrorMsg(const char* cstr) {
@@ -89,7 +89,7 @@ public:
         return ErrorMsg;
     }
 
-    void SetErrorData(const std::string& str) {
+    void SetErrorData(std::string_view str) {
         ErrorData = str;
     }
     void SetErrorData(const char* cstr) {
