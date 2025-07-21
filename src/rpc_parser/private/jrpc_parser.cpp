@@ -417,7 +417,7 @@ void JRPCPaser::ToByte(const JsonRPCResponse& res, FCharBuffer& buf)
         if (resNode.HasParseError()) {
             return;
         }
-        doc.AddMember(ParamsFieldStr, resNode, allocator);
+        doc.AddMember(ResultFieldStr, resNode, allocator);
     }
     buf.Clear();
     rapidjson::Writer<FCharBuffer> writer(buf);
