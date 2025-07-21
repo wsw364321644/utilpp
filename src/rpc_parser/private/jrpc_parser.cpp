@@ -364,6 +364,18 @@ JRPCPaser::ParseResult JRPCPaser::StaticParse(const char* data, int len)
     return res;
 }
 
+class MyJsonRPCRequestWriter :public  rapidjson::Writer<FCharBuffer> {
+public:
+    MyJsonRPCRequestWriter(const JsonRPCRequest& req,FCharBuffer& buf) :rapidjson::Writer<FCharBuffer>(buf), Req(req){}
+    int EndObject(rapidjson::SizeType memberCount = 0) {
+        if (!Req.GetParams().empty()) {
+            Key(ParamsFieldStr);
+            RawValue(Req.GetParams().data(), Req.GetParams().size(),rapidjson::Type::kObjectType);
+        }
+        return rapidjson::Writer<FCharBuffer>::EndObject(memberCount);
+    }
+    const JsonRPCRequest& Req;
+};
 void JRPCPaser::ToByte(const JsonRPCRequest& req, FCharBuffer& buf)
 {
     rapidjson::Document doc(rapidjson::kObjectType);
@@ -375,52 +387,51 @@ void JRPCPaser::ToByte(const JsonRPCRequest& req, FCharBuffer& buf)
     else {
         doc.AddMember(IDFieldStr, rapidjson::Value(rapidjson::Type::kNullType), a);
     }
-    if (!req.GetParams().empty()) {
-        rapidjson::Document paramsNode(&a);
-        paramsNode.Parse(req.GetParams().data());
-        if (paramsNode.HasParseError()) {
-            return;
-        }
-        doc.AddMember(ParamsFieldStr, paramsNode, a);
-    }
     buf.Clear();
-    rapidjson::Writer<FCharBuffer> writer(buf);
+    MyJsonRPCRequestWriter writer(req,buf);
     doc.Accept(writer);
     return;
 }
 
-void JRPCPaser::ToByte(const JsonRPCResponse& res, FCharBuffer& buf)
+class MyJsonRPCResponseWriter :public  rapidjson::Writer<FCharBuffer> {
+public:
+    MyJsonRPCResponseWriter(const JsonRPCResponse& resp, FCharBuffer& buf) :rapidjson::Writer<FCharBuffer>(buf), Resp(resp) {}
+    int EndObject(rapidjson::SizeType memberCount = 0) {
+        if (level_stack_.GetSize() == sizeof(Level)) {
+            if (!Resp.IsError()) {
+                Key(ResultFieldStr);
+                RawValue(Resp.GetResult().data(), Resp.GetResult().size(),rapidjson::Type::kObjectType);
+            }
+        }
+        return rapidjson::Writer<FCharBuffer>::EndObject(memberCount);
+
+    }
+    const JsonRPCResponse& Resp;
+};
+void JRPCPaser::ToByte(const JsonRPCResponse& resp, FCharBuffer& buf)
 {
     rapidjson::Document doc(rapidjson::kObjectType);
     auto& allocator = doc.GetAllocator();
-    if (!res.IsValiad()) {
+    if (!resp.IsValiad()) {
         return;
     }
-    if (res.HasID()) {
-        doc.AddMember(IDFieldStr, res.GetID(), allocator);
+    if (resp.HasID()) {
+        doc.AddMember(IDFieldStr, resp.GetID(), allocator);
     }
     else {
         doc.AddMember(IDFieldStr, rapidjson::Value(rapidjson::Type::kNullType), allocator);
     }
-    if (res.IsError()) {
+    if (resp.IsError()) {
         rapidjson::Value errNode(rapidjson::kObjectType);
-        errNode.AddMember(ErrorCodeFieldStr, res.ErrorCode, allocator);
-        errNode.AddMember(ErrorMsgFieldStr, rapidjson::StringRef(res.GetErrorMsg().data(), res.GetErrorMsg().size()), allocator);
-        if (!res.GetErrorData().empty()) {
-            errNode.AddMember(ErrorDataFieldStr, rapidjson::StringRef(res.GetErrorData().data(), res.GetErrorData().size()), allocator);
+        errNode.AddMember(ErrorCodeFieldStr, resp.ErrorCode, allocator);
+        errNode.AddMember(ErrorMsgFieldStr, rapidjson::StringRef(resp.GetErrorMsg().data(), resp.GetErrorMsg().size()), allocator);
+        if (!resp.GetErrorData().empty()) {
+            errNode.AddMember(ErrorDataFieldStr, rapidjson::StringRef(resp.GetErrorData().data(), resp.GetErrorData().size()), allocator);
         }
         doc.AddMember(ErrorFieldStr, errNode, allocator);
     }
-    else {
-        rapidjson::Document resNode(&allocator);
-        resNode.Parse(res.GetResult().data());
-        if (resNode.HasParseError()) {
-            return;
-        }
-        doc.AddMember(ResultFieldStr, resNode, allocator);
-    }
     buf.Clear();
-    rapidjson::Writer<FCharBuffer> writer(buf);
+    MyJsonRPCResponseWriter writer(resp,buf);
     doc.Accept(writer);
     return;
 }
