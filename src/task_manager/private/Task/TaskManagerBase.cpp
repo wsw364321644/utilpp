@@ -284,6 +284,35 @@ void FTaskManagerBase::WorkflowThreadTick(std::shared_ptr<TaskWorkflow_t> pWorkf
         }
     } while (true);
 
+    do {
+        auto count = pWorkflowData->AppendingDelTaskDatas.try_dequeue_bulk(pWorkflowData->AppendingTaskDataBuf, 5);
+        if (count == 0) {
+            break;
+        }
+        for (int i = 0; i < count; i++) {
+            auto& [tHandle, pTaskData] = pWorkflowData->AppendingTaskDataBuf[i];
+            switch (pTaskData->Type) {
+            case ETaskType::TT_Common: {
+                pWorkflowData->Tasks.erase(tHandle);
+                break;
+            }
+            case ETaskType::TT_Timer: {
+                pWorkflowData->TimerTasks.erase(tHandle);
+                break;
+            }
+            case ETaskType::TT_Tick: {
+                pWorkflowData->TickTasks.erase(tHandle);
+                break;
+            }
+            case ETaskType::TT_Cancelable: {
+                auto derivedPtr = std::dynamic_pointer_cast<CancelableTaskData_t>(pTaskData);
+                derivedPtr->Task->Finalize();
+                pWorkflowData->CancelableTasks.erase(tHandle);
+                break;
+            }
+            }
+        }
+    } while (true);
 }
 
 void FTaskManagerBase::ThreadFinishTask(CommonHandle_t tHandle,std::shared_ptr<TaskDataBase_t> data)
