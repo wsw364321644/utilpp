@@ -89,7 +89,9 @@ void FTaskManagerBase::Tick()
                 TickTasks.erase(taskHandle);
             }
             for (auto& [taskHandle, pTaskData] : TaskWorkflowData->CancelableTasks) {
+                auto derivedPtr = std::dynamic_pointer_cast<CancelableTaskData_t>(pTaskData);
                 CancelableTasks.erase(taskHandle);
+                derivedPtr->Task->OnStop();
             }
         }
     } while (true);
