@@ -48,7 +48,7 @@ public:
     /**
     * task will notice OnStop after RemoveTask.
     */
-    virtual void OnStop()=0;
+    virtual void OnStop() {};
     /**
     * task last run Finalize.
     */

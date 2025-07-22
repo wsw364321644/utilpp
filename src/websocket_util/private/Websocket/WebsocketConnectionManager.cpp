@@ -162,7 +162,9 @@ void FWebsocketConnectionManagerLWS::Disconnect(std::shared_ptr<IWebsocketClient
         return;
     }
     auto pEndpoint = std::dynamic_pointer_cast<FWebsocketEndpointLWS>(pClient);
-    lws_set_timeout(pEndpoint->WSI, pending_timeout(LWS_TO_KILL_ASYNC),0);
+    if (pEndpoint->WSI) {
+        lws_set_timeout(pEndpoint->WSI, pending_timeout(LWS_TO_KILL_ASYNC), 0);
+    }
 }
 
 void FWebsocketConnectionManagerLWS::Tick(float delta)
