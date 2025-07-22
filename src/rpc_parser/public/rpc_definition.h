@@ -31,7 +31,7 @@ public:
         Params.Assign(view.data(), view.size());
     }
     std::string_view GetParams()const {
-        return std::string_view(Params.CStr(),Params.Size());
+        return std::string_view(Params.CStr(),Params.Length());
     }
     FCharBuffer& GetParamsBuf(){
         return Params;
@@ -73,7 +73,7 @@ public:
         Result.Assign(view.data(), view.size());
     }
     std::string_view GetResult()const {
-        return std::string_view(Result.CStr(), Result.Size());
+        return std::string_view(Result.CStr(), Result.Length());
     }
     FCharBuffer& GetResultBuf() {
         return Result;

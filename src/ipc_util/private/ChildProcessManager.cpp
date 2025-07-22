@@ -48,7 +48,7 @@ void alloc_buffer(uv_handle_t* handle,
     uv_buf_t* buf) {
     UVProcess_t& p = *(UVProcess_t*)handle->data;
     p.Buf.Reverse(suggested_size);
-    *buf = uv_buf_init((char*)p.Buf.Data(), p.Buf.Size());
+    *buf = uv_buf_init((char*)p.Buf.Data(), p.Buf.Capacity());
 };
 void on_read(uv_stream_t* stream,
     ssize_t nread,
@@ -214,7 +214,7 @@ void FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
         UVProcess_t& p = *(UVProcess_t*)process->data;
         p.ChildProcessManager->OnUvProcessClosed((UVProcess_t*)process->data, exit_status, term_signal);
     };
-
+    p.options.cwd = nullptr; // use current working directory
     if (r = uv_spawn(ploop, &p.process, &p.options)) {
         SIMPLELOG_LOGGER_ERROR(nullptr,"{}", uv_strerror(r));
         return;
