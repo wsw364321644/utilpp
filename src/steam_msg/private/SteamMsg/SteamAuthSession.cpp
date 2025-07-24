@@ -1,6 +1,7 @@
 #include "SteamMsg/SteamAuthSession.h"
 #include "SteamMsg/SteamClientImpl.h"
 
+#include <hex.h>
 #include <FunctionExitHelper.h>
 #include <LoggerHelper.h>
 #include <os_sock_helper.h>
@@ -8,9 +9,9 @@
 #include <SteamLanguageInternal.h>
 
 #include <steam/steammessages_clientserver_login.pb.h>
-#include <openssl/evp.h>
-#include <openssl/rsa.h>
-#include <openssl/param_build.h>
+#include <crypto_lib_rsa.h>
+#include <crypto_lib_base64.h>
+
 #include <jwt-cpp/jwt.h>
 
 bool FSteamAuthSession::OnSteamPackageReceived(FSteamPacketMsg& msg, std::string_view bodyView)
@@ -30,7 +31,7 @@ void FSteamAuthSession::ClearCurrentAuth()
     AccountName.clear();
     RefreshToken.clear();
     Password.clear();
-    AuthRequestHandlePtr.reset();
+    AuthRequestHandlePtr->bFinished = true;
     AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
 
 }
@@ -75,13 +76,13 @@ void FSteamAuthSession::Tick(float delta)
 FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, ISteamClient::FSteamRequestFailedDelegate FailedDelegate, std::error_code& ec)
 {
     if (AccountName == account && Password == password) {
-        if (AuthRequestHandlePtr) {
-            ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
-            return AuthRequestHandlePtr;
-        }
-        else {
+        if (AuthSessionStatus== ESteamClientAuthSessionStatus::Authenticated) {
             ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyLoggedin), SteamClientErrorCategory());
             return nullptr;
+        }
+        else if(AuthSessionStatus!= ESteamClientAuthSessionStatus::Unauthorized){
+            ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
+            return AuthRequestHandlePtr;
         }
     }
     if (AuthRequestHandlePtr) {
@@ -329,110 +330,31 @@ bool FSteamAuthSession::OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMs
     }
     auto& expStr = *resp.mutable_publickey_exp();
     auto& modStr = *resp.mutable_publickey_mod();
-
-    size_t cipherlen;
-    BIO* b64{ nullptr };
-    uint8_t* cipher{ NULL };
-    EVP_PKEY* key = NULL;
-    EVP_PKEY_CTX* genctx = NULL;
-    EVP_PKEY_CTX* ctx = NULL;
-    ENGINE* eng = NULL;
-    auto pad = RSA_PKCS1_PADDING;
-    OSSL_PARAM_BLD* param_bld{ NULL };
-    OSSL_PARAM* params = NULL;
-    BIGNUM* n{ NULL }, * e{ NULL };
-    FunctionExitHelper_t opensslHelper([&]() {
-        if (params)
-            OSSL_PARAM_free(params);
-        if (param_bld)
-            OSSL_PARAM_BLD_free(param_bld);
-        if (ctx)
-            EVP_PKEY_CTX_free(ctx);
-        if (genctx)
-            EVP_PKEY_CTX_free(genctx);
-
-        if (key)
-            EVP_PKEY_free(key);
-        if (cipher)
-            OPENSSL_free(cipher);
-        if (b64) {
-            BIO_pop(b64);
-            BIO_free_all(b64);
-        }
-        if (n)
-            BN_free(n);
-        if (e)
-            BN_free(e);
-        });
-    ires = BN_hex2bn(&n, modStr.c_str());
-    if (ires <= 0) {
+    FCharBuffer expBin(modStr.size() / 2);
+    expBin.SetLength(expStr.size() / 2);
+    FCharBuffer modBin(modStr.size() / 2);
+    modBin.SetLength(modStr.size() / 2);
+    if (!hex_to_bin((uint8_t*)expBin.Data(), expStr.data(), expStr.size())) {
         return false;
     }
-    ires = BN_hex2bn(&e, expStr.c_str());
-    if (ires <= 0) {
+    if (!hex_to_bin((uint8_t*)modBin.Data(), modStr.data(), modStr.size())) {
         return false;
     }
-    param_bld = OSSL_PARAM_BLD_new();
-    OSSL_PARAM_BLD_push_BN(param_bld, "n", n);
-    OSSL_PARAM_BLD_push_BN(param_bld, "e", e);
-    params = OSSL_PARAM_BLD_to_param(param_bld);
-    genctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
-    if (!genctx)
-        return false;
-    if (EVP_PKEY_fromdata_init(genctx) <= 0) {
+    FCryptoLibBinParams params;
+    params.try_emplace("m", std::span<uint8_t>((uint8_t*)modBin.Data(), modBin.Length()));
+    params.try_emplace("e", std::span<uint8_t>((uint8_t*)expBin.Data(), expBin.Length()));
+    auto hkey = CryptoLibRSAGetKey(params);
+    if (!hkey) {
         return false;
     }
-    ires = EVP_PKEY_fromdata(genctx, &key, EVP_PKEY_PUBLIC_KEY, params);
-    if (ires <= 0) {
+    FCharBuffer encryptOut;
+    if (!CryptoLibRSAEncrypt(hkey.get(), std::span<uint8_t>((uint8_t*)Password.data(), Password.size()), encryptOut)) {
         return false;
     }
-    ctx = EVP_PKEY_CTX_new(key, eng);
-    if (!ctx)
+    FCharBuffer base64Out;
+    if (!CryptoLibBase64Encode(std::span<uint8_t>((uint8_t*)encryptOut.Data(), encryptOut.Length()), base64Out)) {
         return false;
-    ires = EVP_PKEY_encrypt_init(ctx);
-    if (ires <= 0)
-        return false;
-    if (EVP_PKEY_CTX_ctrl(ctx, -1, -1, EVP_PKEY_CTRL_RSA_PADDING, pad, NULL) <= 0)
-        return false;
-    if (EVP_PKEY_encrypt(ctx, NULL, &cipherlen, (uint8_t*)Password.data(), Password.size()) <= 0)
-        return false;
-    cipher = (unsigned char*)OPENSSL_malloc(cipherlen);
-    if (!cipher)
-        return false;
-    if (EVP_PKEY_encrypt(ctx, cipher, &cipherlen, (uint8_t*)Password.data(), Password.size()) <= 0)
-        return false;
-
-    b64 = BIO_new(BIO_f_base64()); // create BIO to perform base64
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    BIO* mem = BIO_new(BIO_s_mem()); // create BIO that holds the result
-    // chain base64 with mem, so writing to b64 will encode base64 and write to mem.
-    BIO_push(b64, mem);
-    // write data
-    bool done = false;
-    while (!done)
-    {
-        ires = BIO_write(b64, cipher, cipherlen);
-        if (ires <= 0) // if failed
-        {
-            if (BIO_should_retry(b64)) {
-                continue;
-            }
-            else // encoding failed
-            {
-                return false;
-            }
-        }
-        else // success!
-            done = true;
     }
-    BIO_flush(b64);
-    // get a pointer to mem's data
-    unsigned char* base64Output;
-    int base64Len;
-    base64Len = BIO_get_mem_data(mem, &base64Output);
-
-
-
     Owner->PacketMsgInCB.Header = utilpp::steam::CMsgProtoBufHeader();
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(Owner->PacketMsgInCB.Header);
     header.set_jobid_source(Owner->GetNextJobID().GetValue());
@@ -443,7 +365,7 @@ bool FSteamAuthSession::OnGetPasswordRSAPublicKeyResponseInternal(FSteamPacketMs
     body.set_account_name(AccountName);
     body.set_persistence(utilpp::steam::k_ESessionPersistence_Persistent);
     body.set_website_id("Client");
-    body.set_encrypted_password(std::string_view((char*)base64Output, base64Len));
+    body.set_encrypted_password(std::string_view(base64Out.Data(), base64Out.Length()));
     body.set_encryption_timestamp(resp.timestamp());
     utilpp::steam::CAuthentication_DeviceDetails* pDeviceDetails = new  utilpp::steam::CAuthentication_DeviceDetails;
     utilpp::steam::CAuthentication_DeviceDetails& DeviceDetails = *pDeviceDetails;
@@ -538,13 +460,12 @@ void FSteamAuthSession::OnPollAuthSessionStatusResponse(FSteamPacketMsg& msg, st
     }
     if (!bres) {
         SIMPLELOG_LOGGER_DEBUG(nullptr, "PollAuthSessionStatusResponse failed");
-        //AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
-        //Owner->OnRequestFinished(AuthRequestHandlePtr, SteamRequestFailedDelegate, ESteamClientError::SCE_RequestErrFromServer);
         return;
     }
-    AuthRequestHandlePtr.reset();
     if (!UpdateAccountCache()) {
+        SIMPLELOG_LOGGER_ERROR(nullptr, "UpdateAccountCache failed");
         AuthSessionStatus = ESteamClientAuthSessionStatus::Error;
+        return;
     }
     SIMPLELOG_LOGGER_DEBUG(nullptr, "PollAuthSessionStatusResponse success");
 }

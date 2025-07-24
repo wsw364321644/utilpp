@@ -234,9 +234,11 @@ FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamReque
 void FSteamClient::Tick(float delta)
 {
     static auto PreLogStatus = ESteamClientLogStatus::NotConnect;
+
     switch (LogStatus) {
     case ESteamClientLogStatus::NotConnect: {
-        if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Unauthorized) {
+        if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Unauthorized &&
+            SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Error) {
             if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Authenticated) {
                 SteamAuthSession.AuthSessionStatus = ESteamClientAuthSessionStatus::WaittingConnection;
             }

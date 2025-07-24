@@ -10,6 +10,7 @@ class SIMPLE_UTIL_EXPORT FCharBuffer
 {
 public:
     FCharBuffer();
+    FCharBuffer(size_t size);
     FCharBuffer(FCharBuffer &&)noexcept;
     FCharBuffer(const FCharBuffer &);
     FCharBuffer(const char *cstr);
@@ -48,6 +49,7 @@ public:
     void Clear();
     const char *CStr() const;
     char *Data();
+    void SetLength(size_t);
     size_t Length() const;
     size_t Size() const;
     size_t Capacity() const;

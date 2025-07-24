@@ -8,6 +8,10 @@
 FCharBuffer::FCharBuffer() : bufSize(0), cursor(0), readCursor(0), pBuf(nullptr), freeptr(free), mallocptr(malloc)
 {
 }
+FCharBuffer::FCharBuffer(size_t size) : FCharBuffer()
+{
+    Resize(size);
+}
 FCharBuffer::FCharBuffer(FCharBuffer &&mbuf)noexcept : FCharBuffer()
 {
     Swap(*this, mbuf);
@@ -277,6 +281,12 @@ char *FCharBuffer::Data()
 {
     return pBuf;
 }
+void FCharBuffer::SetLength(size_t l)
+{
+    if (l < bufSize) {
+        cursor = l;
+    }
+}
 size_t FCharBuffer::Length() const
 {
     return cursor;
@@ -317,40 +327,37 @@ void FCharBuffer::Put(FCharBuffer::Ch c)
 }
 void FCharBuffer::Reverse(uint32_t size)
 {
-    if (size <= bufSize)
+    auto desiredSize = size + 1; // +1 for null terminator
+    if (desiredSize <= bufSize)
     {
         return;
     }
-    char *newbuf = (char *)mallocptr(size);
+    char *newbuf = (char *)mallocptr(desiredSize);
     if (bufSize > 0)
     {
         memcpy(newbuf, pBuf, cursor);
         freeptr(pBuf);
     }
-    bufSize = size;
+    bufSize = desiredSize;
     pBuf = newbuf;
     readCursor = 0;
 }
 
 void FCharBuffer::Resize(uint32_t size)
 {
-    if (size == 0)
+    auto desiredSize = size + 1; // +1 for null terminator
+    if (desiredSize == bufSize)
     {
-        if (bufSize > 0)
-        {
-            free(pBuf);
-            bufSize = 0;
-            pBuf = nullptr;
-        }
+        return;
     }
-    char *newbuf = (char *)mallocptr(size);
-    cursor = size > cursor ? cursor : size;
+    char *newbuf = (char *)mallocptr(desiredSize);
+    cursor = desiredSize > cursor ? cursor : size;
     if (bufSize > 0)
     {
         memcpy(newbuf, pBuf, cursor);
         freeptr(pBuf);
     }
-    bufSize = size;
+    bufSize = desiredSize;
     pBuf = newbuf;
     readCursor = 0;;
 }
