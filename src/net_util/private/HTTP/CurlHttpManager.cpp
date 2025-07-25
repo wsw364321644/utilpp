@@ -518,6 +518,12 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         curl_easy_setopt(creq->EasyHandle, CURLOPT_RANGE, buf.CStr());
     }
 
+    if (!creq->ProxyHost.empty())
+    {
+        curl_easy_setopt(creq->EasyHandle, CURLOPT_PROXYTYPE, creq->GetCURLProxyScheme());
+        curl_easy_setopt(creq->EasyHandle, CURLOPT_PROXY, creq->ProxyHost.data());
+        curl_easy_setopt(creq->EasyHandle, CURLOPT_PROXYPORT, creq->GetProxyPort());
+    }
     return true;
 }
 

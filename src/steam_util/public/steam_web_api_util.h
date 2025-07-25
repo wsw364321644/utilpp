@@ -13,6 +13,8 @@ namespace utilpp {
     typedef std::function<void(bool, FCharBuffer*)> FCommonBodyDelagate;
     constexpr char STEAM_API_HOST[] = "api.steampowered.com";
 
+    STEAM_UTIL_EXPORT void SetSteamProxy(std::string_view proxy);
+
     typedef std::function<void(bool)> FSteamRegisterKeyDelagate;
     STEAM_UTIL_EXPORT HttpRequestPtr SteamRegisterKey(HttpManagerPtr pHttpManager, std::string_view sessionID, std::string_view key, FSteamRegisterKeyDelagate Delagate);
 

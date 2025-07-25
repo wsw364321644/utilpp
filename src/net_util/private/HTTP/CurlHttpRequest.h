@@ -32,6 +32,13 @@ public:
     void SetContent(std::string_view ContentPayload) override;
     void SetContentAsString(std::string_view ContentString) override;
 
+    std::string_view GetProxyURL()override;
+    void SetProxyURL(std::string_view URL) override;
+    std::string_view GetProxyScheme()const override;
+    void SetProxyScheme(std::string_view Scheme) override;
+    uint32_t GetProxyPort()const override;
+    void SetProxyPort(uint32_t Port) override;
+
     void SetHeader(std::string_view HeaderName, std::string_view HeaderValue) override;
     void AppendToHeader(std::string_view HeaderName, std::string_view AdditionalHeaderValue) override;
     void SetMimePart(InMimePart_t part)override;
@@ -47,7 +54,9 @@ public:
     float GetElapsedTime() override;
     friend class FCurlHttpManager;
 private:
+
     FCurlHttpRequest(FCurlHttpManager* inManager);
+    curl_proxytype GetCURLProxyScheme()const;
     size_t DebugCallback(CURL* Handle, curl_infotype DebugInfoType, char* DebugInfo, size_t DebugInfoSize, void* UserData);
     static size_t StaticDebugCallback(CURL* Handle, curl_infotype DebugInfoType, char* DebugInfo, size_t DebugInfoSize, void* UserData);
 
@@ -77,6 +86,10 @@ private:
     std::unordered_map<std::string, std::string> Queries;
     std::unordered_map<std::string, std::string> Headers;
     std::vector<MimePart_t> MimeParts;
+    uint32_t ProxyPort{ std::numeric_limits<uint32_t>::max() };
+    std::string ProxyHost;
+    std::string ProxyScheme;
+    std::string ProxyURL;
     FCharBuffer Content;
 
     uint32_t RequestID{ 0 };

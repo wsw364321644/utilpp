@@ -4,6 +4,11 @@
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 namespace utilpp {
+    static std::string SteamProxy;
+    void SetSteamProxy(std::string_view proxy)
+    {
+        SteamProxy = proxy;
+    }
     HttpRequestPtr SteamRegisterKey(HttpManagerPtr pHttpManager, std::string_view sessionID, std::string_view key, FSteamRegisterKeyDelagate Delagate) {
         if (!pHttpManager) {
             return nullptr;
@@ -101,7 +106,9 @@ namespace utilpp {
         pReq->SetScheme(SCHEME_HTTPS);
         pReq->SetHost(STEAM_API_HOST);
         pReq->SetPath((std::string(I_STEAM_DIRECTORY_PATH) + "/GetCMListForConnect/v1").c_str());
-
+        if (!SteamProxy.empty()) {
+            pReq->SetProxyURL(SteamProxy);
+        }
         pReq->OnProcessRequestComplete() =
             [=](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
             if (res) {

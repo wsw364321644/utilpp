@@ -1,5 +1,6 @@
 #include "HTTP/CurlHttpRequest.h"
 #include "HTTP/CurlHttpManager.h"
+#include <constant_hash.h>
 #include <LoggerHelper.h>
 #include <algorithm>
 #include <iterator>
@@ -40,6 +41,7 @@ FCurlHttpRequest::~FCurlHttpRequest()
 {
 
 }
+
 
 std::string_view FCurlHttpRequest::GetURL() const
 {
@@ -151,6 +153,51 @@ void FCurlHttpRequest::SetContent(std::string_view ContentPayload)
 void FCurlHttpRequest::SetContentAsString(std::string_view ContentString)
 {
     Content.ReverseAssign(ContentString.data(), ContentString.size());
+}
+
+std::string_view FCurlHttpRequest::GetProxyURL()
+{
+    ProxyURL =std::format("{}://{}:{}", GetProxyScheme(), ProxyHost, GetProxyPort());
+    return ProxyURL;
+}
+
+void FCurlHttpRequest::SetProxyURL(std::string_view URL)
+{
+    ParsedURL_t parsedURL;
+    ParseUrl(URL, parsedURL);
+    ProxyHost = parsedURL.outAuthority;
+    if (!parsedURL.outPort.empty()) {
+        auto res= std::from_chars(parsedURL.outPort.data(), parsedURL.outPort.data()+ parsedURL.outPort.size(), ProxyPort);
+    }
+    if (!parsedURL.outScheme.empty()) {
+        ProxyScheme = parsedURL.outScheme;
+    }
+}
+
+std::string_view FCurlHttpRequest::GetProxyScheme() const
+{
+    if (ProxyScheme.empty()) {
+        return "http";
+    }
+    return ProxyScheme;
+}
+
+void FCurlHttpRequest::SetProxyScheme(std::string_view Scheme)
+{
+    ProxyScheme = Scheme;
+}
+
+uint32_t FCurlHttpRequest::GetProxyPort() const
+{
+    if (ProxyPort == std::numeric_limits<uint32_t>::max()) {
+        return 1080;
+    }
+    return ProxyPort;
+}
+
+void FCurlHttpRequest::SetProxyPort(uint32_t Port)
+{
+    ProxyPort = Port;
 }
 
 
@@ -269,6 +316,25 @@ void FCurlHttpRequest::Tick(float DeltaSeconds)
 float FCurlHttpRequest::GetElapsedTime()
 {
     return 0.0f;
+}
+
+
+curl_proxytype FCurlHttpRequest::GetCURLProxyScheme() const
+{
+    switch (ctcrc32(GetProxyScheme())) {
+    case ctcrc32("http"):
+        return CURLPROXY_HTTP;
+    case ctcrc32("https"):
+        return CURLPROXY_HTTPS;
+    case ctcrc32("socks4"):
+        return CURLPROXY_SOCKS4;
+    case ctcrc32("socks4a"):
+        return CURLPROXY_SOCKS4A;
+    case ctcrc32("socks5"):
+        return CURLPROXY_SOCKS5;
+    default:
+        return CURLPROXY_HTTP;
+    }
 }
 
 size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType, char* DebugInfo, size_t DebugInfoSize, void* UserData)

@@ -185,6 +185,13 @@ public:
     * Set Mime Data(ie form-data)
     */
     virtual void SetMimePart(InMimePart_t part) = 0;
+
+    virtual std::string_view GetProxyURL()= 0;
+    virtual void SetProxyURL(std::string_view URL) = 0;
+    virtual std::string_view GetProxyScheme()const = 0;
+    virtual void SetProxyScheme(std::string_view Scheme) = 0;
+    virtual uint32_t GetProxyPort()const = 0;
+    virtual void SetProxyPort(uint32_t Port) = 0;
     /**
      * Called to begin processing the request.
      * OnProcessRequestComplete delegate is always called when the request completes or on error if it is bound.
