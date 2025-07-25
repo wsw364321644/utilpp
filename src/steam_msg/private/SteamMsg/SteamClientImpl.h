@@ -23,7 +23,7 @@ public:
     const SteamAccoutnInfo_t& GetAccoutnInfo()const override;
     const std::unordered_set<ESteamClientAuthSessionGuardType>& GetAllowedConfirmations() const override;
 
-    FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFailedDelegate, std::error_code&) override;
+    FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     FCommonHandlePtr SendSteamGuardCode(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     FCommonHandlePtr RegisterKey(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) override;
     void Tick(float delta) override;
@@ -53,7 +53,6 @@ private:
     //sqlite3_stmt* pInsertAccountPSO{ nullptr };
 
     FSteamGlobalID JobID;
-
     uint32_t SequentialCount{ 0 };
     float HeartBeatSecCount{ 0 };
 

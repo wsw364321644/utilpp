@@ -22,7 +22,7 @@ public:
     void ClearCurrentAuth();
     void Tick(float delta);
 
-    FCommonHandlePtr BeginAuthSessionViaCredentials(std::string_view, std::string_view, ISteamClient::FSteamRequestFailedDelegate, std::error_code&);
+    FCommonHandlePtr BeginAuthSessionViaCredentials(std::string_view, std::string_view, ISteamClient::FSteamRequestFinishedDelegate, std::error_code&);
     FCommonHandlePtr SendSteamGuardCode(std::string_view, ISteamClient::FSteamRequestFinishedDelegate, std::error_code&);
 
 
@@ -54,7 +54,7 @@ public:
 
     std::string Password;
     std::shared_ptr<SteamRequestHandle_t> AuthRequestHandlePtr;
-    ISteamClient::FSteamRequestFailedDelegate SteamRequestFailedDelegate;
+    ISteamClient::FSteamRequestFinishedDelegate SteamRequestFailedDelegate;
     std::shared_ptr<SteamRequestHandle_t> SteamGuardCodeRequestHandlePtr;
     ISteamClient::FSteamRequestFinishedDelegate SteamGuardCodeDelegate;
     std::string SteamGuardCode;

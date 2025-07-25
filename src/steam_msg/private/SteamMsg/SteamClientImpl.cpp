@@ -9,6 +9,7 @@
 #include <os_info_helper.h>
 #include <string_convert.h>
 #include <os_sock_helper.h>
+#include <LoggerHelper.h>
 
 
 #include <steam/steammessages_clientserver_login.pb.h>
@@ -68,16 +69,26 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
             TriggerOnDisconnectedDelegates(ec);
         }
     );
-    //auto ires= sqlite3_open_v2(SQL_FILE_NAME, &pSQLite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
-    //if (ires != SQLITE_OK) {
-    //    return false;
-    //}
-    //char* zErrMsg = 0;
-    //ires = sqlite3_exec(pSQLite, SQL_CREATE_STEAM_USER_TABLE, SqliteCB, 0, &zErrMsg);
-    //if (ires != SQLITE_OK) {
-    //    auto msg = sqlite3_errmsg(pSQLite);
-    //    return false;
-    //}
+
+    sqlite3* pSQLite{ nullptr };
+    auto ires= sqlite3_open_v2(SQL_FILE_NAME, &pSQLite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
+    if (ires != SQLITE_OK) {
+        return false;
+    }
+    FunctionExitHelper_t sqliteExit(
+        [&]() {
+            sqlite3_close(pSQLite);
+        }
+    );
+    char* zErrMsg = 0;
+    ires = sqlite3_exec(pSQLite, SQL_CREATE_STEAM_CLIENT_TABLE, SqliteCB, 0, &zErrMsg);
+    if (ires != SQLITE_OK) {
+        SIMPLELOG_LOGGER_ERROR(nullptr, "Create db failed {}", zErrMsg);
+        LogStatus = ESteamClientLogStatus::Error;
+        return false;
+    }
+    ;
+
     //auto selectSql=std::format(SQL_SELECT_FROM_STEAM_USER_BY_ACCOUNTNAME, "RefreshToken");
     //ires = sqlite3_prepare_v2(pSQLite, selectSql.c_str(), -1, &pSelectAccountPSO, 0);
     //if (ires != SQLITE_OK) {
@@ -125,7 +136,7 @@ const std::unordered_set<ESteamClientAuthSessionGuardType>& FSteamClient::GetAll
     return SteamAuthSession.OutAllowedConfirmations;
 }
 
-FCommonHandlePtr FSteamClient::Login(std::string_view account, std::string_view password, FSteamRequestFailedDelegate FailedDelegate,std::error_code& ec)
+FCommonHandlePtr FSteamClient::Login(std::string_view account, std::string_view password, FSteamRequestFinishedDelegate FailedDelegate,std::error_code& ec)
 {
     return SteamAuthSession.BeginAuthSessionViaCredentials(account, password, FailedDelegate, ec);
 }
@@ -139,6 +150,7 @@ FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamReque
 {
     if (LogStatus!= ESteamClientLogStatus::Logon) {
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_NotLogin), SteamClientErrorCategory());
+        return nullptr;
     }
 
     PacketMsg.Header = utilpp::steam::CMsgProtoBufHeader();
@@ -154,8 +166,6 @@ FCommonHandlePtr FSteamClient::RegisterKey(std::string_view keyView, FSteamReque
     body.set_activation_code(keyView);
     body.set_is_request_from_client(true);
     auto bodyLen = body.ByteSizeLong();
-
-
 
     auto [bufview, bres] = PacketMsg.SerializeToOstream(bodyLen, std::bind(&utilpp::steam::CStore_RegisterCDKey_Request::SerializeToOstream, &body, std::placeholders::_1));
     if (!bres) {
@@ -339,7 +349,6 @@ bool FSteamClient::Connect()
                 LogStatus = ESteamClientLogStatus::NotConnect;
                 return;
             }
-
             pWSClient->SetHost(ConvertStringToU8View(resp.EndpointDetails[0].Host));
             pWSClient->SetPath(u8"/cmsocket/");
             pWSClient->SetPortNum(resp.EndpointDetails[0].Port);
@@ -411,7 +420,7 @@ void FSteamClient::OnRequestFinished(std::shared_ptr<SteamRequestHandle_t> Steam
 {
     SteamRequestHandle->bFinished = true;
     SteamRequestHandle->FinishCode = std::error_code(std::to_underlying(err), SteamClientErrorCategory());
-    SteamRequestFailedDelegate(SteamRequestHandle->FinishCode);
+    SteamRequestFailedDelegate(SteamRequestHandle,SteamRequestHandle->FinishCode);
 }
 
 void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWSClient, const char* content, size_t len)

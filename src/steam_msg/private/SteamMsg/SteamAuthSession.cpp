@@ -73,7 +73,7 @@ void FSteamAuthSession::Tick(float delta)
     }
     }
 }
-FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, ISteamClient::FSteamRequestFailedDelegate FailedDelegate, std::error_code& ec)
+FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, ISteamClient::FSteamRequestFinishedDelegate FailedDelegate, std::error_code& ec)
 {
     if (AccountName == account && Password == password) {
         if (AuthSessionStatus== ESteamClientAuthSessionStatus::Authenticated) {
@@ -109,7 +109,7 @@ FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, IS
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_ClientStatusError), SteamClientErrorCategory());
         return nullptr;
     }
-    if (SteamGuardCodeRequestHandlePtr) {
+    if (SteamGuardCodeRequestHandlePtr&& SteamGuardCodeRequestHandlePtr->IsValid()) {
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
         return SteamGuardCodeRequestHandlePtr;
     }
@@ -146,9 +146,10 @@ FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, IS
         return nullptr;
     }
     SteamGuardCodeRequestHandlePtr = std::make_shared<SteamRequestHandle_t>();
+    SteamGuardCodeRequestHandlePtr->bFinished = false;
     Owner->pWSClient->SendData(bufview.data(), bufview.size());
     SteamGuardCodeRequestHandlePtr->SourceJobID = Owner->PacketMsg.GetSourceJobID();
-    Owner->JobManager.AddJob(PollJobID,
+    Owner->JobManager.AddJob(SteamGuardCodeRequestHandlePtr->SourceJobID,
         std::bind(&FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&FSteamClient::OnRequestFinished, Owner, SteamGuardCodeRequestHandlePtr, SteamGuardCodeDelegate, std::placeholders::_1)
     );
@@ -510,7 +511,7 @@ void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPack
             else {
                 PollAuthSessionStatus();
             }
-            SteamGuardCodeDelegate(SteamGuardCodeRequestHandlePtr->FinishCode);
+            SteamGuardCodeDelegate(SteamGuardCodeRequestHandlePtr,SteamGuardCodeRequestHandlePtr->FinishCode);
         }
     );
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);

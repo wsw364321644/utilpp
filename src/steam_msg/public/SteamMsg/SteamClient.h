@@ -24,7 +24,7 @@ typedef struct SteamAccoutnInfo_t {
 
 class STEAM_MSG_EXPORT ISteamClient {
 public:
-    typedef std::function<void(std::error_code)> FSteamRequestFinishedDelegate;
+    typedef std::function<void(FCommonHandlePtr,std::error_code)> FSteamRequestFinishedDelegate;
     typedef std::function<void(std::error_code)> FSteamRequestFailedDelegate;
     typedef std::function<void()> FSteamSuccessDelegate;
     virtual ~ISteamClient() = default;
@@ -36,7 +36,7 @@ public:
     virtual const SteamAccoutnInfo_t& GetAccoutnInfo() const = 0;
     virtual const std::unordered_set<ESteamClientAuthSessionGuardType>& GetAllowedConfirmations() const = 0;
 
-    virtual FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFailedDelegate, std::error_code&) = 0;
+    virtual FCommonHandlePtr Login(std::string_view, std::string_view, FSteamRequestFinishedDelegate, std::error_code&) = 0;
     virtual FCommonHandlePtr SendSteamGuardCode(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) = 0;
     virtual FCommonHandlePtr RegisterKey(std::string_view, FSteamRequestFinishedDelegate, std::error_code&) = 0;
     virtual void Tick(float delta) = 0;
