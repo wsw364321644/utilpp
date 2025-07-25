@@ -95,7 +95,7 @@ std::shared_ptr<ICommonHandle> CryptoLibRSAGetKey(const FCryptoLibBinParams& par
 bool CryptoLibRSAEncrypt(ICommonHandle* handle, std::span<uint8_t> src, FCharBuffer& buf)
 {
 #ifdef HAS_MbedTLS
-    return nullptr;
+    return false;
 #elif defined HAS_OpenSSL
     auto KeyHandle =dynamic_cast<FRSAKeyHandle*>(handle);
     if (!KeyHandle || !KeyHandle->IsValid()) {
