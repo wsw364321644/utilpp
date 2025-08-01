@@ -88,7 +88,16 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(OCmakeUtil spdlog taskflow concurrentqueue)
+set(BUILD_SHARED_LIBS ON CACHE INTERNAL "")
+set(SIMDJSON_BUILD_STATIC_LIB ON CACHE INTERNAL "")
+FetchContent_Declare(
+  simdjson
+  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
+  GIT_TAG v3.13.0
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(OCmakeUtil spdlog taskflow concurrentqueue simdjson)
 include(ResourceDownload)
 include(ProjectImport)
 include(ProgramImport)
