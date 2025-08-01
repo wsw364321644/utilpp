@@ -1,6 +1,6 @@
 #include "SteamMsg/SteamClientImpl.h"
 #include "SteamMsg/SteamClientInternal.h"
-
+#include "SteamMsg/SteamDDl.h"
 #include <steam_web_api_util.h>
 #include <FunctionExitHelper.h>
 #include <SteamLanguage.h>
@@ -54,7 +54,6 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
             ClientHello(ec);
             if (ec) {
                 Disconnect();
-                LogStatus = ESteamClientLogStatus::NotConnect;
             }
             else {
                 LogStatus = ESteamClientLogStatus::Logout;
@@ -110,6 +109,9 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
 void FSteamClient::Disconnect()
 {
     pWSManager->Disconnect(pWSClient);
+    SteamAuthSession.ClearCurrentAuth();
+    ReconnectDelayRecorder.Clear();
+    bShouldReconnect = false;
 }
 
 void FSteamClient::CancelRequest(FCommonHandlePtr CommonHandlePtr)
@@ -138,7 +140,11 @@ const std::unordered_set<ESteamClientAuthSessionGuardType>& FSteamClient::GetAll
 
 FCommonHandlePtr FSteamClient::Login(std::string_view account, std::string_view password, FSteamRequestFinishedDelegate FailedDelegate,std::error_code& ec)
 {
-    return SteamAuthSession.BeginAuthSessionViaCredentials(account, password, FailedDelegate, ec);
+    auto HPtr= SteamAuthSession.BeginAuthSessionViaCredentials(account, password, FailedDelegate, ec);
+    if (HPtr&&LogStatus== ESteamClientLogStatus::NotConnect) {
+        Reconnect(false);
+    }
+    return HPtr;
 }
 
 FCommonHandlePtr FSteamClient::SendSteamGuardCode(std::string_view code, FSteamRequestFinishedDelegate FinishedDelegate, std::error_code& ec)
@@ -248,7 +254,8 @@ void FSteamClient::Tick(float delta)
     switch (LogStatus) {
     case ESteamClientLogStatus::NotConnect: {
         if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Unauthorized &&
-            SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Error) {
+            SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Error&&
+            bShouldReconnect) {
             if (SteamAuthSession.AuthSessionStatus != ESteamClientAuthSessionStatus::Authenticated) {
                 SteamAuthSession.AuthSessionStatus = ESteamClientAuthSessionStatus::WaittingConnection;
             }
@@ -258,6 +265,7 @@ void FSteamClient::Tick(float delta)
             else {
                 LogStatus = ESteamClientLogStatus::Error;
             }
+            bShouldReconnect = false;
         }
         break;
     }
@@ -341,11 +349,13 @@ bool FSteamClient::Connect()
     auto req=utilpp::GetCMListForConnect(pHttpManager,
         [&](bool bres, FCharBuffer* pbuf) {
             if (!bres) {
+                Reconnect(true);
                 LogStatus = ESteamClientLogStatus::NotConnect;
                 return;
             }
             utilpp::GetCMListForConnectResp_t resp;
             if (!resp.Parse(*pbuf)) {
+                Reconnect(false);
                 LogStatus = ESteamClientLogStatus::NotConnect;
                 return;
             }
@@ -484,7 +494,8 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
         }
     }
     case utilpp::steam::EMsg::ClientServerUnavailable: {
-        //todo MsgClientServerUnavailable
+        Reconnect(false);
+        LogStatus = ESteamClientLogStatus::NotConnect;
         break;
     }
     case utilpp::steam::EMsg::ClientSessionToken: { // am session token
@@ -541,6 +552,7 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             LogStatus = ESteamClientLogStatus::Logon;
         }
         else if (res == utilpp::steam::EResult::TryAnotherCM || res == utilpp::steam::EResult::ServiceUnavailable) {
+            Reconnect(false);
             LogStatus = ESteamClientLogStatus::NotConnect;
         }
         else {
@@ -567,6 +579,7 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
             auto logoffResult = utilpp::steam::EResult(body.eresult());
             if (logoffResult == utilpp::steam::EResult::TryAnotherCM || logoffResult == utilpp::steam::EResult::ServiceUnavailable)
             {
+                bShouldReconnect = true;
                 LogStatus = ESteamClientLogStatus::NotConnect;
             }
         }
@@ -577,6 +590,32 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
     }
     }
 
+}
+
+void FSteamClient::Reconnect(bool bNeedDelay)
+{
+    static constexpr std::chrono::microseconds MinDelayMS{1000};
+    static constexpr std::chrono::microseconds MaxDelayMS{10000};
+    static constexpr std::chrono::microseconds DelayStepMS{ 1000 };
+    if (bNeedDelay) {
+        std::chrono::microseconds delay = MinDelayMS;
+        delay = ReconnectDelayRecorder.GetDelayConfig();
+        if (delay.count() < MinDelayMS.count()) {
+            delay = MinDelayMS;
+        }
+        else {
+            delay += DelayStepMS;
+        }
+        ReconnectDelayRecorder.SetDelay(delay,
+            [&]() {
+                bShouldReconnect = true;
+                ReconnectDelayRecorder.Clear();
+            }
+        );
+    }
+    else {
+        bShouldReconnect = true;
+    }
 }
 
 ISteamClient* GetSteamClientSingleton() {

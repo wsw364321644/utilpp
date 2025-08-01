@@ -28,12 +28,19 @@ if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
         message(FATAL_ERROR "Failed to gen steamlanguage")
     endif()
 
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql" SQL_CREATE_STEAM_CLIENT_TABLE)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/SteamDDl.h.in"
+        "${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg/SteamDDl.h"
+        @ONLY
+    )
+
     set(GEN_SQLPP_STRUCT FALSE CACHE BOOL "Generate SQLPP orm C++ files" FORCE)
 endif()
 
 NewTargetSource()
 AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
-AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/generated")
+AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/generated")
 AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})

@@ -1,0 +1,4 @@
+#pragma once
+constexpr char SQL_CREATE_STEAM_CLIENT_TABLE[] = R"(
+@SQL_CREATE_STEAM_CLIENT_TABLE@
+)";

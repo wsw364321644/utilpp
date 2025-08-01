@@ -2,8 +2,9 @@
 #include <string>
 #include <zlib.h>
 #include <zconf.h>
-
 #include <concurrentqueue.h>
+
+#include <TimeRecorder.h>
 #include "SteamMsg/SteamPacketMessage.h"
 #include "SteamMsg/SteamClientInternal.h"
 #include "SteamMsg/SteamJobManager.h"
@@ -33,10 +34,12 @@ public:
 
     sqlpp::sqlite3::pooled_connection& GetDBConnection();
 private:
+    void Reconnect(bool bNeedDelay =false);
     bool Connect();
     bool Logon();
     void OnRequestFinished(std::shared_ptr<SteamRequestHandle_t>, FSteamRequestFinishedDelegate, ESteamClientError);
     void OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWSClient, const char* content, size_t len);
+
     FSteamGlobalID& GetNextJobID() {
         JobID.SetSequentialCount(++SequentialCount);
         return JobID;
@@ -48,10 +51,9 @@ private:
     sqlpp::sqlite3::connection_pool DBConnectionPool;
     inline static thread_local std::optional<sqlpp::sqlite3::pooled_connection> DBConnection;
     utilpp::steam::STEAMUSER SteamUserTable;
-    //sqlite3* pSQLite{ nullptr };
-    //sqlite3_stmt* pSelectAccountPSO{ nullptr };
-    //sqlite3_stmt* pInsertAccountPSO{ nullptr };
-
+    bool bShouldReconnect{ false };
+    FDelayRecorder ReconnectDelayRecorder;
+    //count
     FSteamGlobalID JobID;
     uint32_t SequentialCount{ 0 };
     float HeartBeatSecCount{ 0 };

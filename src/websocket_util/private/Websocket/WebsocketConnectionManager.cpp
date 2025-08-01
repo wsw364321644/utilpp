@@ -77,14 +77,14 @@ public:
         pEndpoint->TriggerOnDisconnectedDelegates(pEndpoint, pEndpoint->GetLastError());
     }
     ~FWebsocketEndpointLWS() {
+        Free();
+    }
+    void Free() {
         if (LWSContext) {
             lws_context_destroy(LWSContext);
             LWSContext = nullptr;
         }
         Status = ELWSStatus::LWS_None;
-    }
-    void Clear() {
-        memset(&LWSInfo, 0, sizeof LWSInfo);
     }
 
     std::string Host;
@@ -138,7 +138,13 @@ std::shared_ptr<IWebsocketClient> FWebsocketConnectionManagerLWS::CreateClient()
 
 void FWebsocketConnectionManagerLWS::Connect(std::shared_ptr<IWebsocketClient> pClient)
 {
+    if (!pClient) {
+        return;
+    }
     auto pEndpoint = std::dynamic_pointer_cast<FWebsocketEndpointLWS>(pClient);
+    if (pEndpoint->Status!= ELWSStatus::LWS_None) {
+        pEndpoint->Free();
+    }
     struct lws_context_creation_info& info = pEndpoint->LWSInfo;
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
@@ -253,6 +259,9 @@ int FWebsocketConnectionManagerLWS::LWSCallback(lws* wsi, lws_callback_reasons r
 
 void FWebsocketConnectionManagerLWS::RecycleWebsocketEndpointLWS(std::shared_ptr<FWebsocketEndpointLWS> pEndpoint)
 {
-    pEndpoint->Clear();
+    pEndpoint->Free();
+    memset(&pEndpoint->LWSConnectInfo, 0, sizeof(pEndpoint->LWSConnectInfo));
+    memset(&pEndpoint->LWSInfo, 0, sizeof(pEndpoint->LWSInfo));
+    Endpionts.erase(pEndpoint);
     EndpiontPool.enqueue(pEndpoint);
 }

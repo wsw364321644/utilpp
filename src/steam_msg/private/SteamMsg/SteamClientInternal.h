@@ -45,30 +45,30 @@ typedef struct SteamRequestHandle_t : ICommonHandle {
 }SteamRequestHandle_t;
 
 constexpr char SQL_FILE_NAME[] = "steamclient.db";
-constexpr char SQL_CREATE_STEAM_CLIENT_TABLE[] = R"(
-CREATE TABLE
-    IF NOT EXISTS STEAMUSER (
-        SteamID INT PRIMARY KEY NOT NULL,
-        AccountName TEXT UNIQUE,
-        AccessToken TEXT,
-        RefreshToken TEXT
-    );
+//constexpr char SQL_CREATE_STEAM_CLIENT_TABLE[] = R"(
+//CREATE TABLE
+//    IF NOT EXISTS STEAMUSER (
+//        SteamID INT PRIMARY KEY NOT NULL,
+//        AccountName TEXT UNIQUE,
+//        AccessToken TEXT,
+//        RefreshToken TEXT
+//    );
+//
+//CREATE TABLE
+//    IF NOT EXISTS STEAMSERVER (
+//        TimeStamp INTEGER  PRIMARY KEY NOT NULL,
+//        List TEXT
+//    );
+//)";
 
-CREATE TABLE
-    IF NOT EXISTS STEAMSERVER (
-        TimeStamp INTEGER  PRIMARY KEY NOT NULL,
-        List TEXT
-    );
-)";
-
-constexpr char SQL_CREATE_STEAM_USER_TABLE[] = R"(
-CREATE TABLE  IF NOT EXISTS STEAMUSER(
-SteamID             INT   PRIMARY KEY     NOT NULL,
-AccountName         TEXT  UNIQUE, 
-AccessToken         TEXT,
-RefreshToken        TEXT
-);
-)";
+//constexpr char SQL_CREATE_STEAM_USER_TABLE[] = R"(
+//CREATE TABLE  IF NOT EXISTS STEAMUSER(
+//SteamID             INT   PRIMARY KEY     NOT NULL,
+//AccountName         TEXT  UNIQUE, 
+//AccessToken         TEXT,
+//RefreshToken        TEXT
+//);
+//)";
 
 constexpr char SQL_SELECT_FROM_STEAM_USER_BY_ACCOUNTNAME[] = R"(SELECT {} FROM STEAMUSER WHERE AccountName=?1 LIMIT 1;)";
 
