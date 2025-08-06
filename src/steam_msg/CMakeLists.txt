@@ -13,12 +13,11 @@ ImportProject(sqlpp23 ${SSH} TAG 0.66)
 if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
     ImportProgram(Python3 URL https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip)
     find_package(Python3 REQUIRED)
-    FetchContent_GetProperties(sqlpp23
-        SOURCE_DIR sqlpp23_SOURCE_DIR
-    )
+
     execute_process(COMMAND ${Python3_EXECUTABLE} -m pip install pyparsing
     )
-    execute_process(COMMAND ${Python3_EXECUTABLE} ${sqlpp23_SOURCE_DIR}/scripts/ddl2cpp -split-tables
+    find_package(sqlpp23 CONFIG REQUIRED)
+    execute_process(COMMAND ${Python3_EXECUTABLE} ${sqlpp23_DIR}/../../../bin/sqlpp23-ddl2cpp -split-tables
         ${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg
         utilpp::steam
         RESULT_VARIABLE result
