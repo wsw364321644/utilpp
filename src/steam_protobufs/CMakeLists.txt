@@ -28,7 +28,7 @@ FetchContent_Declare(
     GIT_SUBMODULES ""
 )
 FetchContent_MakeAvailable(protobuf)
-
+FetchContent_GetProperties(protobuf)
 # ImportProject(absl ${STATIC_CRT} STATIC SSH TAG)
 # ImportProject(Protobuf ${STATIC_CRT} STATIC SSH TAG v31.1)
 set(ProtobufCPPOutPath ${CMAKE_CURRENT_SOURCE_DIR}/generated)
@@ -88,6 +88,7 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         list(GET line ${ProtoDirIndex} ProtoDir)
         list(GET line ${ProtoFileNameIndex} ProtoFileName)
         list(APPEND ProtobufFiles ${SteamDBProtobufs_DIR}/${ProtoDir}/${ProtoFileName})
+        list(APPEND ProtobufOutFiles ${CMAKE_CURRENT_BINARY_DIR}/${ProtoDir}/${ProtoFileName})
     endforeach()
 
     set(INDEX 0)
@@ -101,10 +102,12 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         endif()
 
         list(GET ProtobufFiles ${INDEX} FILE)
+        list(GET ProtobufOutFiles ${INDEX} OutFile)
 
         if(NOT EXISTS ${FILE})
             message(WARNING "Protobuf file ${FILE} does not exist, skipping.")
-            list(REMOVE_ITEM ProtobufFiles ${FILE})
+            list(REMOVE_AT  ProtobufFiles ${INDEX})
+            list(REMOVE_AT  ProtobufOutFiles ${INDEX})
             continue()
         endif()
 
@@ -175,6 +178,8 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
             if(pos EQUAL -1)
                 list(APPEND ProtobufFiles ${IMPORT_FILE_PATH})
                 message(STATUS "Adding import file ${IMPORT_FILE_PATH} from ${FILE}.")
+                string(REPLACE ${SteamDBProtobufs_DIR} ${CMAKE_CURRENT_BINARY_DIR} IMPORT_FILE_PATH ${IMPORT_FILE_PATH})
+                list(APPEND ProtobufOutFiles ${IMPORT_FILE_PATH})
             endif()
         endforeach()
 
@@ -229,20 +234,19 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
             set(FILE_CONTENTS_SET TRUE)
         endif()
 
-        if(FILE_CONTENTS_SET)
-            file(WRITE ${FILE} "${FILE_CONTENTS}")
-        endif()
+
+        file(WRITE ${OutFile} "${FILE_CONTENTS}")
     endwhile()
 
-    foreach(FILE ${ProtobufFiles})
+    foreach(FILE ${ProtobufOutFiles})
         message(STATUS "Generating C++ files from ${FILE}")
 
         execute_process(
 
             # COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-            COMMAND protoc
-            --proto_path=${Protobuf_INCLUDE_DIR}
-            --proto_path=${SteamDBProtobufs_DIR}
+            COMMAND ${protoc_PATH}/bin/protoc.exe
+            --proto_path=${protobuf_SOURCE_DIR}/src
+            --proto_path=${CMAKE_CURRENT_BINARY_DIR}
 
             # --proto_path=${ProtobufFileParentPath}
             --cpp_out=${ProtobufCPPOutPath}
@@ -254,7 +258,7 @@ if(NOT DEFINED GEN_STEAM_PROTOBUFS OR GEN_STEAM_PROTOBUFS)
         )
 
         if(NOT ${result} EQUAL 0)
-            message(FATAL_ERROR "Failed to generate C++ files from ${FILE} COMMAND ${Protobuf_PROTOC_EXECUTABLE} --proto_path=${Protobuf_INCLUDE_DIR}  --proto_path=${SteamDBProtobufs_DIR} --cpp_out=${ProtobufCPPOutPath}  output: ${output}")
+            message(FATAL_ERROR "Failed to generate C++ files from ${FILE} COMMAND ${Protobuf_PROTOC_EXECUTABLE} --proto_path=${protobuf_SOURCE_DIR}/src  --proto_path=${CMAKE_CURRENT_BINARY_DIR} --cpp_out=${ProtobufCPPOutPath}  output: ${output}")
         endif()
     endforeach()
 
