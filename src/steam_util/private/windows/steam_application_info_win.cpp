@@ -1,4 +1,5 @@
 #include "steam_application_info.h"
+#include <windows_helper.h>
 #include <simple_os_process.h>
 #include <string_convert.h>
 #include <FunctionExitHelper.h>

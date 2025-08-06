@@ -1,6 +1,8 @@
 #include <simple_os_defs.h>
 #include "windows_util_export_defs.h"
 
+constexpr char REG_COMMAND_PATH[] = "Shell\\Open\\Command";
+
 WINDOWS_UTIL_API bool is_app_container(HANDLE process);
 WINDOWS_UTIL_API bool is_uwp_window(HWND hwnd);
 WINDOWS_UTIL_API BOOL is_main_window(HWND handle);

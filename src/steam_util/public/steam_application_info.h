@@ -8,7 +8,6 @@
 
 #include "steam_util_export_defs.h"
 
-constexpr char REG_COMMAND_PATH[] = "Shell\\Open\\Command";;
 constexpr char STEAM_PRODUCT_NAME[] = "steam";
 constexpr char STEAM_SERVICE_NAME[] = "Steam Client Service";
 
