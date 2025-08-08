@@ -50,6 +50,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
   GIT_TAG 44a2f675ef4468380a8d7609fb7b0c63ec914893
 )
+FetchContent_MakeAvailable(OCmakeUtil)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -64,6 +65,7 @@ FetchContent_Declare(
   GIT_TAG v1.15.3
   GIT_SHALLOW TRUE
 )
+FetchContent_MakeAvailable(spdlog)
 
 # FetchContent_Declare(
 # gcem
@@ -80,6 +82,7 @@ FetchContent_Declare(
   GIT_TAG v3.10.0
   GIT_SHALLOW TRUE
 )
+FetchContent_MakeAvailable(taskflow)
 
 FetchContent_Declare(
   concurrentqueue
@@ -87,6 +90,7 @@ FetchContent_Declare(
   GIT_TAG origin/master
   GIT_SHALLOW TRUE
 )
+FetchContent_MakeAvailable(concurrentqueue)
 
 set(BUILD_SHARED_LIBS ON CACHE INTERNAL "")
 set(SIMDJSON_BUILD_STATIC_LIB ON CACHE INTERNAL "")
@@ -96,8 +100,8 @@ FetchContent_Declare(
   GIT_TAG v3.13.0
   GIT_SHALLOW TRUE
 )
+FetchContent_MakeAvailable(simdjson)
 
-FetchContent_MakeAvailable(OCmakeUtil spdlog taskflow concurrentqueue simdjson)
 include(ResourceDownload)
 include(ProjectImport)
 include(ProgramImport)
