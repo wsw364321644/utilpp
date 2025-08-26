@@ -25,7 +25,7 @@ RPCHandle_t JRPCCommandAPI::HeartBeat(THeartBeatDelegate inDelegate,TRPCErrorDel
 {
     std::shared_ptr<JsonRPCRequest> req = std::make_shared< JsonRPCRequest>();
     req->SetMethod(HeartBeatName);
-    auto handle = processer->SendRequest(req);
+    auto handle = SendRPCRequest(req);
     if (handle.IsValid()) {
         AddHeartBeatSendDelagate(req->GetID(), inDelegate, errDelegate);
     }
@@ -67,7 +67,7 @@ RPCHandle_t JRPCCommandAPI::SetChannel(uint8_t index, EMessagePolicy policy, TSe
     if (!doc.Accept(writer)) {
         return NullHandle;
     }
-    auto handle = processer->SendRequest(req);
+    auto handle = SendRPCRequest(req);
     if (handle.IsValid()) {
         AddSetChannelSendDelagate(req->GetID(), inDelegate, errDelegate);
     }

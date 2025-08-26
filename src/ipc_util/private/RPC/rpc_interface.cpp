@@ -9,6 +9,10 @@ RPCHandle_t IGroupRPC::SendRPCRequest(std::shared_ptr<RPCRequest> req)
     handle.PIGroupRPC = this;
     return handle;
 }
+bool IGroupRPC::SendRPCEvent(std::shared_ptr<RPCRequest> req)
+{
+    return processer->SendEvent(req);
+}
 std::shared_ptr<RPCRequest>  IGroupRPC::CancelRPCRequest(RPCHandle_t handle)
 {
     return processer->CancelRequest(handle);
@@ -36,7 +40,7 @@ bool RPCInterfaceFactory::Register(const char* name, RPCInterfaceInfo info)
 }
 
 
-std::unique_ptr<IGroupRPC> RPCInterfaceFactory::Create(const char* name, RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew fn)
+std::unique_ptr<IGroupRPC> RPCInterfaceFactory::Create(const char* name, IRPCProcesser* inprocesser, RPCInterfaceInfo::fnnew fn)
 {
     if (auto it = RPCInfos->find(name); it != RPCInfos->end())
         return it->second.CreateFunc(inprocesser, fn); // call the createFunc

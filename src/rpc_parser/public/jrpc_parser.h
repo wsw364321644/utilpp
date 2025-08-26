@@ -92,7 +92,7 @@ class RPC_PARSER_EXPORT JRPCPaser :public IRPCPaser
 {
     friend class JsonRPCResponse;
     friend class JsonRPCRequest;
-    friend class RPCProcesser;
+    friend class FJRPCProcesser;
 private:
     JRPCPaser() = default;
 

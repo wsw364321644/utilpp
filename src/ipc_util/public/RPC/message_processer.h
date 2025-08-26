@@ -50,29 +50,44 @@ struct IPC_EXPORT MessagePacket_t {
     uint8_t Channel;
     uint32_t Index;
 };
-class IPC_EXPORT  MessageProcesser
-{
-public:
-    MessageProcesser();
-    MessageProcesser(IMessageSession*);
-    ~MessageProcesser();
 
+
+
+class IPC_EXPORT IMessageProcesser {
 public:
-    struct ConsumeResult_t {
+    typedef struct ConsumeResult_t {
         ConsumeResult_t();
         ~ConsumeResult_t();
         EMessageError Result;
         uint32_t ConsumptionLength;
         std::vector<std::shared_ptr<MessagePacket_t>> MessagePackets;
-    };
+    }ConsumeResult_t;
+
+    virtual ~IMessageProcesser() = default;
+    virtual FCharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy) =0;
+    virtual bool SendContent(const char*, uint32_t len, uint8_t channel = 0) =0;
+    virtual ConsumeResult_t TryConsume(const char* data, uint32_t len) =0;
+
+    DEFINE_EVENT_ONE_PARAM(OnPacketRecv, MessagePacket_t*)
+};
+
+
+class IPC_EXPORT FMessageProcesser:public IMessageProcesser
+{
+public:
+    FMessageProcesser();
+    FMessageProcesser(IMessageSession*);
+    ~FMessageProcesser();
+
+public:
     bool Init(IMessageSession*);
-    FCharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy);
-    bool SendContent(const char*, uint32_t len, uint8_t channel = 0);
-    ConsumeResult_t TryConsume(const char* data, uint32_t len);
+    FCharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy) override;
+    bool SendContent(const char*, uint32_t len, uint8_t channel = 0) override;
+    ConsumeResult_t TryConsume(const char* data, uint32_t len) override;
 
 public:
     EMessageConnectionType ConnectionType;
-    DEFINE_EVENT_ONE_PARAM(OnPacketRecv, MessagePacket_t*)
+
 private:
 
     FCharBuffer BuildPacket(const char* data, uint32_t len, uint8_t channel = 0);

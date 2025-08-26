@@ -17,23 +17,23 @@ const char* MessageHeaderSeparator = ":";
 //const char* MessageCommandPolicy = "Policy";
 //const char* MessageCommandHeartbeat = "Heartbeat";
 const char* MessageEnd = "\r\n";
-std::unordered_map<std::string, EMessageHeader> MessageProcesser::mapHeader{ {MessageHeaderLength,EMessageHeader::ContentLength}
+std::unordered_map<std::string, EMessageHeader> FMessageProcesser::mapHeader{ {MessageHeaderLength,EMessageHeader::ContentLength}
 ,{MessageHeaderIndex,EMessageHeader::Index}
 ,{MessageHeaderChannel,EMessageHeader::Channel}
 };
-MessageProcesser::MessageProcesser() :sendChannels(MAX_CHANNAL, 0), recvChannels(MAX_CHANNAL, 0), ConnectionType(), session(nullptr), messageQueues(MAX_CHANNAL)
+FMessageProcesser::FMessageProcesser() :sendChannels(MAX_CHANNAL, 0), recvChannels(MAX_CHANNAL, 0), ConnectionType(), session(nullptr), messageQueues(MAX_CHANNAL)
 {
 }
-MessageProcesser::MessageProcesser(IMessageSession* mif) : MessageProcesser() {
+FMessageProcesser::FMessageProcesser(IMessageSession* mif) : FMessageProcesser() {
     Init(mif);
 }
-MessageProcesser::~MessageProcesser()
+FMessageProcesser::~FMessageProcesser()
 {
     if (MessageSessionOnReadHandle.IsValid()) {
         session->ClearOnReadDelegate(MessageSessionOnReadHandle);
     }
 }
-bool MessageProcesser::Init(IMessageSession* insession)
+bool FMessageProcesser::Init(IMessageSession* insession)
 {
     if (!insession) {
         return false;
@@ -41,7 +41,7 @@ bool MessageProcesser::Init(IMessageSession* insession)
     session = insession;
     ConnectionType = session->GetConnectionType();
 
-    MessageSessionOnReadHandle = session->AddOnReadDelegate(std::bind(&MessageProcesser::OnRead, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    MessageSessionOnReadHandle = session->AddOnReadDelegate(std::bind(&FMessageProcesser::OnRead, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     /*if (ConnectionType == EMessageConnectionType::EMCT_UDP) {
         sendChannels.resize(std::numeric_limits<uint8_t>::max(), 0);
         recvChannels.resize(std::numeric_limits<uint8_t>::max(), 0);
@@ -49,19 +49,19 @@ bool MessageProcesser::Init(IMessageSession* insession)
     lastHeartBeat = std::chrono::steady_clock::now();
     return true;
 }
-FCharBuffer MessageProcesser::ChangePolicy(uint8_t channel, EMessagePolicy policy)
+FCharBuffer FMessageProcesser::ChangePolicy(uint8_t channel, EMessagePolicy policy)
 {
     return FCharBuffer();
 }
 
-bool MessageProcesser::SendContent(const char* data, uint32_t len, uint8_t channel)
+bool FMessageProcesser::SendContent(const char* data, uint32_t len, uint8_t channel)
 {
     auto buf = BuildPacket(data, len, channel);
     auto handle = session->Write(buf.CStr(), (int)buf.Length());
     return handle.IsValid();
 }
 
-MessageProcesser::ConsumeResult_t MessageProcesser::TryConsume(const char* data, uint32_t len)
+IMessageProcesser::ConsumeResult_t FMessageProcesser::TryConsume(const char* data, uint32_t len)
 {
     const char* ptr = data;
     uint32_t leftlen = len;
@@ -164,7 +164,7 @@ MessageProcesser::ConsumeResult_t MessageProcesser::TryConsume(const char* data,
 }
 
 
-void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size)
+void FMessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size)
 {
     if (ConnectionType == EMessageConnectionType::EMCT_UDP) {
         auto result = TryConsume(str, size);
@@ -248,12 +248,12 @@ void MessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size
     }
     return;
 }
-void MessageProcesser::HeartBeat()
+void FMessageProcesser::HeartBeat()
 {
     return;
 }
 
-FCharBuffer MessageProcesser::BuildPacket(const char* data, uint32_t len, uint8_t channel)
+FCharBuffer FMessageProcesser::BuildPacket(const char* data, uint32_t len, uint8_t channel)
 {
     FCharBuffer buff;
     buff.Append(MessageBegin, strlen(MessageBegin));
@@ -273,7 +273,7 @@ FCharBuffer MessageProcesser::BuildPacket(const char* data, uint32_t len, uint8_
     return buff;
 }
 
-void MessageProcesser::AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer value)
+void FMessageProcesser::AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer value)
 {
     buf.Append(key);
     buf.Append(MessageHeaderSeparator, strlen(MessageHeaderSeparator));
@@ -281,11 +281,11 @@ void MessageProcesser::AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer 
     buf.Append(MessageEnd, strlen(MessageEnd));
 }
 
-MessageProcesser::ConsumeResult_t::ConsumeResult_t() :ConsumptionLength(0), Result(EMessageError::OK)
+FMessageProcesser::ConsumeResult_t::ConsumeResult_t() :ConsumptionLength(0), Result(EMessageError::OK)
 {
 }
 
-MessageProcesser::ConsumeResult_t::~ConsumeResult_t()
+FMessageProcesser::ConsumeResult_t::~ConsumeResult_t()
 {
 }
 

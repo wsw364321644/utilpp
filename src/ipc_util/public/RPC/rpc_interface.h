@@ -12,7 +12,7 @@
 #pragma warning(disable:4251)
 
 
-class RPCProcesser;
+class IRPCProcesser;
 class RPCRequest;
 class RPCResponse;
 class IGroupRPC;
@@ -32,20 +32,21 @@ typedef struct RPCHandle_t :CommonHandle_t {
 
 class IPC_EXPORT IGroupRPC {
 public:
-    IGroupRPC(RPCProcesser* inprocesser) :processer(inprocesser) {}
+    IGroupRPC(IRPCProcesser* inprocesser) :processer(inprocesser) {}
     virtual const char* GetName() = 0;
     virtual bool OnRequestRecv(std::shared_ptr<RPCRequest>) = 0;
     virtual bool OnResponseRecv(std::shared_ptr<RPCResponse>, std::shared_ptr<RPCRequest>) = 0;
     virtual RPCHandle_t SendRPCRequest(std::shared_ptr< RPCRequest> req);
+    virtual bool SendRPCEvent(std::shared_ptr< RPCRequest> req);
     virtual std::shared_ptr<RPCRequest> CancelRPCRequest(RPCHandle_t handle);
     virtual bool SendRPCResponse(RPCHandle_t handle, std::shared_ptr<RPCResponse> response);
 protected:
-    RPCProcesser* processer;
+    IRPCProcesser* processer;
 };
 struct RPCInterfaceInfo
 {
     typedef void*(*fnnew) (size_t);
-    using TCreateMethod = std::unique_ptr<IGroupRPC>(*)(RPCProcesser*, fnnew);
+    using TCreateMethod = std::unique_ptr<IGroupRPC>(*)(IRPCProcesser*, fnnew);
     using TCheckMethod = bool(*)(const char*);
     TCreateMethod CreateFunc;
     TCheckMethod CheckFunc;
@@ -59,7 +60,7 @@ public:
 
     static bool Register(const char* name, RPCInterfaceInfo info);
 
-    static std::unique_ptr<IGroupRPC> Create(const char* name, RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew=nullptr);
+    static std::unique_ptr<IGroupRPC> Create(const char* name, IRPCProcesser* inprocesser, RPCInterfaceInfo::fnnew=nullptr);
     static bool CheckMethod(const char* name, const char* methodname);
 
     static std::unordered_map<std::string, RPCInterfaceInfo>* GetRPCInfos();
@@ -199,9 +200,9 @@ typedef std::function<void(RPCHandle_t,int64_t, std::string_view, std::string_vi
 #define DECLARE_RPC_OVERRIDE_FUNCTION(ClassName)                                                              \
 public:                                                                                                       \
     friend struct RPCMethodInfo<ClassName>;                                                                   \
-    ClassName(RPCProcesser*);                                                                                 \
+    ClassName(IRPCProcesser*);                                                                                 \
     virtual ~ClassName();                                                                                     \
-    static std::unique_ptr<IGroupRPC> Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew);             \
+    static std::unique_ptr<IGroupRPC> Create(IRPCProcesser* inprocesser, RPCInterfaceInfo::fnnew);             \
     static const char* GetGroupName();                                                                        \
     const char* GetName() override;                                                                           \
     bool OnRequestRecv(std::shared_ptr<RPCRequest>)override;                                                  \
@@ -212,13 +213,13 @@ public:                                                                         
 static bool RegisteredInRPCFactory##ClassName= RegisteredInRPCFactory<ClassName>::s_bRegistered;           \
 template <>                                                                                               \
 std::unordered_map<std::string, RPCMethodInfo<ClassName>> RPCInfoData<ClassName>::MethodInfos{};          \
-ClassName::ClassName(RPCProcesser* inprocesser) :IGroupJRPC(inprocesser)                                  \
+ClassName::ClassName(IRPCProcesser* inprocesser) :IGroupJRPC(inprocesser)                                  \
 {                                                                                                         \
 }                                                                                                         \
 ClassName::~ClassName()                                                                                   \
 {                                                                                                         \
 }                                                                                                         \
-std::unique_ptr<IGroupRPC> ClassName::Create(RPCProcesser* inprocesser, RPCInterfaceInfo::fnnew fn)       \
+std::unique_ptr<IGroupRPC> ClassName::Create(IRPCProcesser* inprocesser, RPCInterfaceInfo::fnnew fn)       \
 {                                                                                                         \
     if (fn) {                                                                                             \
         ClassName* ptr = (ClassName*)fn(sizeof(ClassName));                                               \

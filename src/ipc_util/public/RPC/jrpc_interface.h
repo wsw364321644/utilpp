@@ -7,7 +7,7 @@
 class IPC_EXPORT IGroupJRPC :public IGroupRPC
 {
 public:
-    IGroupJRPC(RPCProcesser* inprocesser) :IGroupRPC(inprocesser) {}
+    IGroupJRPC(IRPCProcesser* inprocesser) :IGroupRPC(inprocesser) {}
     bool RespondError(RPCHandle_t handle, int64_t errorCode, const char* errorMsg=nullptr, const char* errorData = nullptr);
 };
 
