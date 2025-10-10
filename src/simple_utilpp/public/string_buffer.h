@@ -32,9 +32,8 @@ public:
     bool Format(const char* format, ...);
     bool FormatAppend(const char* format, ...);
     bool VFormatAppend(const char* format, va_list vlist);
-    // template <typename T,
-    //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, FCharBuffer>::value>::type>
-    // void Append(T&&);
+    void Reverse(uint32_t size);
+    void Resize(uint32_t size);
     void ReverseAssign(const char* cstr, size_t size);
     template <typename T>
     void ReverseAssign(const T* first, const T* last) {
@@ -53,6 +52,9 @@ public:
     size_t Length() const;
     size_t Size() const;
     size_t Capacity() const;
+    FCharBuffer& Seekg(size_t);
+    FCharBuffer& Seekp(size_t);
+
     typedef char Ch;
 
     //! Read the current character from stream without moving the read cursor.
@@ -71,8 +73,15 @@ public:
     //! Flush the buffer.
     void Flush(){};
 
-    void Reverse(uint32_t size);
-    void Resize(uint32_t size);
+    //! Begin writing operation at the current read pointer.
+    //! \return The begin writer pointer.
+    Ch* PutBegin() {}
+    //! End the writing operation.
+    //! \param begin The begin write pointer returned by PutBegin().
+    //! \return Number of characters written.
+    size_t PutEnd(Ch* begin) {}
+
+
 
 private:
 

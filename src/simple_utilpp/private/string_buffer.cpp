@@ -302,6 +302,18 @@ size_t FCharBuffer::Capacity() const
     return bufSize;
 }
 
+FCharBuffer& FCharBuffer::Seekg(size_t pos)
+{
+    readCursor = pos < cursor ? pos : cursor;
+    return *this;
+}
+
+FCharBuffer& FCharBuffer::Seekp(size_t pos)
+{
+    cursor = pos < bufSize ? pos : bufSize;
+    return *this;
+}
+
 FCharBuffer::Ch FCharBuffer::Peek() const
 {
     return pBuf[readCursor];
