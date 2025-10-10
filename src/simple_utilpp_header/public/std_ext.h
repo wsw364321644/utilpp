@@ -116,3 +116,11 @@ struct hash_64bit
         }
     }
 };
+
+template <typename Ret, typename... Args>
+struct function_signature {
+    using type = Ret(*)(Args...);
+};
+
+template <typename Ret, typename... Args>
+using function_signature_t = typename function_signature<Ret, Args...>::type;
