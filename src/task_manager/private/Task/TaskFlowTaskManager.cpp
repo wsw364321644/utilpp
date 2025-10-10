@@ -1,17 +1,11 @@
 #include "Task/TaskFlowTaskManager.h"
-
+#include <singleton.h>
 FTaskFlowTaskManager::FTaskFlowTaskManager() {
 
 }
 FTaskFlowTaskManager* FTaskFlowTaskManager::Get()
 {
-    static std::atomic<std::shared_ptr<FTaskFlowTaskManager>> AtomicTaskManager;
-    auto oldptr = AtomicTaskManager.load();
-    if (!oldptr) {
-        std::shared_ptr<FTaskFlowTaskManager> pTaskManager(new FTaskFlowTaskManager);
-        AtomicTaskManager.compare_exchange_strong(oldptr, pTaskManager);
-    }
-    return AtomicTaskManager.load().get();
+    return TClassSingletonHelper<FTaskFlowTaskManager>::GetClassSingleton().get();
 }
 
 void FTaskFlowTaskManager::Tick() {
