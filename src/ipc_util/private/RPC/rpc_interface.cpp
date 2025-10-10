@@ -5,13 +5,12 @@ std::unordered_map<std::string, RPCInterfaceInfo>* RPCInterfaceFactory::RPCInfos
 
 RPCHandle_t IGroupRPC::SendRPCRequest(std::shared_ptr<RPCRequest> req)
 {
-    auto handle= processer->SendRequest(req);
-    handle.PIGroupRPC = this;
+    auto handle= processer->SendRequest(this,req);
     return handle;
 }
 bool IGroupRPC::SendRPCEvent(std::shared_ptr<RPCRequest> req)
 {
-    return processer->SendEvent(req);
+    return processer->SendEvent(this,req);
 }
 std::shared_ptr<RPCRequest>  IGroupRPC::CancelRPCRequest(RPCHandle_t handle)
 {

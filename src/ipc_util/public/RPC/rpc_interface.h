@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <optional>
 #include <cassert>
-
+#include <rpc_definition.h>
 #include "message_processer.h"
 #include "delegate_macros.h"
 #pragma warning(push)
@@ -179,7 +179,7 @@ typedef std::function<void(RPCHandle_t,int64_t, std::string_view, std::string_vi
 
 #define REGISTER_RPC_API(ClassName,APIName,RequestRecvFunc,ResponseRecvFunc)                                                    \
     const char ClassName::APIName##Name[] = #APIName;                                                                           \
-    static RPCInfoRegister<ClassName> APIName##Register(RPCMethodInfo<ClassName>{.Name = ClassName::APIName##Name,            \
+    static RPCInfoRegister<ClassName> APIName##Register(RPCMethodInfo<ClassName>{.Name = ClassName::APIName##Name,              \
         .OnRequestMethod = &ClassName::RequestRecvFunc,                                                                         \
         .OnResponseMethod = &ClassName::ResponseRecvFunc,                                                                       \
         .RemoveSendDelagateMethod= &ClassName::Remove##APIName##SendDelagate                                                    \
@@ -189,8 +189,8 @@ typedef std::function<void(RPCHandle_t,int64_t, std::string_view, std::string_vi
 
 #define REGISTER_RPC_EVENT_API(ClassName,APIName,RequestRecvFunc) \
     const char ClassName::APIName##Name[] = #APIName; \
-    static RPCInfoRegister<##ClassName> APIName##Register(RPCMethodInfo<##ClassName>{.Name = ClassName::APIName##Name, \
-        .OnRequestMethod = &##ClassName::##RequestRecvFunc, \
+    static RPCInfoRegister<ClassName> APIName##Register(RPCMethodInfo<ClassName>{.Name = ClassName::APIName##Name, \
+        .OnRequestMethod = &ClassName::RequestRecvFunc, \
         .OnResponseMethod = nullptr \
     });
 

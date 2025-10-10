@@ -66,7 +66,6 @@ public:
     virtual ~IMessageProcesser() = default;
     virtual FCharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy) =0;
     virtual bool SendContent(const char*, uint32_t len, uint8_t channel = 0) =0;
-    virtual ConsumeResult_t TryConsume(const char* data, uint32_t len) =0;
 
     DEFINE_EVENT_ONE_PARAM(OnPacketRecv, MessagePacket_t*)
 };
@@ -83,14 +82,15 @@ public:
     bool Init(IMessageSession*);
     FCharBuffer ChangePolicy(uint8_t channel, EMessagePolicy policy) override;
     bool SendContent(const char*, uint32_t len, uint8_t channel = 0) override;
-    ConsumeResult_t TryConsume(const char* data, uint32_t len) override;
+
 
 public:
     EMessageConnectionType ConnectionType;
 
-private:
-
+protected:
+    ConsumeResult_t TryConsume(const char* data, uint32_t len);
     FCharBuffer BuildPacket(const char* data, uint32_t len, uint8_t channel = 0);
+private:
     void OnRead(IMessageSession*, char*, intptr_t);
     void HeartBeat();
     void AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer value);

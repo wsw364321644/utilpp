@@ -22,6 +22,7 @@ struct RPCInfo_t {
 };
 
 class RPC_PARSER_EXPORT  JsonRPCRequest :public RPCRequest {
+    friend class JRPCPaser;
 public:
     JsonRPCRequest() = default;
     ~JsonRPCRequest() override = default;

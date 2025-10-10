@@ -20,7 +20,6 @@ enum class ERPCParseError {
 
 
 class RPC_PARSER_EXPORT RPCRequest {
-    friend class JRPCPaser;
 public:
     virtual ~RPCRequest() = default;
     virtual void ToBytes(FCharBuffer&) = 0;

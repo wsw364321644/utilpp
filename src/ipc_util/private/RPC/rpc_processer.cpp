@@ -16,23 +16,17 @@
 static thread_local FCharBuffer SendBuf;
 static FCharBuffer Recevbuf;
 
-FJRPCProcesser::FJRPCProcesser(IMessageProcesser* inp) :msgprocesser(inp)
+IRPCProcesser::IRPCProcesser(IMessageProcesser* processer):pMsgProcesser(processer)
 {
-    if (!JRPCPaser::bInited) {
-        SIMPLELOG_LOGGER_ERROR(nullptr,"JRPCPaser bInited failed");
-    }
-    rpcParserInterface.reset(new JRPCPaser);
-    OnPacketRecvHandle= msgprocesser->AddOnPacketRecvDelegate(std::bind(&FJRPCProcesser::OnRecevPacket, this, std::placeholders::_1));
-    AddGroupRPC(JRPCCommandAPI::GetGroupName());
+    OnPacketRecvHandle = pMsgProcesser->AddOnPacketRecvDelegate(std::bind(&IRPCProcesser::OnRecevPacket, this, std::placeholders::_1));
 }
-FJRPCProcesser::~FJRPCProcesser()
+IRPCProcesser::~IRPCProcesser()
 {
     if (OnPacketRecvHandle.IsValid()) {
-        msgprocesser->ClearOnPacketRecvDelegate(OnPacketRecvHandle);
+        pMsgProcesser->ClearOnPacketRecvDelegate(OnPacketRecvHandle);
     }
 }
-
-bool FJRPCProcesser::AddGroupRPC(std::string_view groupName) {
+bool IRPCProcesser::AddGroupRPC(std::string_view groupName) {
     if (RPCInterfaceFactory::GetRPCInfos()) {
         for (auto& [name, info] : *RPCInterfaceFactory::GetRPCInfos()) {
             if (name == groupName) {
@@ -44,7 +38,7 @@ bool FJRPCProcesser::AddGroupRPC(std::string_view groupName) {
     return false;
 }
 
-std::shared_ptr<IGroupRPC> FJRPCProcesser::GetInterfaceByMethodName(const char* name)
+std::shared_ptr<IGroupRPC> IRPCProcesser::GetInterfaceByMethodName(const char* name)
 {
     for (auto& info : *RPCInterfaceFactory::GetRPCInfos()) {
         if (info.second.CheckFunc(name)) {
@@ -53,6 +47,20 @@ std::shared_ptr<IGroupRPC> FJRPCProcesser::GetInterfaceByMethodName(const char* 
     }
     return nullptr;
 }
+
+FJRPCProcesser::FJRPCProcesser(IMessageProcesser* inp) :IRPCProcesser(inp)
+{
+    if (!JRPCPaser::bInited) {
+        SIMPLELOG_LOGGER_ERROR(nullptr,"JRPCPaser bInited failed");
+    }
+    rpcParserInterface.reset(new JRPCPaser);
+    AddGroupRPC(JRPCCommandAPI::GetGroupName());
+}
+FJRPCProcesser::~FJRPCProcesser()
+{
+}
+
+
 
 void FJRPCProcesser::OnRecevRPC(const char* str, uint32_t len)
 {
@@ -78,7 +86,7 @@ void FJRPCProcesser::OnRecevRPC(const char* str, uint32_t len)
             }
             auto rpcInterface = GetInterfaceByMethodName(rpcReq->GetMethod().data());
             if (rpcInterface) {
-                rpcInterface->OnResponseRecv(response, rpcReq);
+                RecevRespInGroup(rpcInterface, response, rpcReq);
             }
         }
         return;
@@ -88,14 +96,14 @@ void FJRPCProcesser::OnRecevRPC(const char* str, uint32_t len)
         auto request = *pRequest;
         auto rpcInterface = GetInterfaceByMethodName(request->GetMethod().data());
         if (rpcInterface) {
-            if (!rpcInterface->OnRequestRecv(request)) {
+            if (!RecevReqInGroup(rpcInterface,request)) {
                 TriggerOnRPCConsumedErrorDelegates(request);
             }
         }
         else {
             Recevbuf.Clear();
             rpcParserInterface->GetMethodNotFoundResponse(request->GetID())->ToBytes(Recevbuf);
-            msgprocesser->SendContent(Recevbuf.CStr(), Recevbuf.Length());
+            pMsgProcesser->SendContent(Recevbuf.CStr(), Recevbuf.Length());
             TriggerOnMethoedNotFoundDelegates(request);
         }
         return;
@@ -104,7 +112,7 @@ void FJRPCProcesser::OnRecevRPC(const char* str, uint32_t len)
     auto ParseError = std::get<ERPCParseError>(parseResult);
     Recevbuf.Clear();
     rpcParserInterface->GetErrorParseResponse(ParseError)->ToBytes(Recevbuf);
-    msgprocesser->SendContent(Recevbuf.CStr(), Recevbuf.Length());
+    pMsgProcesser->SendContent(Recevbuf.CStr(), Recevbuf.Length());
 }
 
 void FJRPCProcesser::OnRecevPacket(MessagePacket_t* p)
@@ -113,17 +121,18 @@ void FJRPCProcesser::OnRecevPacket(MessagePacket_t* p)
 }
 
 
-RPCHandle_t FJRPCProcesser::SendRequest(std::shared_ptr<RPCRequest> request)
+RPCHandle_t FJRPCProcesser::SendRequest(IGroupRPC* group, std::shared_ptr<RPCRequest> request)
 {
     std::unique_lock lock(requestMapMutex);
     auto res = requestMap.emplace(RPCHandle_t(counter), request);
     lock.unlock();
     if (res.second) {
         auto handle = res.first->first;
+        handle.PIGroupRPC = group;
         request->SetID( handle.ID);
         SendBuf.Clear();
         request->ToBytes(SendBuf);
-        if (msgprocesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length())) {
+        if (pMsgProcesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length())) {
             return handle;
         }
         else {
@@ -154,16 +163,17 @@ std::shared_ptr<RPCRequest> FJRPCProcesser::CancelRequest(RPCHandle_t handle)
     return preq;
 
 }
-bool FJRPCProcesser::SendEvent(std::shared_ptr<RPCRequest> request)
+bool FJRPCProcesser::SendEvent(IGroupRPC* group, std::shared_ptr<RPCRequest> request)
 {
     SendBuf.Clear();
     request->ToBytes(SendBuf);
-    return msgprocesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length());
+    return pMsgProcesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length());
 }
+
 bool FJRPCProcesser::SendResponse(RPCHandle_t handle, std::shared_ptr<RPCResponse> response)
 {
     response->SetID(handle.ID);
     SendBuf.Clear();
     response->ToBytes(SendBuf);
-    return msgprocesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length());
+    return pMsgProcesser->SendContent(SendBuf.CStr(), (uint32_t)SendBuf.Length());
 }
