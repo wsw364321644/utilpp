@@ -75,11 +75,11 @@ public:
 
     //! Begin writing operation at the current read pointer.
     //! \return The begin writer pointer.
-    Ch* PutBegin() {}
+    Ch* PutBegin() { return nullptr; }
     //! End the writing operation.
     //! \param begin The begin write pointer returned by PutBegin().
     //! \return Number of characters written.
-    size_t PutEnd(Ch* begin) {}
+    size_t PutEnd(Ch* begin) { return NULL; }
 
 
 
