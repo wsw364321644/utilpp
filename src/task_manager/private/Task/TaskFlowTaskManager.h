@@ -4,8 +4,9 @@
 #include <taskflow/taskflow.hpp>
 
 
-class  FTaskFlowTaskManager :public FTaskManagerBase {
+class FTaskFlowTaskManager : public FTaskManagerBase {
 public:
+    template<typename T> friend struct TClassSingletonHelper;
     static FTaskFlowTaskManager* Get();
     void Tick() override;
 private:

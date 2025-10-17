@@ -18,7 +18,7 @@ struct TClassSingletonHelper {
     static std::shared_ptr<T> GetClassSingleton(Args&&... args) {
         auto oldptr = AtomicPtr.load();
         if (!oldptr) {
-            std::shared_ptr<T> ptr = std::make_shared<T>(args...);
+            std::shared_ptr<T> ptr(new T(args...));
             AtomicPtr.compare_exchange_strong(oldptr, ptr);
         }
         return AtomicPtr.load();
