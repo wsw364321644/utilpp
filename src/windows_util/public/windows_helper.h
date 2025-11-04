@@ -1,3 +1,4 @@
+#pragma once
 #include <simple_os_defs.h>
 #include "windows_util_export_defs.h"
 

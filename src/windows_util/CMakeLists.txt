@@ -11,9 +11,26 @@ function(add_windows_util TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
 
+    if(OPENGL_FOUND)
+        target_link_libraries(${TARGET_NAME} PRIVATE OpenGL::GL)
+
+        if(GLUT_FOUND)
+            target_link_libraries(${TARGET_NAME} PRIVATE GLUT::GLUT)
+        endif()
+
+        if(GLFW_FOUND)
+            target_link_libraries(${TARGET_NAME} PRIVATE GLFW::GLFW)
+        endif()
+    endif()
+
+
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)
 endfunction()
+
+find_package(OpenGL)
+find_package(GLUT)
+find_package(GLFW)
 
 set(TARGET_NAME windows_util_a)
 add_library(${TARGET_NAME} STATIC ${SourceFiles})
