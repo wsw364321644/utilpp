@@ -134,6 +134,21 @@ public:
         PathLenW = lastCursor - GetBufInternalW();
         return true;
     }
+
+    const wchar_t* FileNameW() {
+        wchar_t* lastCursor = wcsrchr(GetBufInternalW(), static_cast<wchar_t>(std::filesystem::path::preferred_separator));
+        if (lastCursor == NULL) {
+            return nullptr;
+        }
+        return lastCursor + 1;
+    }
+    const char* FileName() {
+        char* lastCursor = strrchr(GetBufInternal(), static_cast<char>(std::filesystem::path::preferred_separator));
+        if (lastCursor == NULL) {
+            return nullptr;
+        }
+        return lastCursor + 1;
+    }
     char* CurrentPrifix{nullptr};
     wchar_t* CurrentPrifixW{ nullptr };
     char Buf[PATH_MAX]{0};
