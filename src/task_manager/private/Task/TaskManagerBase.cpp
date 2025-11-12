@@ -40,18 +40,30 @@ void FTaskManagerBase::ReleaseWorkflow(WorkflowHandle_t handle)
 void FTaskManagerBase::Run()
 {
     auto pMainThreadData = TaskWorkflowDatas[GetMainThread()];;
-    while (!bRequestExit.load()) {
+    while (true) {
         Tick();
+        if (bRequestExit) {
+            //continue tick because work thread wait sign from main thread
+            bool bExistWorkFlow{ false };
+            for (auto& [wHandle, pTaskWorkflow] : TaskWorkflowDatas) {
+                if (GetMainThread() == wHandle) {
+                    continue;
+                }
+                auto& optfuture = pTaskWorkflow->OptFuture;
+                if (!optfuture.has_value()|| optfuture.value().wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                    ReleaseWorkflow(wHandle);
+                }
+                else {
+                    bExistWorkFlow = true;
+                }
+            }
+            if (!bExistWorkFlow) {
+                break;
+            }
+        }
         auto dur = pMainThreadData->TimeRecorder.GetDeltaToNow<std::chrono::nanoseconds>();
         if (dur < pMainThreadData->RepeatTime) {
             std::this_thread::sleep_for(pMainThreadData->RepeatTime - dur);
-        }
-    }
-    Tick();
-    for (auto& [wHandle, pTaskWorkflow] : TaskWorkflowDatas) {
-        auto& optfuture = pTaskWorkflow->OptFuture;
-        if (optfuture.has_value()) {
-            optfuture.value().wait();
         }
     }
 }

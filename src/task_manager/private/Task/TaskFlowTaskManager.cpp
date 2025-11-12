@@ -16,15 +16,17 @@ void FTaskFlowTaskManager::Tick() {
             TickTaskWorkflow(pTaskWorkflow);
         }
         else {
-            auto& optfuture = pTaskWorkflow->OptFuture;
-            if (optfuture.has_value() && optfuture.value().wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
-                continue;
-            }
-            optfuture = Executor.async(
-                [&, pTaskWorkflow]() {
-                    TickTaskWorkflow(pTaskWorkflow);
+            if (!bRequestExit) {
+                auto& optfuture = pTaskWorkflow->OptFuture;
+                if (optfuture.has_value() && optfuture.value().wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
+                    continue;
                 }
-            );
+                optfuture = Executor.async(
+                    [&, pTaskWorkflow]() {
+                        TickTaskWorkflow(pTaskWorkflow);
+                    }
+                );
+            }
         }
     }
 }
