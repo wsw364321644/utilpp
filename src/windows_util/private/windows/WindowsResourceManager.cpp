@@ -27,24 +27,28 @@ void FWindowsResourceBitmap::ReleaseResource()
 {
     if (hBM) {
         ::DeleteObject(hBM);
+        hBM = NULL;
     }
     if (BMBits) {
         delete[] BMBits;
+        BMBits = nullptr;
     }
 }
 
 bool FWindowsResourceBitmap::GenerateGLTexture()
 {
 
-    glGenTextures(1, &GLTexture);
-    glBindTexture(GL_TEXTURE_2D, GLTexture);
-    // Setup filtering parameters for display
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // Upload pixels into texture
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, BMBits);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, BMBits);
+    if (GLTexture == 0) {
+        glGenTextures(1, &GLTexture);
+        glBindTexture(GL_TEXTURE_2D, GLTexture);
+        // Setup filtering parameters for display
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // Upload pixels into texture
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, BMBits);
+        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, BMBits);
+    }
     return true;
 }
 
