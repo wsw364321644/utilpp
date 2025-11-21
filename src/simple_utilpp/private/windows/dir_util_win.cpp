@@ -13,6 +13,8 @@
 #include <assert.h>
 #include <stack>
 #include <simple_os_defs.h>
+#include <ctre-unicode.hpp>
+
 thread_local DirUtil::IterateDirCallback cb;
 thread_local DirEntry_t out;
 bool InternalCreateDir(wchar_t* pathw, size_t prependlen,size_t len) {
@@ -273,4 +275,33 @@ bool DirUtil::IterateDir(std::u8string_view  path, IterateDirCallback _cb, uint3
     PathBuf.SetNormalizePathW(path.data(), path.length()); 
     cb = _cb;
     return RecursiveIterateDir(depth);
+}
+
+
+
+
+
+constexpr char windowsFilenameRegexStr[] = R"_(^(?!(?:[cC][oO][nN]|[pP][rR][nN]|[aA][uU][xX]|[nN][uU][lL]|[cC][oO][mM][1-9]|[lL][pP][tT][1-9])$)[^<>:"\/\\|?*\x00-\x1F]*[^<>:"\/\\|?*\x00-\x1F .]$)_";
+constexpr char windowsInvalidPathRegexStr[] = R"_(([cC][oO][nN]|[pP][rR][nN]|[aA][uU][xX]|[nN][uU][lL]|[cC][oO][mM][1-9]|[lL][pP][tT][1-9])([\\].*|$))_";
+constexpr char windowsPathRegexStr[] = R"_(^([a-zA-Z]:\\)(([^<>:"\/\\|?*\x00-\x1F]*[^<>:"\/\\|?*\x00-\x1F. ])(?:\\)*)*$)_";
+
+bool DirUtil::IsValidFilename(const char* filenameStr, int32_t length) {
+    auto matchResult = ctre::match<windowsFilenameRegexStr>(filenameStr, filenameStr + length);
+    if (matchResult) {
+        return true;
+    }
+    return false;
+}
+
+
+bool DirUtil::IsValidPath(const char* pathStr, int32_t length) {
+    auto invalidMatchResult = ctre::search<windowsInvalidPathRegexStr>(pathStr, pathStr + length);
+    if (invalidMatchResult) {
+        return false;
+    }
+    auto matchResult = ctre::match<windowsPathRegexStr>(pathStr, pathStr + length);
+    if (matchResult) {
+        return true;
+    }
+    return false;
 }

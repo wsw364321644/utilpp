@@ -51,4 +51,7 @@ public:
     typedef std::function<void(DirEntry_t&)> IterateDirCallback;
     static bool IterateDir(std::u8string_view  path, IterateDirCallback cb, uint32_t depth = std::numeric_limits<uint32_t>::max());
 
+
+    static bool IsValidFilename(const char* filenameStr, int32_t length);
+    static bool IsValidPath(const char* pathStr, int32_t length);
 };

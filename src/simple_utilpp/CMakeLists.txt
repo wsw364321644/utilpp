@@ -10,6 +10,7 @@ function(add_simple_utilpp TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
+    target_link_libraries(${TARGET_NAME} PRIVATE ctre::ctre)
     AddTargetInclude(${TARGET_NAME})
 
     # if(UTILPP_ENABLE_LOG)

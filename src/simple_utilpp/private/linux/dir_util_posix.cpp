@@ -199,3 +199,17 @@ bool DirUtil::IterateDir(std::u8string_view path, IterateDirCallback _cb, uint32
     PathBuf.SetNormalizePath(path.data(), path.length());
     return RecursiveIterateDir(depth);
 }
+
+
+
+
+bool IsValidFilename(const char* filenameStr, int32_t length) {
+    //todo
+    return false;
+}
+
+
+bool IsValidPath(const char* pathStr, int32_t length) {
+    //todo
+    return false;
+}
