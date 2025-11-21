@@ -29,6 +29,20 @@ public:
             return std::make_shared<RegisterClassChild>();
             };
     };
+
+    static std::shared_ptr<RegisterClassParent> NewNamedClassInstance(const char* name) {
+        return NewNamedClassInstance((const char8_t*)name);
+    }
+    static std::shared_ptr<RegisterClassParent> NewNamedClassInstance(std::u8string_view name) {
+        auto itr = NamedClassInfos.find(name);
+        if (itr == NamedClassInfos.end()) {
+            return nullptr;
+        }
+        auto& [_name, pNamedClassInfo] = *itr;
+        auto& namedClassInfo = *pNamedClassInfo;
+        return namedClassInfo.CreateFn();
+    }
+
     static std::shared_ptr<RegisterClassParent> GetNamedClassSingleton(const char* name) {
         return GetNamedClassSingleton((const char8_t*)name);
     }
