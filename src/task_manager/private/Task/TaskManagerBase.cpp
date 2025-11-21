@@ -89,7 +89,7 @@ void FTaskManagerBase::Tick()
             break;
         }
         for (int i = 0; i < count; i++) {
-            auto& TaskWorkflowData=TaskWorkflowDatas[AppendingDelWorkflowHandleBuf[i]];
+            auto TaskWorkflowData=TaskWorkflowDatas[AppendingDelWorkflowHandleBuf[i]];
             TaskWorkflowDatas.erase(AppendingDelWorkflowHandleBuf[i]);
             for (auto& [taskHandle,pTaskData] : TaskWorkflowData->Tasks) {
                 Tasks.erase(taskHandle);
