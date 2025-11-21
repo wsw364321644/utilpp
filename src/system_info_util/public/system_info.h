@@ -5,23 +5,24 @@
 #include "system_info_export_defs.h"
 
 namespace utilpp {
-#define VENDOR_STR_MAX 16
-#define BRAND_STR_MAX 64
+    #define VENDOR_STR_MAX 16
+    #define BRAND_STR_MAX 64
 
-#define OS_NAME_MAX 32
-#define OS_GUIDLEN 39
+    #define OS_NAME_MAX 32
+    #define OS_GUIDLEN 39
 
-#define DISPLAY_NAME_MAX 129
-#define DISPLAY_NUM_MAX 16
+    #define DISPLAY_NAME_MAX 129
+    #define DISPLAY_NUM_MAX 16
 
-#define SYS_PRODUCT_MAX 128
-#define SYS_MANUFACTURER_MAX 128
+    #define SYS_PRODUCT_MAX 128
+    #define SYS_MANUFACTURER_MAX 128
 
-#define DRIVER_NUM_MAX 16
-#define DRIVER_MODEL_MAX 64
+    #define LOGICAL_DRIVE_NAME_MAX 5
+    #define DRIVER_NUM_MAX 16
+    #define DRIVER_MODEL_MAX 64
 
-#define MEM_NUM_MAX 8
-#define MEM_MANUFACTURER_MAX 128
+    #define MEM_NUM_MAX 8
+    #define MEM_MANUFACTURER_MAX 128
     enum class EDriverType : uint8_t {
         E_DRIVE_UNKNOWN,
         E_DRIVE_NO_ROOT_DIR,
@@ -82,6 +83,7 @@ namespace utilpp {
     }DisplayInfos_t;
 
     typedef struct LogicalDriverInfo_t {
+        char LogicalDriveName[LOGICAL_DRIVE_NAME_MAX];
         EDriverType DriverType;
         uint64_t FreeBytesToCaller;
         uint64_t TotalBytes;

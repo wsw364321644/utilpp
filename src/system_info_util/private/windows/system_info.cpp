@@ -231,9 +231,9 @@ namespace utilpp {
         {
 
             auto& DriverInfo = infos.LogicalDrivers[i];
-            std::string strdriver = DStr + i * 4;
+            memcpy(DriverInfo.LogicalDriveName, DStr + i * 4, 4);
             std::string strTmp, strTotalBytes, strFreeBytes;
-            DType = GetDriveTypeA(strdriver.c_str());//GetDriveType函数，可以获取驱动器类型，参数为驱动器的根目录  
+            DType = GetDriveTypeA(DriverInfo.LogicalDriveName);//GetDriveType函数，可以获取驱动器类型，参数为驱动器的根目录  
             switch (DType)
             {
             case DRIVE_FIXED: {
@@ -262,7 +262,7 @@ namespace utilpp {
             }
 
             //GetDiskFreeSpaceEx函数，可以获取驱动器磁盘的空间状态,函数返回的是个BOOL类型数据  
-            fResult = GetDiskFreeSpaceExA(strdriver.c_str(),
+            fResult = GetDiskFreeSpaceExA(DriverInfo.LogicalDriveName,
                 (PULARGE_INTEGER)&i64FreeBytesToCaller,
                 (PULARGE_INTEGER)&i64TotalBytes,
                 (PULARGE_INTEGER)&i64FreeBytes);
@@ -274,9 +274,6 @@ namespace utilpp {
             }
         }
         delete[] DStr;
-
-
-
 
         infos.Num = 0;
         QueryWMI([&](IWbemServices* pSvc) {
@@ -327,9 +324,6 @@ namespace utilpp {
                 }
             }
             });
-
-
-
         return;
     }
 
