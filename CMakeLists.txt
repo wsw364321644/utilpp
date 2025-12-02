@@ -51,6 +51,15 @@ FetchContent_Declare(
   GIT_TAG 44a2f675ef4468380a8d7609fb7b0c63ec914893
 )
 FetchContent_MakeAvailable(OCmakeUtil)
+include(ResourceDownload)
+include(ProjectImport)
+include(ProgramImport)
+include(TargetImport)
+
+ImportTarget(RapidJSON ${SSH} TAG origin/master)
+if(UTILPP_ENABLE_CPUID)
+  ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
+endif()
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -102,16 +111,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(simdjson)
 
-include(ResourceDownload)
-include(ProjectImport)
-include(ProgramImport)
-include(TargetImport)
 
-ImportTarget(RapidJSON ${SSH} TAG origin/master)
-
-if(UTILPP_ENABLE_CPUID)
-  ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
-endif()
+FetchContent_Declare(
+  compile-time-regular-expressions
+  GIT_REPOSITORY git@github.com:hanickadot/compile-time-regular-expressions.git
+  GIT_TAG v3.10.0
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(compile-time-regular-expressions)
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
