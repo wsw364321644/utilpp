@@ -113,12 +113,12 @@ FetchContent_MakeAvailable(simdjson)
 
 
 FetchContent_Declare(
-  compile-time-regular-expressions
+  ctre
   GIT_REPOSITORY git@github.com:hanickadot/compile-time-regular-expressions.git
   GIT_TAG v3.10.0
   GIT_SHALLOW TRUE
 )
-FetchContent_MakeAvailable(compile-time-regular-expressions)
+FetchContent_MakeAvailable(ctre)
 
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
