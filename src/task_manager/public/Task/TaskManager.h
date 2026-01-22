@@ -12,20 +12,20 @@ constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_
 
 class  ITaskManager;
 
-typedef struct TASK_MANAGER_EXPORT CommonTaskHandle_t : CommonHandle32_t
+typedef struct CommonTaskHandle_t : CommonHandle32_t
 {
     CommonTaskHandle_t(CommonHandle32_t h) :CommonHandle32_t(h) {}
     CommonTaskHandle_t() :CommonHandle32_t() {}
     CommonTaskHandle_t(const NullCommonHandle_t handle) :CommonHandle32_t(handle) {}
-    static std::atomic_uint32_t TaskCount;
+    inline static std::atomic_uint32_t TaskCount;
 }CommonTaskHandle_t;
 
-typedef struct TASK_MANAGER_EXPORT WorkflowHandle_t : CommonHandle32_t
+typedef struct WorkflowHandle_t : CommonHandle32_t
 {
     WorkflowHandle_t(NullCommonHandle_t h) :CommonHandle32_t(h) {}
     WorkflowHandle_t(CommonHandle32_t h) :CommonHandle32_t(h) {}
     WorkflowHandle_t() : CommonHandle32_t() {}
-    static std::atomic_uint32_t WorkflowCount;
+    inline static std::atomic_uint32_t WorkflowCount;
 }WorkflowHandle_t;
 
 typedef std::function<void()> TCommonTask;

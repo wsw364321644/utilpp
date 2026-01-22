@@ -19,7 +19,7 @@
 #include <regex>
 constexpr char DownloadTempExtensionStr[] = "tmp";
 constexpr char DownloadDiskDataExtensionStr[] = "downloaddata";
-std::atomic_uint32_t DownloadTaskHandle_t::task_count;
+
 // max size of a file chunk
 static constexpr uint32_t DOWNLOAD_FILE_CHUNK_SIZE = 4 * 1024 * 1024;
 

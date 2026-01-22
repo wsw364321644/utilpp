@@ -13,7 +13,7 @@ typedef struct SimpleValueHandle_t : CommonHandle32_t
     constexpr SimpleValueHandle_t(const SimpleValueHandle_t& handle) : CommonHandle32_t(handle) {}
 
     virtual ~SimpleValueHandle_t() {}
-    static std::atomic<CommonHandleID_t> SimpleValueCount;
+    inline static std::atomic<CommonHandleID_t> SimpleValueCount;
 }SimpleValueHandle_t;
 
 typedef std::function<void(SimpleValueHandle_t,const void*, const void*)> ValueChangedDelegate_t;

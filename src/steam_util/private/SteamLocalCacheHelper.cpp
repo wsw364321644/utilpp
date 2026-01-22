@@ -125,7 +125,7 @@ public:
     //slow thread
     std::unordered_map<std::u8string_view, std::shared_ptr<SteamLibraryFolderInfo_t>, string_hash> SteamLibraryFolderInfosCache;
     std::unordered_set<std::u8string_view, string_hash> SteamLibraryFolderRemoveCache;
-    std::unordered_map<std::u8string_view, CommonHandle_t, string_hash> SteamLibraryFolderMonitors;
+    std::unordered_map<std::u8string_view, CommonHandle32_t, string_hash> SteamLibraryFolderMonitors;
 
 private:
     bool UpdateSteamLibraryFoldersFile(std::u8string_view SteamLibraryFoldersFilePathStr);

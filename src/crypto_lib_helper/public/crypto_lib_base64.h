@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <span>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 
 #include "crypto_lib_export_defs.h"
 

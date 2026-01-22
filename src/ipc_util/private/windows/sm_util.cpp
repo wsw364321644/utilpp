@@ -13,7 +13,7 @@ const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
 {
     //int flags = UV_FS_O_RDWR | UV_FS_O_CREAT | UV_FS_O_TRUNC | UV_FS_O_FILEMAP;
     //int mode = S_IREAD | S_IWRITE;
-    //CommonHandle_t out{ 0 };
+    //CommonHandle32_t out{ 0 };
     //uv_fs_t req;
     //int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
     //uv_fs_req_cleanup(&req);
@@ -54,7 +54,7 @@ const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
 const CommonHandlePtr_t OpenSharedMemory(const char* name) {
     //int flags = UV_FS_O_RDWR | UV_FS_O_FILEMAP| UV_FS_O_CREAT;
     //int mode = S_IREAD | S_IWRITE;
-    //CommonHandle_t out{ 0 };
+    //CommonHandle32_t out{ 0 };
     //uv_fs_t req;
     //int res = uv_fs_open(uv_default_loop(), &req, name, flags, mode, NULL);
     //uv_fs_req_cleanup(&req);
