@@ -27,6 +27,7 @@ SIMPLE_UTIL_API const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 
 #define F_HANDLE HANDLE
 #define pid_t DWORD
+#define MAX_COMMAND_LINE_LEHGTH 0X7fff
 
 typedef void* (__cdecl *fnmalloc)(size_t _Size);
 typedef void(__cdecl* fnfree)(void* const block);
@@ -41,6 +42,7 @@ typedef void(__cdecl* fnfree)(void* const block);
 #include <signal.h>
 
 #define F_HANDLE int
+#define MAX_COMMAND_LINE_LEHGTH ARG_MAX
 
 typedef void* (*fnmalloc)(size_t _Size);
 typedef void(* fnfree)(void* const block);
