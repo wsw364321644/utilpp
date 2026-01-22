@@ -1,3 +1,16 @@
+find_package(CapnProto REQUIRED)
+
+if(NOT NET_UTIL_GENERATE_CAPNP_FILES)
+    execute_process(COMMAND ${CapnProto_DIR}/../../../bin/capnp
+        compile
+        --output=${CapnProto_DIR}/../../../bin/capnpc-c++:private/Downloader
+        ./download-file.capnp
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE result)
+        message(STATUS "result --output=${CAPNPC_CXX_EXECUTABLE}:private/Downloader")
+    set(NET_UTIL_GENERATE_CAPNP_FILES ON CACHE BOOL "net uitl Generate capnp files")
+endif()
+
 NewTargetSource()
 
 AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
@@ -16,7 +29,9 @@ function(add_lib TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PRIVATE CURL::libcurl)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
-
+    target_link_libraries(${TARGET_NAME} PRIVATE CapnProto::kj)
+    target_link_libraries(${TARGET_NAME} PRIVATE CapnProto::capnp)
+    
     AddTargetInclude(${TARGET_NAME})
     AddTargetInstall(${TARGET_NAME} UTILPP)
 endfunction()

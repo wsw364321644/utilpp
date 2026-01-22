@@ -48,7 +48,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 44a2f675ef4468380a8d7609fb7b0c63ec914893
+  GIT_TAG b55adca7544d2e2612afb18388a3ae9175ebb2ae
 )
 FetchContent_MakeAvailable(OCmakeUtil)
 include(ResourceDownload)
@@ -59,6 +59,9 @@ include(TargetImport)
 ImportTarget(RapidJSON ${SSH} TAG origin/master)
 if(UTILPP_ENABLE_CPUID)
   ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
+endif()
+if(UTILPP_ENABLE_NET)
+  ImportProject(CapnProto ${STATIC_CRT} STATIC SSH TAG v1.3.0)
 endif()
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -114,7 +117,7 @@ FetchContent_MakeAvailable(simdjson)
 
 FetchContent_Declare(
   ctre
-  GIT_REPOSITORY git@github.com:hanickadot/compile-time-regular-expressions.git
+  GIT_REPOSITORY https://github.com/hanickadot/compile-time-regular-expressions.git
   GIT_TAG v3.10.0
   GIT_SHALLOW TRUE
 )
