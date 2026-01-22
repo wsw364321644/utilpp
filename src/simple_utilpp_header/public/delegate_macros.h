@@ -6,15 +6,15 @@
 
 
 #define DEFINE_DELEGATE_BASE(DelegateName)  \
-    std::unordered_map<CommonHandle_t, DelegateName##DelegateType> DelegateName##Delegates; \
-    CommonHandle_t Add##DelegateName##Delegate(DelegateName##DelegateType indelegate) { \
-        const auto& pair= DelegateName##Delegates.emplace(CommonHandle_t(CommonHandle_t::atomic_count), indelegate); \
+    std::unordered_map<CommonHandle32_t, DelegateName##DelegateType> DelegateName##Delegates; \
+    CommonHandle32_t Add##DelegateName##Delegate(DelegateName##DelegateType indelegate) { \
+        const auto& pair= DelegateName##Delegates.emplace(CommonHandle32_t(CommonHandle32_t::atomic_count), indelegate); \
         if (!pair.second) { \
             return NullHandle; \
         } \
         return pair.first->first; \
     } \
-    void Clear##DelegateName##Delegate(CommonHandle_t& handle) \
+    void Clear##DelegateName##Delegate(CommonHandle32_t& handle) \
     { \
         DelegateName##Delegates.erase(handle); \
     } \

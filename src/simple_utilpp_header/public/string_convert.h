@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <cuchar>
 #ifdef WIN32
@@ -60,13 +61,14 @@ inline size_t GetU16StringLength(const char16_t* Str)
     return GetStringLengthW((const wchar_t*)Str);
 }
 
-inline size_t U8ToU16Buf(const char* u8Str, size_t inStrLen, wchar_t* outBuf, size_t bufLen) {
+inline size_t U8ToU16Buf(const char8_t* u8Str, size_t inStrLen, wchar_t* outBuf, size_t bufLen) {
     if ((u8Str == NULL) || (*u8Str == '\0'))
         return 0;
 #ifdef WIN32
+    char* in = (char*)u8Str;
     int result = ::MultiByteToWideChar(CP_UTF8,
         MB_ERR_INVALID_CHARS,
-        u8Str,
+        in,
         (int)inStrLen,
         (LPWSTR)outBuf,
         bufLen);
@@ -85,8 +87,10 @@ inline size_t U8ToU16Buf(const char* u8Str, size_t inStrLen, wchar_t* outBuf, si
     return res;
 #endif
 }
-
-inline size_t U16ToU8Buf(const wchar_t* u16Str, size_t inStrLen, char* outBuf, size_t bufLen) {
+inline size_t U8ToU16Buf(const char* u8Str, size_t inStrLen, wchar_t* outBuf, size_t bufLen) {
+    return U8ToU16Buf((const char8_t*)u8Str, inStrLen, outBuf, bufLen);
+}
+inline size_t U16ToU8Buf(const char16_t* u16Str, size_t inStrLen, char* outBuf, size_t bufLen) {
     if ((u16Str == NULL) || (*u16Str == L'\0'))
         return 0;
 #ifdef WIN32
@@ -119,7 +123,9 @@ inline size_t U16ToU8Buf(const wchar_t* u16Str, size_t inStrLen, char* outBuf, s
     return res;
 #endif
 }
-
+inline size_t U16ToU8Buf(const wchar_t* u16Str, size_t inStrLen, char* outBuf, size_t bufLen) {
+    return U16ToU8Buf((const char16_t*)u16Str, inStrLen, outBuf, bufLen);
+}
 inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
 #ifdef WIN32
     if ((u16Str == NULL) || (*u16Str == L'\0'))
@@ -323,20 +329,32 @@ inline std::string U32ToU8(const char32_t* u32Str,size_t num) {
     return out;
 }
 
-inline std::string_view ConvertU8StringToView(const std::u8string& str) {
+constexpr std::string_view ConvertU8StringToView(const std::u8string& str) {
     return std::string_view((const char*)str.c_str(), str.size());
 }
 
-inline std::u8string_view ConvertStringToU8View(const std::string& str) {
+constexpr std::u8string_view ConvertStringToU8View(const std::string& str) {
     return std::u8string_view((const char8_t*)str.c_str(), str.size());
 }
 
-inline std::string ConvertU8ViewToString(std::u8string_view view) {
+constexpr std::string ConvertU8ViewToString(std::u8string_view view) {
     return std::string((const char*)view.data(), view.size());
 }
 
-inline std::u8string_view ConvertViewToU8View(std::string_view view) {
+constexpr std::u8string_view ConvertViewToU8View(std::string_view view) {
     return std::u8string_view((const char8_t*)view.data(), view.size());
+}
+
+constexpr std::string_view ConvertU8ViewToView(std::u8string_view view) {
+    return std::string_view((const char*)view.data(), view.size());
+}
+
+constexpr std::u16string_view ConvertWViewToU16View(std::wstring_view view) {
+    return std::u16string_view((const char16_t*)view.data(), view.size());
+}
+
+constexpr std::wstring_view ConvertU16ViewToWView(std::u16string_view view) {
+    return std::wstring_view((const wchar_t*)view.data(), view.size());
 }
 
 inline char* StrCopy(char* dst,std::string_view view) {
