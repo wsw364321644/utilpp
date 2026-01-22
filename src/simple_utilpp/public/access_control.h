@@ -11,5 +11,5 @@ enum EUserType { LocalUser, ProcessUser,Users};
 
 //ChangeAccessControl();
 
-SIMPLE_UTIL_API  bool GetFolderAccessControlForUser(const char* path, EUserType type,uint64_t* mask);
-SIMPLE_UTIL_API  bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t mask);
+SIMPLE_UTIL_API bool GetFolderAccessControlForUser(const char* path, EUserType type, uint64_t* mask);
+SIMPLE_UTIL_API bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t mask);

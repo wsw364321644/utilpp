@@ -9,7 +9,7 @@ WINDOWS_UTIL_API void  DoInstallSvc(const char* svcname, const char* exepath);
 * @param argv The arguments to pass to the service.
 * @return None
 */
-WINDOWS_UTIL_API void  DoStartSvc(const char* svcname, int argc, const char* const* argv);
+WINDOWS_UTIL_API void  DoStartSvc(const char* svcname, int argc, const char** argv);
 
 /*
 * @brief Updates the service DACL to grant start, stop, delete, and read

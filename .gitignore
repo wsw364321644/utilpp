@@ -27,6 +27,7 @@
 *.pdb
 *.exp
 *.dll
+*.capnp.*
 
 CMakeSettings.json
 Doxyfile

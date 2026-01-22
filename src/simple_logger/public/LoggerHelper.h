@@ -1,10 +1,11 @@
 #pragma once
+#include "logger_export_defs.h"
 #include <string>
 #include <memory>
 #include <vector>
 #include <format>
 #include <spdlog/spdlog.h>
-#include "logger_export_defs.h"
+
 struct BaseLoggerInfo_t{
     virtual ~BaseLoggerInfo_t() {}
 };
