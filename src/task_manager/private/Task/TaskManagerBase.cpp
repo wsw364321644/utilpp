@@ -329,7 +329,7 @@ void FTaskManagerBase::WorkflowThreadTick(std::shared_ptr<TaskWorkflow_t> pWorkf
     } while (true);
 }
 
-void FTaskManagerBase::ThreadFinishTask(CommonHandle_t tHandle,std::shared_ptr<TaskDataBase_t> data)
+void FTaskManagerBase::ThreadFinishTask(CommonHandle32_t tHandle,std::shared_ptr<TaskDataBase_t> data)
 {
     SyncFinishedTaskDatas.enqueue(std::make_tuple(tHandle, data));
 }

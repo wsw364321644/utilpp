@@ -22,7 +22,7 @@ typedef struct PathMonitorData_t
 
     }
     IFilesystemMonitor::TMonitorCallback Delegate;
-    CommonHandle_t Handle;
+    CommonHandle32_t Handle;
     std::string Path;
     uint32_t Mask;
     HANDLE DirHandle{ INVALID_HANDLE_VALUE };
@@ -48,17 +48,17 @@ public:
             CloseHandle(CompletionPort);
         }
     }
-    CommonHandle_t Monitor(std::u8string_view path, uint32_t mask, TMonitorCallback) override;
-    void CancelMonitor(CommonHandle_t handle) override;
+    CommonHandle32_t Monitor(std::u8string_view path, uint32_t mask, TMonitorCallback) override;
+    void CancelMonitor(CommonHandle32_t handle) override;
     void Tick(float delta)override;
 private:
     bool InternalStartMonitor(PathMonitorData_t& PathMonitorData);
     FPathBuf PathBuf;
     HANDLE CompletionPort{ INVALID_HANDLE_VALUE };
-    std::unordered_map< CommonHandle_t, std::shared_ptr<PathMonitorData_t>> MonitorDatas;
-    std::unordered_map< std::u8string_view, CommonHandle_t, string_hash> MonitorDataPathMap;
+    std::unordered_map< CommonHandle32_t, std::shared_ptr<PathMonitorData_t>> MonitorDatas;
+    std::unordered_map< std::u8string_view, CommonHandle32_t, string_hash> MonitorDataPathMap;
 };
-CommonHandle_t FFilesystemMonitorWin::Monitor(std::u8string_view pathstr, uint32_t mask, TMonitorCallback CB)
+CommonHandle32_t FFilesystemMonitorWin::Monitor(std::u8string_view pathstr, uint32_t mask, TMonitorCallback CB)
 {
     if (MonitorDataPathMap.find(pathstr) != MonitorDataPathMap.end()) {
         return NullHandle;
@@ -117,11 +117,11 @@ CommonHandle_t FFilesystemMonitorWin::Monitor(std::u8string_view pathstr, uint32
     if (ResCompletionPort != CompletionPort) {
         return NullHandle;
     }
-    auto [itr,res]=MonitorDatas.try_emplace(CommonHandle_t(CommonHandle_t::atomic_count), pPathMonitorData);
+    auto [itr,res]=MonitorDatas.try_emplace(CommonHandle32_t(CommonHandle32_t::atomic_count), pPathMonitorData);
     MonitorDataPathMap.try_emplace(ConvertStringToU8View(PathMonitorData.Path), itr->first);
     return itr->first;
 }
-void FFilesystemMonitorWin::CancelMonitor(CommonHandle_t handle) 
+void FFilesystemMonitorWin::CancelMonitor(CommonHandle32_t handle) 
 {
     auto itr=MonitorDatas.find(handle);
     if (itr == MonitorDatas.end()) {

@@ -27,8 +27,8 @@ class IFilesystemMonitor
 public:
     virtual ~IFilesystemMonitor(){};
     typedef std::function<void(EFilesystemAction,std::u8string_view, std::u8string_view)> TMonitorCallback;
-    virtual CommonHandle_t Monitor(std::u8string_view path, uint32_t mask, TMonitorCallback) = 0;
-    virtual void CancelMonitor(CommonHandle_t handle) = 0;
+    virtual CommonHandle32_t Monitor(std::u8string_view path, uint32_t mask, TMonitorCallback) = 0;
+    virtual void CancelMonitor(CommonHandle32_t handle) = 0;
     virtual void Tick(float delta)=0;
 };
 

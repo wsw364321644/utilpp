@@ -50,7 +50,7 @@ typedef struct CancelableTaskData_t :TaskDataBase_t {
 }CancelableTaskData_t;
 
 
-typedef std::tuple<CommonHandle_t, std::shared_ptr<TaskDataBase_t>> TAppendingTaskData;
+typedef std::tuple<CommonHandle32_t, std::shared_ptr<TaskDataBase_t>> TAppendingTaskData;
 typedef struct TaskWorkflow_t {
     std::chrono::nanoseconds RepeatTime{ DEFAULT_REPEAT_TIME };
     std::chrono::nanoseconds Timeout{ 0 };
@@ -62,10 +62,10 @@ typedef struct TaskWorkflow_t {
     TAppendingTaskData AppendingTaskDataBuf[5];
 
     //thread read only
-    std::unordered_map < CommonHandle_t, std::shared_ptr<TickTaskData_t>> TickTasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<TimerTaskData_t>> TimerTasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<CommonTaskData_t>> Tasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<CancelableTaskData_t>> CancelableTasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<TickTaskData_t>> TickTasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<TimerTaskData_t>> TimerTasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<CommonTaskData_t>> Tasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<CancelableTaskData_t>> CancelableTasks;
 }TaskWorkflow_t;
 
 
@@ -88,14 +88,14 @@ public:
     void RemoveTask(CommonTaskHandle_t) override;
 
     void WorkflowThreadTick(std::shared_ptr<TaskWorkflow_t> pWorkflowData);
-    void ThreadFinishTask(CommonHandle_t,std::shared_ptr<TaskDataBase_t>);
+    void ThreadFinishTask(CommonHandle32_t,std::shared_ptr<TaskDataBase_t>);
 
     typedef std::tuple<WorkflowHandle_t, std::shared_ptr<TaskWorkflow_t>> TAppendingTaskWorkflowData;
     moodycamel::ConcurrentQueue<TAppendingTaskWorkflowData> AppendingAddTaskWorkflowDatas;
     TAppendingTaskWorkflowData AppendingAddTaskWorkflowDataBuf[5];
     moodycamel::ConcurrentQueue<WorkflowHandle_t> AppendingDelTaskWorkflowDatas;
     WorkflowHandle_t AppendingDelWorkflowHandleBuf[5];
-    std::unordered_map<CommonHandle_t, std::shared_ptr<TaskWorkflow_t>>  TaskWorkflowDatas;
+    std::unordered_map<CommonHandle32_t, std::shared_ptr<TaskWorkflow_t>>  TaskWorkflowDatas;
     WorkflowHandle_t MainThread;
 
 
@@ -105,15 +105,15 @@ public:
     typedef CommonTaskHandle_t TSyncTaskDelData;
     moodycamel::ConcurrentQueue<TSyncTaskDelData> SyncDelTaskDatas;
     TSyncTaskDelData SyncDelTaskDataBuf[100];
-    typedef std::tuple<CommonHandle_t, std::shared_ptr<TaskDataBase_t>> TSyncFinishedTaskData;
+    typedef std::tuple<CommonHandle32_t, std::shared_ptr<TaskDataBase_t>> TSyncFinishedTaskData;
     moodycamel::ConcurrentQueue<TSyncFinishedTaskData> SyncFinishedTaskDatas;
     TSyncFinishedTaskData SyncFinishedTaskDataBuf[100];
 
     //main read only
-    std::unordered_map < CommonHandle_t, std::shared_ptr<TickTaskData_t>> TickTasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<TimerTaskData_t>> TimerTasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<CommonTaskData_t>> Tasks;
-    std::unordered_map < CommonHandle_t, std::shared_ptr<CancelableTaskData_t>> CancelableTasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<TickTaskData_t>> TickTasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<TimerTaskData_t>> TimerTasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<CommonTaskData_t>> Tasks;
+    std::unordered_map < CommonHandle32_t, std::shared_ptr<CancelableTaskData_t>> CancelableTasks;
 
 
     std::atomic_bool bRequestExit{ false };

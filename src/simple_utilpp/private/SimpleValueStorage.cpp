@@ -17,7 +17,7 @@ typedef struct StorageValueInfo_t {
     DeconstructFn_t DeconstructFn;
 }StorageValueInfo_t;
 
-std::unordered_map<SimpleValueHandle_t,std::shared_ptr<StorageValueInfo_t>, std::hash<CommonHandle_t>> StorageValueInfoList;
+std::unordered_map<SimpleValueHandle_t,std::shared_ptr<StorageValueInfo_t>, std::hash<CommonHandle32_t>> StorageValueInfoList;
 const SimpleValueHandle_t SimpleValueStorage::RegisterValue(uint32_t size, ConstructFn_t LConstructFn, ConstructFn_t RConstructFn, DeconstructFn_t deconstructfn)
 {
     auto pinfo=std::make_shared<StorageValueInfo_t>();

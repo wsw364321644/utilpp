@@ -12,10 +12,10 @@
 
 // #pragma comment(lib, "dbghelp.lib")
 
-struct DumpHandle_t : CommonHandle_t
+struct DumpHandle_t : CommonHandle32_t
 {
-    DumpHandle_t(const CommonHandle_t handle) :CommonHandle_t(handle) {}
-    DumpHandle_t() : CommonHandle_t() {}
+    DumpHandle_t(const CommonHandle32_t handle) :CommonHandle32_t(handle) {}
+    DumpHandle_t() : CommonHandle32_t() {}
     inline static std::atomic<CommonHandleID_t> DumpCount;
     static std::atomic_bool initialized;
     static std::vector<DumpHandle_t> DumpHandles;
@@ -137,7 +137,7 @@ LONG __stdcall MyUnhandledExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
-CommonHandle_t SetCrashHandle(CrashCallback infunc)
+CommonHandle32_t SetCrashHandle(CrashCallback infunc)
 {
     DumpHandle_t::DumpHandles.emplace_back(DumpHandle_t::DumpCount);
     DumpHandle_t& handle = DumpHandle_t::DumpHandles.back();
@@ -150,9 +150,9 @@ CommonHandle_t SetCrashHandle(CrashCallback infunc)
     return handle;
 }
 
-void ClearCrashHandle(CommonHandle_t handle)
+void ClearCrashHandle(CommonHandle32_t handle)
 {
-    auto result = std::find_if(std::begin(DumpHandle_t::DumpHandles), std::end(DumpHandle_t::DumpHandles), [&](const CommonHandle_t& handleitr) -> bool
+    auto result = std::find_if(std::begin(DumpHandle_t::DumpHandles), std::end(DumpHandle_t::DumpHandles), [&](const CommonHandle32_t& handleitr) -> bool
         { return handleitr == handle; });
 
     if (result != std::end(DumpHandle_t::DumpHandles))

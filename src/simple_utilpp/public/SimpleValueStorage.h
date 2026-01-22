@@ -5,12 +5,12 @@
 #include <functional>
 #include <type_traits>
 #include "simple_export_ppdefs.h"
-typedef struct SimpleValueHandle_t : CommonHandle_t
+typedef struct SimpleValueHandle_t : CommonHandle32_t
 {
-    constexpr SimpleValueHandle_t(NullCommonHandle_t nhandle) :CommonHandle_t(nhandle) { }
-    SimpleValueHandle_t() : CommonHandle_t() {}
-    constexpr SimpleValueHandle_t(CommonHandleID_t id) : CommonHandle_t(id) {}
-    constexpr SimpleValueHandle_t(const SimpleValueHandle_t& handle) : CommonHandle_t(handle) {}
+    constexpr SimpleValueHandle_t(NullCommonHandle_t nhandle) :CommonHandle32_t(nhandle) { }
+    SimpleValueHandle_t() : CommonHandle32_t() {}
+    constexpr SimpleValueHandle_t(CommonHandleID_t id) : CommonHandle32_t(id) {}
+    constexpr SimpleValueHandle_t(const SimpleValueHandle_t& handle) : CommonHandle32_t(handle) {}
 
     virtual ~SimpleValueHandle_t() {}
     static std::atomic<CommonHandleID_t> SimpleValueCount;
