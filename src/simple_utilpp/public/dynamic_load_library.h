@@ -7,8 +7,11 @@
 
 SIMPLE_UTIL_API void* simple_dlopen(const char* lib_name);
 SIMPLE_UTIL_API void* simple_dlsym(void* handle, const char* func_name);
+SIMPLE_UTIL_API void simple_dlsym_function_ptr(void* handle, const char* func_name, void** outptr);
 SIMPLE_UTIL_API bool simple_dlclose(void* handle);
 
-SIMPLE_UTIL_EXPORT void* simple_dlopen(std::u8string_view lib_name);
-SIMPLE_UTIL_EXPORT void* simple_dlsym(void* handle, std::string_view func_name);
+namespace utilpp {
+    SIMPLE_UTIL_EXPORT void* simple_dlopen(std::u8string_view lib_name);
+    SIMPLE_UTIL_EXPORT void* simple_dlsym(void* handle, std::string_view func_name);
+}
 
