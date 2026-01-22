@@ -70,9 +70,9 @@ void MessageSessionUV::Disconnect()
     }
 }
 
-CommonHandle_t MessageSessionUV::Write(const char* data, int len)
+CommonHandle32_t MessageSessionUV::Write(const char* data, int len)
 {
-    auto res = CommonHandle_t(NullHandle);
+    auto res = CommonHandle32_t(NullHandle);
     auto messageConnectionType = GetServer()->GetServerType();
     writeMtx.lock();
     auto pair = writeRequests.emplace(writeCount, messageConnectionType);

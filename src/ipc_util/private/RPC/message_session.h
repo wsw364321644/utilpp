@@ -32,7 +32,7 @@ public:
     }
 
     void Disconnect()override;
-    CommonHandle_t Write(const char* data, int len)override;
+    CommonHandle32_t Write(const char* data, int len)override;
 public:
     uint64_t GetPID() const override;
 
@@ -52,7 +52,7 @@ public:
 private:
     std::atomic<EMessageConnectionState> state;
     std::atomic_uint32_t writeCount;
-    std::map<CommonHandle_t, MessageSendRequestUV> writeRequests;
+    std::map<CommonHandle32_t, MessageSendRequestUV> writeRequests;
     MessageServerUV* server;
     uv_shutdown_t shutdownReq;
     std::mutex writeMtx;

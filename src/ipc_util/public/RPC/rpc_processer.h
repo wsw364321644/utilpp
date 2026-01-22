@@ -3,7 +3,7 @@
 #include <set>
 #include <unordered_map>
 #include <optional>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 
 #include "rpc_interface.h"
 #include "message_processer.h"
@@ -55,7 +55,7 @@ public:
 
     std::unordered_map<std::string, std::shared_ptr<IGroupRPC>> RPCAPIInterfaces;
     IMessageProcesser* pMsgProcesser;
-    CommonHandle_t OnPacketRecvHandle{ NullHandle };
+    CommonHandle32_t OnPacketRecvHandle{ NullHandle };
 };
 class IPC_EXPORT FJRPCProcesser : public IRPCProcesser
 {

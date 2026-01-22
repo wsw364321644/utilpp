@@ -34,12 +34,12 @@ class IPC_EXPORT IMessageSession {
 public:
     virtual EMessageConnectionType GetConnectionType()const = 0;
     virtual void Disconnect() = 0;
-    virtual CommonHandle_t Write(const char* data, int len) = 0;
+    virtual CommonHandle32_t Write(const char* data, int len) = 0;
     virtual EMessageConnectionState GetConnectionState()const = 0;
     virtual uint64_t GetPID()const { return 0; };
     DEFINE_EVENT_ONE_PARAM(OnDisconnect, IMessageSession*);
     DEFINE_EVENT_THREE_PARAM(OnRead, IMessageSession*, char*, intptr_t);
-    DEFINE_EVENT_THREE_PARAM(OnWrite, IMessageSession*, CommonHandle_t,int);
+    DEFINE_EVENT_THREE_PARAM(OnWrite, IMessageSession*, CommonHandle32_t,int);
 };
 
 class IPC_EXPORT IMessageClient:public IMessageSession {

@@ -262,7 +262,7 @@ public:
     }SendReq{};
     std::unique_ptr<char> Data;
     size_t Len{};
-    CommonHandle_t Handle{ NullHandle };
+    CommonHandle32_t Handle{ NullHandle };
     EMessageConnectionType  ConnectionType;
     MessageSendRequestUV(const MessageSendRequestUV&& sendhandle)noexcept : ConnectionType(sendhandle.ConnectionType) {
         switch (sendhandle.ConnectionType) {

@@ -22,7 +22,7 @@ public:
 public:
 
     bool Connect(EMessageConnectionType, const std::string& url) override;
-    CommonHandle_t Write(const char* data, int len) override;
+    CommonHandle32_t Write(const char* data, int len) override;
     void Disconnect()override;
     void Tick(float delSec) override;
     EMessageConnectionType GetConnectionType()const override {
@@ -49,7 +49,7 @@ private:
 
     std::vector<char> readBuf;
     std::vector<char> writeBuf;
-    std::map<CommonHandle_t, MessageSendRequestUV> writeRequests;
+    std::map<CommonHandle32_t, MessageSendRequestUV> writeRequests;
     std::atomic_uint32_t writeCount;
     std::shared_mutex writeMtx;
     std::thread uvworkThread;

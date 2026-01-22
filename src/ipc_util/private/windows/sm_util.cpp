@@ -2,26 +2,14 @@
 #include <uv.h>
 #include <LoggerHelper.h>
 
-typedef struct WindowsHandle_t :public CommonHandle_t
+typedef struct WindowsSharedMemoryInfo_t 
 {
-    WindowsHandle_t(HANDLE _handle): HMapFile(_handle)
-    {
-        if (HMapFile == NULL) {
-            CommonHandle_t(NullHandle);
-        }
-        else {
-            CommonHandle_t(WindowsHandleCount);
-        }
-    }
-
     HANDLE HMapFile{NULL};
     size_t FileSize{0};
     std::string Name;
-    static std::atomic<CommonHandleID_t> WindowsHandleCount;
-} WindowsHandle_t;
-std::atomic<WindowsHandle_t::CommonHandleID_t> WindowsHandle_t::WindowsHandleCount{0};
+} WindowsSharedMemoryInfo_t;
 
-CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
+const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
 {
     //int flags = UV_FS_O_RDWR | UV_FS_O_CREAT | UV_FS_O_TRUNC | UV_FS_O_FILEMAP;
     //int mode = S_IREAD | S_IWRITE;
@@ -50,15 +38,20 @@ CommonHandle_t* CreateSharedMemory(const char* name, size_t len)
     if (HMapFile == NULL)
     {
         SIMPLELOG_LOGGER_ERROR(nullptr, "Could not create file mapping object({}).\n", GetLastError());
-        return nullptr;
+        return NullHandle;
     }
-    auto handle = new WindowsHandle_t(HMapFile);
-    handle->Name = name;
-    handle->FileSize = len;
-    return handle;
+
+    auto info = new WindowsSharedMemoryInfo_t;
+    info->Name = name;
+    info->FileSize = len;
+    info->HMapFile = HMapFile;
+    auto dwres = GetLastError();
+    if (dwres == ERROR_ALREADY_EXISTS) {
+    }
+    return CommonHandlePtr_t((intptr_t)info);
 }
 
-CommonHandle_t* OpenSharedMemory(const char* name) {
+const CommonHandlePtr_t OpenSharedMemory(const char* name) {
     //int flags = UV_FS_O_RDWR | UV_FS_O_FILEMAP| UV_FS_O_CREAT;
     //int mode = S_IREAD | S_IWRITE;
     //CommonHandle_t out{ 0 };
@@ -81,52 +74,54 @@ CommonHandle_t* OpenSharedMemory(const char* name) {
     if (hMapFile == NULL)
     {
         SIMPLELOG_LOGGER_ERROR(nullptr, "Could not open file mapping object({}).", GetLastError());
-        return nullptr;
+        return NullHandle;
     }
-    auto out = new WindowsHandle_t(hMapFile);
-    out->Name = name;
-    return out;
+    auto info = new WindowsSharedMemoryInfo_t(hMapFile);
+    info->Name = name;
+    info->HMapFile = hMapFile;
+    return CommonHandlePtr_t((intptr_t)info);
 
 }
 
-void* MapSharedMemory(CommonHandle_t* phandle)
+void* MapSharedMemory(const CommonHandlePtr_t handle)
 {
-    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
     if (!handle) {
         return  nullptr;
     }
-    LPVOID pBuf = MapViewOfFile(handle->HMapFile,   // handle to map object
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
+    LPVOID pBuf = MapViewOfFile(info.HMapFile,   // handle to map object
         FILE_MAP_ALL_ACCESS, // read/write permission
         0,
         0,
-        handle->FileSize);
+        info.FileSize);
     return pBuf;
 }
 
-void* MapReadSharedMemory(CommonHandle_t* phandle)
+void* MapReadSharedMemory(const CommonHandlePtr_t handle)
 {
-    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
     if (!handle) {
         return  nullptr;
     }
-    LPVOID pBuf = MapViewOfFile(handle->HMapFile,   // handle to map object
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
+    LPVOID pBuf = MapViewOfFile(info.HMapFile,   // handle to map object
         FILE_MAP_READ, // read/write permission
         0,
         0,
-        handle->FileSize);
+        info.FileSize);
     return pBuf;
 }
 
-void UnmapSharedMemory(void* ptr)
+void UnmapSharedMemory(const CommonHandlePtr_t,void* ptr)
 {
     UnmapViewOfFile(ptr);
 }
 
-bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t len)
+bool WriteSharedMemory(const CommonHandlePtr_t handle, void* content, size_t len)
 {
-    if (!phandle||!phandle->IsValid()) {
-        return false;
+    if (!handle) {
+        return  false;
     }
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
     //uv_buf_t buf = uv_buf_init((char*)content, *len);
     //uv_fs_t write_req;
     //int res = uv_fs_write(uv_default_loop(), &write_req, handle.ID, &buf, 1, 0, NULL);
@@ -135,17 +130,11 @@ bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t len)
     //    SIMPLELOG_LOGGER_ERROR(nullptr,"uv_fs_write error: {}\n", uv_strerror(res));
     //}
     //*len = write_req.result;
-    
-
-    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
-    if (!handle) {
-        return  false;
-    }
-    if (handle->FileSize < len) {
+    if (info.FileSize < len) {
         return false;
     }
 
-    LPTSTR pBuf = (LPTSTR)MapViewOfFile(handle->HMapFile,   // handle to map object
+    LPTSTR pBuf = (LPTSTR)MapViewOfFile(info.HMapFile,   // handle to map object
         FILE_MAP_ALL_ACCESS, // read/write permission
         0,
         0,
@@ -163,11 +152,12 @@ bool WriteSharedMemory(CommonHandle_t* phandle, void* content, size_t len)
     return true;
 }
 
-bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
+bool ReadSharedMemory(const CommonHandlePtr_t handle, void* content, size_t* len)
 {
-    if (!phandle || !phandle->IsValid()) {
-        return false;
+    if (!handle) {
+        return  false;
     }
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
     //uv_buf_t buf = uv_buf_init((char*)content, *len);
     //*len = 0;
     //uv_fs_t read_req;
@@ -177,11 +167,8 @@ bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
     //    SIMPLELOG_LOGGER_ERROR(nullptr,"uv_fs_write error: {}\n", uv_strerror(res));
     //}
     //*len = read_req.result;
-    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
-    if (!handle) {
-        return  false;
-    }
-    LPTSTR pBuf = (LPTSTR)MapViewOfFile(handle->HMapFile, // handle to map object
+
+    LPTSTR pBuf = (LPTSTR)MapViewOfFile(info.HMapFile, // handle to map object
         FILE_MAP_ALL_ACCESS,  // read/write permission
         0,
         0,
@@ -197,20 +184,18 @@ bool ReadSharedMemory(CommonHandle_t* phandle, void* content, size_t* len)
     return true;
 }
 
-void CloseSharedMemory(CommonHandle_t* phandle)
+void CloseSharedMemory(const CommonHandlePtr_t handle)
 {
-    if (!phandle || !phandle->IsValid()) {
+    if (!handle) {
         return;
     }
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
     //uv_fs_t closeReq;
     //uv_fs_close(uv_default_loop(), &closeReq,
     //    handle.ID,
     //    NULL);
-    WindowsHandle_t* handle = dynamic_cast<WindowsHandle_t*>(phandle);
-    if (!handle) {
-        return;
-    }
-    if (handle->HMapFile)
-        CloseHandle(handle->HMapFile);
-    delete handle;
+
+    CloseHandle(info.HMapFile);
+    delete (WindowsSharedMemoryInfo_t*)handle.ID;
+    const_cast<CommonHandlePtr_t&>(handle).Reset();
 }

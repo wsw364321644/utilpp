@@ -6,7 +6,7 @@
 #include <string>
 #include <chrono>
 #include <list>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 #include "message_common.h"
 #include "delegate_macros.h"
 #pragma warning(push)
@@ -98,7 +98,7 @@ private:
 private:
 
     IMessageSession* session;
-    CommonHandle_t MessageSessionOnReadHandle{NullHandle};
+    CommonHandle32_t MessageSessionOnReadHandle{NullHandle};
     std::vector<char> readBuf;
     std::vector<std::list<std::shared_ptr<MessagePacket_t>>> messageQueues;
     std::shared_mutex messageQueuesMutex;
