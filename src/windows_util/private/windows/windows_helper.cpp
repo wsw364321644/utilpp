@@ -310,40 +310,6 @@ WINDOWS_UTIL_API DWORD get_process_id_from_handle(HANDLE hProcess)
     return ::GetProcessId(hProcess);
 }
 
-
-
-HANDLE create_mutex(const char* name, BOOL is_app)
-{
-    if (is_app) {
-
-    }
-    return CreateMutexA(NULL, false, name);
-}
-
-HANDLE open_mutex(const char* name, BOOL is_app)
-{
-    if (is_app) {
-
-    }
-    return OpenMutexA((SYNCHRONIZE), false, name);
-}
-
-HANDLE create_event(const char* name, BOOL is_app)
-{
-    if (is_app) {
-
-    }
-    return CreateEventA(NULL, false, false, name);
-}
-
-HANDLE open_event(const char* name, BOOL is_app)
-{
-    if (is_app) {
-
-    }
-    return OpenEventA((EVENT_MODIFY_STATE | SYNCHRONIZE), false, name);
-}
-
 UINT get_system_module_path(WCHAR* base_path, const char* module_name) {
     if (!bsystem_path_inited) {
         UINT ret = GetSystemDirectoryW(system_path, MAX_PATH);

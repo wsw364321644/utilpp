@@ -3,6 +3,9 @@
 #include "windows_util_export_defs.h"
 
 constexpr char REG_COMMAND_PATH[] = "Shell\\Open\\Command";
+constexpr char URL_PROTOCOL_KEY_NAME[] = "URL Protocol";
+constexpr wchar_t URL_PROTOCOL_KEY_NAME_U16[] = L"URL Protocol";
+
 
 WINDOWS_UTIL_API bool is_app_container(HANDLE process);
 WINDOWS_UTIL_API bool is_uwp_window(HWND hwnd);
@@ -24,11 +27,6 @@ WINDOWS_UTIL_API DWORD  get_process_file_name_from_handle(HANDLE  hProcess, HMOD
 WINDOWS_UTIL_API DWORD  get_process_file_base_name(DWORD process_id, HMODULE hMod, LPSTR  file_name, DWORD  nSize);
 WINDOWS_UTIL_API DWORD  get_process_file_base_name_from_handle(HANDLE  hProcess, HMODULE hMod, LPSTR  file_name, DWORD  nSize);
 WINDOWS_UTIL_API DWORD get_process_id_from_handle(HANDLE hProcess);
-
-WINDOWS_UTIL_API HANDLE create_mutex(const char* name, BOOL is_app);
-WINDOWS_UTIL_API HANDLE open_mutex(const char* name, BOOL is_app);
-WINDOWS_UTIL_API HANDLE create_event(const char* name, BOOL is_app);
-WINDOWS_UTIL_API HANDLE open_event(const char* name, BOOL is_app);
 
 //not support  parallel
 WINDOWS_UTIL_API HMODULE get_system_module(const char* module_name);
