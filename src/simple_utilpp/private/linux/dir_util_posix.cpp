@@ -9,7 +9,7 @@
 #include "dir_util.h"
 #include "dir_util_internal.h"
 #include "string_convert.h"
-#include "logger_header.h"
+
 #include <stack>
 #include <assert.h>
 #include <filesystem>
@@ -67,12 +67,23 @@ bool InternalCreateDir(char *path, mode_t mode)
     }
     return true;
 }
+std::u8string_view DirUtil::AbsolutePath(std::u8string_view path)
+{
+    return u8"";
+}
 
 bool DirUtil::IsExist(std::u8string_view path)
 {
     struct stat s;
     int err = stat((const char *)path.data(), &s);
     return err == 0;
+}
+
+bool DirUtil::IsExist(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return IsExist(ConvertViewToU8View(path));
 }
 
 bool DirUtil::IsDirectory(std::u8string_view path)
@@ -85,6 +96,13 @@ bool DirUtil::IsDirectory(std::u8string_view path)
     return S_ISDIR(s.st_mode);
 }
 
+bool DirUtil::IsDirectory(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return IsDirectory(ConvertViewToU8View(path));
+}
+
 bool DirUtil::IsRegular(std::u8string_view path)
 {
     struct stat s;
@@ -95,11 +113,78 @@ bool DirUtil::IsRegular(std::u8string_view path)
     return S_ISREG(s.st_mode);
 }
 
+bool DirUtil::IsRegular(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return IsRegular(ConvertViewToU8View(path));
+}
+
+bool DirUtil::SetCWD(std::u8string_view path)
+{
+    int err = chdir((const char*)path.data());
+    if (err == -1)
+        return false;
+
+    return true
+}
+
+bool DirUtil::SetCWD(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return SetCWD(ConvertViewToU8View(path));
+}
+
+uint64_t DirUtil::FileSize(std::u8string_view path)
+{
+    struct stat s;
+    int err = stat((const char*)path.data(), &s);
+    if (err == -1)
+        return 0;
+
+    return s.st_size;
+}
+
+uint64_t DirUtil::FileSize(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return FileSize(ConvertViewToU8View(path));
+}
+
+bool DirUtil::SetWritable(std::u8string_view path)
+{
+    struct stat s;
+    int err = stat((const char*)path.data(), &s);
+    if (err == -1)
+        return false;
+    mode_t new_mode = s.st_mode | S_IWUSR;
+    err = chmod((const char*)path.data(), new_mode);
+    if (err == -1)
+        return false;
+    return true;
+}
+
+bool DirUtil::SetWritable(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return SetWritable(ConvertViewToU8View(path));
+}
+
 bool DirUtil::CreateDir(std::u8string_view path)
 {
     PathBuf.SetNormalizePath(path.data(), path.length());
     char *norPath = PathBuf.GetBufInternal();
     return InternalCreateDir(norPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
+bool DirUtil::CreateDir(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return CreateDir(ConvertViewToU8View(path));
 }
 
 F_HANDLE DirUtil::RecursiveCreateFile(std::u8string_view path, uint32_t flag)
@@ -123,9 +208,10 @@ F_HANDLE DirUtil::RecursiveCreateFile(std::u8string_view path, uint32_t flag)
     return open(norPath, flag, mode);
 }
 
-std::u8string_view DirUtil::AbsolutePath(std::u8string_view path)
-{
-    return u8"";
+F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf) {
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return RecursiveCreateFile(ConvertViewToU8View(path));
 }
 
 bool DirUtil::Delete(std::u8string_view path)
@@ -135,25 +221,31 @@ bool DirUtil::Delete(std::u8string_view path)
     return remove(norPath) == 0;
 }
 
+bool DirUtil::Delete(FPathBuf& pathBuf)
+{
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    return Delete(ConvertViewToU8View(path));
+}
+
 bool DirUtil::Rename(std::u8string_view  oldpath, std::u8string_view  path)
 {
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* norOldPath = PathBuf.GetBufInternal();
+    char* OldPathStr = PathBuf.GetBufInternal();
     PathBuf2.SetNormalizePath(path.data(), path.length());
-    char* norPath = PathBuf2.GetBufInternal();
-    return rename(norOldPath, norPath)==0;
+    char* PathStr = PathBuf2.GetBufInternal();
+    return rename(OldPathStr, PathStr)==0;
 }
 
-
-uint64_t DirUtil::FileSize(std::u8string_view path)
+bool DirUtil::Rename(FPathBuf& pathBuf, FPathBuf& newPathBuf)
 {
-    struct stat s;
-    int err = stat((const char *)path.data(), &s);
-    if (err == -1)
-        return 0;
-
-    return s.st_size;
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    newPathBuf.ToPath();
+    auto newPath = newPathBuf.GetPrependFileNamespaces();
+    return Rename(ConvertViewToU8View(path), ConvertViewToU8View(newPath));
 }
+
 bool RecursiveIterateDir(uint32_t depth)
 {
     char *path = PathBuf.GetBufInternal();
