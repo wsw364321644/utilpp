@@ -1,9 +1,42 @@
 #include "ChildProcessManager.h"
-#include <uv.h>
-#include <mutex>
+
+#include <singleton.h>
 #include <LoggerHelper.h>
-#include <string_buffer.h>
+#include <CharBuffer.h>
+#include <uv.h>
 #include <cstring>
+#include <atomic>
+#include <unordered_map>
+#include <memory>
+#include <functional>
+typedef struct uv_loop_s uv_loop_t;
+typedef struct uv_pipe_s uv_pipe_t;
+typedef struct uv_stream_s uv_stream_t;
+typedef struct uv_buf_t uv_buf_t;
+
+class FChildProcessManager :public IChildProcessManager {
+public:
+    FChildProcessManager();
+    ~FChildProcessManager() {}
+    static FChildProcessManager* GetInstance();
+    CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr);
+    typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
+    void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate);
+    typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;
+    void RegisterOnExit(CommonHandle32_t handle, FOnExitDelegate delegate);
+    bool CheckIsFinished(CommonHandle32_t handle);
+    void Tick(float delSec);
+    void Run();
+
+private:
+    void ClearProcessData(CommonHandle32_t handle);
+    void OnUvProcessClosed(UVProcess_t* process, int64_t exit_status, int term_signal);
+    void InternalSpawnProcess(UVProcess_t*);
+    std::atomic_uint32_t processCount{ 0 };
+    uv_loop_t* ploop;
+    CommonHandle32_t currentHandle{ NullHandle };
+    std::unordered_map<CommonHandle32_t, std::shared_ptr<UVProcess_t>> processes;
+};
 
 typedef struct UVProcess_t {
     ~UVProcess_t() {
@@ -27,22 +60,14 @@ typedef struct UVProcess_t {
     uv_process_t process{ 0 };
     uv_process_options_t options{ 0 };
     uv_stdio_container_t child_stdio[4];
-    uv_pipe_t pipe;
-    uv_async_t async;
-    FChildProcessManager* ChildProcessManager;
+    uv_pipe_t pipe{};
+    uv_async_t async{};
+    FChildProcessManager* ChildProcessManager{ NULL };
     FChildProcessManager::FOnReadDelegate  OnReadDelegate;
     FChildProcessManager::FOnExitDelegate  OnExitDelegate;
-    CommonHandle_t handle{ NullHandle };
+    CommonHandle32_t handle{ NullHandle };
     FCharBuffer Buf;
-    //std::mutex m;
-    //std::condition_variable cv;
-    //bool running = true;
 }UVProcess_t;
-//void on_new_connection(uv_stream_t* server, int status) {
-//    UVProcess_t* UVProcess = (UVProcess_t*)server->data;
-//    UVProcess->ChildProcessManager->OnNewConnection(server, status);
-//}
-
 void alloc_buffer(uv_handle_t* handle,
     size_t suggested_size,
     uv_buf_t* buf) {
@@ -79,7 +104,7 @@ FChildProcessManager* FChildProcessManager::GetInstance()
     }
     return ptr;
 }
-CommonHandle_t FChildProcessManager::SpawnProcess(const char* _filepath, const char** _args)
+CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const char** _args)
 {
     if (!_filepath) {
         return NullHandle;
@@ -111,7 +136,7 @@ CommonHandle_t FChildProcessManager::SpawnProcess(const char* _filepath, const c
 
     return pair.first->first;
 }
-void FChildProcessManager::RegisterOnRead(CommonHandle_t handle, FOnReadDelegate delegate)
+void FChildProcessManager::RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate)
 {
     auto pair = processes.find(handle);
     if (pair == processes.end()) {
@@ -119,7 +144,7 @@ void FChildProcessManager::RegisterOnRead(CommonHandle_t handle, FOnReadDelegate
     }
     pair->second->OnReadDelegate = delegate;
 }
-void FChildProcessManager::RegisterOnExit(CommonHandle_t handle, FOnExitDelegate delegate)
+void FChildProcessManager::RegisterOnExit(CommonHandle32_t handle, FOnExitDelegate delegate)
 {
     auto pair = processes.find(handle);
     if (pair == processes.end()) {
@@ -127,7 +152,7 @@ void FChildProcessManager::RegisterOnExit(CommonHandle_t handle, FOnExitDelegate
     }
     pair->second->OnExitDelegate = delegate;
 }
-bool FChildProcessManager::CheckIsFinished(CommonHandle_t handle)
+bool FChildProcessManager::CheckIsFinished(CommonHandle32_t handle)
 {
     auto pair = processes.find(handle);
     if (pair == processes.end()) {
@@ -161,7 +186,7 @@ void FChildProcessManager::Run()
     } while (currentHandle.IsValid());
 }
 
-void FChildProcessManager::ClearProcessData(CommonHandle_t handle)
+void FChildProcessManager::ClearProcessData(CommonHandle32_t handle)
 {
     auto pair = processes.find(handle);
     if (pair == processes.end()) {
@@ -225,4 +250,10 @@ void FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
         SIMPLELOG_LOGGER_ERROR(nullptr,"{}", uv_strerror(r));
         return;
     }
+}
+
+
+std::shared_ptr<IChildProcessManager> IChildProcessManager::GetSingleton()
+{
+    return TClassSingletonHelper<FChildProcessManager>::GetClassSingleton();
 }
