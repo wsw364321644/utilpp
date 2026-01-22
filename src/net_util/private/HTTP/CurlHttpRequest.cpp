@@ -1,5 +1,6 @@
 #include "HTTP/CurlHttpRequest.h"
 #include "HTTP/CurlHttpManager.h"
+#include <FunctionExitHelper.h>
 #include <constant_hash.h>
 #include <LoggerHelper.h>
 #include <algorithm>
@@ -113,6 +114,69 @@ std::string_view FCurlHttpRequest::GetVerb()const
 void FCurlHttpRequest::SetVerb(std::string_view _Verb)
 {
     Verb = _Verb;
+}
+
+bool FCurlHttpRequest::GenerateURL()
+{
+    CURLU* urlp{ nullptr };
+    CURLUcode rc{ CURLUcode::CURLUE_OK };
+    char* url{ nullptr };
+    if (Host.empty()) {
+        return false;
+    }
+    urlp = curl_url();
+    if (!urlp) {
+        return false;
+    }
+    FunctionExitHelper_t curlUrlCleanupHelper(
+        [&urlp]() {
+            curl_url_cleanup(urlp);
+        }
+    );
+    //rc = curl_url_set(urlp, CURLUPART_FRAGMENT, "anchor", 0);
+    //rc = curl_url_set(urlp, CURLUPART_USER, "john", 0);
+    //rc = curl_url_set(urlp, CURLUPART_PASSWORD, "doe", 0);
+    //rc = curl_url_set(urlp, CURLUPART_ZONEID, "eth0", 0);
+    rc = curl_url_set(urlp, CURLUPART_HOST, Host.c_str(), 0);
+    if (rc != CURLUcode::CURLUE_OK) {
+        return false;
+    }
+    if (!Scheme.empty()) {
+        rc = curl_url_set(urlp, CURLUPART_SCHEME, Scheme.c_str(), 0);
+        if (rc != CURLUcode::CURLUE_OK) {
+            return false;
+        }
+    }
+    if (!Path.empty()) {
+        rc = curl_url_set(urlp, CURLUPART_PATH, Path.c_str(), 0);
+        if (rc != CURLUcode::CURLUE_OK) {
+            return false;
+        }
+    }
+    if (Port < std::numeric_limits<uint16_t>::max()) {
+        rc = curl_url_set(urlp, CURLUPART_PORT, std::to_string(Port).c_str(), 0);
+        if (rc != CURLUcode::CURLUE_OK) {
+            return false;
+        }
+    }
+    for (auto& pair : Queries) {
+        rc = curl_url_set(urlp, CURLUPART_QUERY, (pair.first + "=" + pair.second).c_str(), CURLU_APPENDQUERY | CURLU_URLENCODE);
+        if (rc != CURLUcode::CURLUE_OK) {
+            return false;
+        }
+    }
+
+    rc = curl_url_get(urlp, CURLUPART_URL, &url, 0);
+    if (rc != CURLUcode::CURLUE_OK) {
+        return false;
+    }
+    FunctionExitHelper_t curlFreeUrlHelper(
+        [&url]() {
+            curl_free(url);
+        }
+    );
+    URL = url;
+    return true;
 }
 
 void FCurlHttpRequest::SetURL(std::string_view _URL)
@@ -277,12 +341,17 @@ void FCurlHttpRequest::Clear()
     Host.clear();
     Path.clear();
     Scheme.clear();
+    Ranges.clear();
     Port = std::numeric_limits<uint32_t>::max();
     RequestID = 0;
     CompletionStatus = EHttpRequestStatus::NotStarted;
     if (Response) {
         Response->Clear();
     }
+    RequestStartTime = {};
+    LastServerRespondTime = {};
+    bEnableRespContent = true;
+    bCompleted = false;
 }
 
 HttpRequestCompleteDelegateType& FCurlHttpRequest::OnProcessRequestComplete()
@@ -293,6 +362,11 @@ HttpRequestCompleteDelegateType& FCurlHttpRequest::OnProcessRequestComplete()
 HttpRequestProgressDelegateType& FCurlHttpRequest::OnRequestProgress()
 {
     return HttpRequestProgressDelegate;
+}
+
+HttpThreadRespContentReceiveDelegateType& FCurlHttpRequest::OnHttpThreadRespContentReceive()
+{
+    return HttpThreadRespContentReceiveDelegate;
 }
 
 void FCurlHttpRequest::CancelRequest()
@@ -315,7 +389,12 @@ void FCurlHttpRequest::Tick(float DeltaSeconds)
 
 float FCurlHttpRequest::GetElapsedTime()
 {
-    return 0.0f;
+    return std::chrono::duration_cast<std::chrono::microseconds>(LastServerRespondTime -RequestStartTime).count()/float(std::micro::den);
+}
+
+void FCurlHttpRequest::EnableRespContent(bool bEnable)
+{
+    bEnableRespContent = bEnable;
 }
 
 
@@ -323,17 +402,17 @@ curl_proxytype FCurlHttpRequest::GetCURLProxyScheme() const
 {
     switch (ctcrc32(GetProxyScheme())) {
     case ctcrc32("http"):
-        return CURLPROXY_HTTP;
+        return curl_proxytype(CURLPROXY_HTTP);
     case ctcrc32("https"):
-        return CURLPROXY_HTTPS;
+        return curl_proxytype(CURLPROXY_HTTPS);
     case ctcrc32("socks4"):
-        return CURLPROXY_SOCKS4;
+        return curl_proxytype(CURLPROXY_SOCKS4);
     case ctcrc32("socks4a"):
-        return CURLPROXY_SOCKS4A;
+        return curl_proxytype(CURLPROXY_SOCKS4A);
     case ctcrc32("socks5"):
-        return CURLPROXY_SOCKS5;
+        return curl_proxytype(CURLPROXY_SOCKS5);
     default:
-        return CURLPROXY_HTTP;
+        return curl_proxytype(CURLPROXY_HTTP);
     }
 }
 
@@ -463,4 +542,6 @@ void FCurlHttpResponse::Clear()
     HttpCode = 0;
     ContentLength = -1;
     TotalBytesRead = 0;
+    UserBuf = nullptr;
+    UserBufLen = 0;
 }

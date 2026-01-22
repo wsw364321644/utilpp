@@ -1,10 +1,10 @@
 #pragma once
-#include <string_buffer.h>
+
 #include <vector>
 #include <string>
 #include <functional>
 #include <memory>
-
+#include <CharBuffer.h>
 
 #define InfiniteRange std::numeric_limits<uint64_t>::max()
 typedef std::shared_ptr<class IHttpRequest> HttpRequestPtr;
@@ -12,6 +12,7 @@ typedef std::shared_ptr<class IHttpResponse> HttpResponsePtr;
 
 typedef std::function<void(HttpRequestPtr, HttpResponsePtr, bool)> HttpRequestCompleteDelegateType;
 typedef std::function<void(HttpRequestPtr, int64_t, int64_t, int64_t)> HttpRequestProgressDelegateType;
+typedef std::function<void(HttpRequestPtr, int64_t, int64_t, void*, int64_t)> HttpThreadRespContentReceiveDelegateType;
 
 enum EHttpRequestStatus
 {
@@ -133,7 +134,7 @@ public:
      * @param URL - URL to use.
      */
     virtual void SetURL(std::string_view URL) = 0;
-
+    virtual bool GenerateURL() = 0;
     virtual void SetHost(std::string_view Host) = 0;
     virtual void SetPath(std::string_view Path) = 0;
     virtual void SetScheme(std::string_view Scheme) = 0;
@@ -211,6 +212,8 @@ public:
      */
     virtual HttpRequestProgressDelegateType& OnRequestProgress() = 0;
 
+    virtual HttpThreadRespContentReceiveDelegateType& OnHttpThreadRespContentReceive() = 0;
+
     /**
      * Called to cancel a request that is still being processed
      */
@@ -245,6 +248,13 @@ public:
      */
     virtual float GetElapsedTime() = 0;
 
+    /// <summary>
+    /// Default is enabled. Disable to save memory if response content is not needed.
+    /// If disabled , GetContent and GetContentAsString in IHttpResponse will return empty.Callback OnHttpThreadRespContentReceive used;
+    /// If enable ,callback OnRequestProgress used;
+    /// </summary>
+    /// <param name="bDisable"></param>
+    virtual void EnableRespContent(bool bEnable) = 0;
     /**
      * Destructor for overrides
      */

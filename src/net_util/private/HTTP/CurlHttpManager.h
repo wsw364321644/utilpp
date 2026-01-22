@@ -29,6 +29,7 @@ public:
 
 
     HttpRequestPtr NewRequest() override;
+    void FreeRequest(HttpRequestPtr) override;
     bool ProcessRequest(HttpRequestPtr) override;
     void Tick(float delSec) override;
     void HttpThreadTick(float delSec) override;

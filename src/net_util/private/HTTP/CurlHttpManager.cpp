@@ -1,7 +1,7 @@
 #include "HTTP/HttpManager.h"
 #include "HTTP/CurlHttpManager.h"
 #include "HTTP/CurlHttpRequest.h"
-#include <string_buffer.h>
+#include <CharBuffer.h>
 #include <curl/curl.h>
 #include <LoggerHelper.h>
 #include <string>
@@ -46,6 +46,13 @@ HttpRequestPtr FCurlHttpManager::NewRequest()
     // Response object to handle data that comes back after starting this request
     pCurlHttpRequest->Response = std::make_shared<FCurlHttpResponse>(pCurlHttpRequest.get());
     return pCurlHttpRequest;
+}
+
+void FCurlHttpManager::FreeRequest(HttpRequestPtr req)
+{
+    auto ptr=std::dynamic_pointer_cast<FCurlHttpRequest>(req);
+    ptr->Clear();
+    FreeToUseRequests.enqueue(ptr);
 }
 
 bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
@@ -156,7 +163,7 @@ void FCurlHttpManager::HttpThreadTick(float delSec)
 
 size_t FCurlHttpManager::UploadCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, FCurlHttpRequest* creq)
 {
-    creq->TimeSinceLastResponse = 0.0f;
+    creq->LastServerRespondTime = std::chrono::steady_clock::now();
 
     size_t SizeToSend = creq->Content.Size() - creq->BytesSent;
     size_t SizeToSendThisTime = 0;
@@ -182,7 +189,7 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
     auto cresp = creq->Response;
     if (cresp.get())
     {
-        creq->TimeSinceLastResponse = 0.0f;
+        creq->LastServerRespondTime = std::chrono::steady_clock::now();
 
         uint32_t HeaderSize = SizeInBlocks * BlockSizeInBytes;
         if (HeaderSize > 0 && HeaderSize <= CURL_MAX_HTTP_HEADER)
@@ -241,36 +248,42 @@ size_t FCurlHttpManager::ReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlo
 {
     auto Response = creq->Response;
 
-    if (Response.get())
-    {
-        creq->TimeSinceLastResponse = 0.0f;
-
-        int64_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
-
-        //SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
-        //    (void*)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
-        //    SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
-        //);
-
-        // note that we can be passed 0 bytes if file transmitted has 0 length
-        if (SizeToDownload > 0)
-        {
-            auto oldsize = Response->GetContentBytesRead();
-            Response->ContentAppend((char*)Ptr, SizeToDownload);
-            CurlDownloadProgress_t progress;
-            progress.NewSize = Response->TotalBytesRead;
-            progress.OldSize = oldsize;
-            progress.HttpReq = creq->shared_from_this();
-            progress.RequestID = creq->RequestID;
-            RunningProgressList.enqueue(std::move(progress));
-            return SizeToDownload;
-        }
-    }
-    else
+    if (!Response.get())
     {
         SIMPLELOG_LOGGER_WARN(nullptr, "{}: Could not download response data for request - response not valid.", (void*)Response.get());
+        return 0;
     }
-    return 0;	// request will fail with write error if we had non-zero bytes to download
+    creq->LastServerRespondTime = std::chrono::steady_clock::now();
+
+    int64_t SizeToDownload = SizeInBlocks * BlockSizeInBytes;
+
+    //SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseBodyCallback {}: {} bytes out of {} received. (SizeInBlocks={}, BlockSizeInBytes={}, Response->TotalBytesRead={}, Response->GetContentLength()={}, SizeToDownload={} (<-this will get returned from the callback))",
+    //    (void*)Response.get(), Response->TotalBytesRead + SizeToDownload, Response->GetContentLength(),
+    //    SizeInBlocks, BlockSizeInBytes, Response->GetContentBytesRead(), Response->GetContentLength(), SizeToDownload
+    //);
+
+    // note that we can be passed 0 bytes if file transmitted has 0 length
+    if (SizeToDownload <= 0)
+    {
+        return 0;
+    }
+    if (creq->bEnableRespContent) {
+        auto oldsize = Response->GetContentBytesRead();
+        Response->ContentAppend((char*)Ptr, SizeToDownload);
+        CurlDownloadProgress_t progress;
+        progress.NewSize = Response->TotalBytesRead;
+        progress.OldSize = oldsize;
+        progress.HttpReq = creq->shared_from_this();
+        progress.RequestID = creq->RequestID;
+        RunningProgressList.enqueue(std::move(progress));
+    }
+    else {
+        int64_t oldSize = Response->TotalBytesRead.load();
+        int64_t newSize = oldSize + SizeToDownload;
+        Response->TotalBytesRead = newSize;
+        creq->OnHttpThreadRespContentReceive()(creq->shared_from_this(), oldSize, newSize, Ptr, SizeToDownload);
+    }
+    return SizeToDownload;
 }
 
 size_t FCurlHttpManager::StaticUploadCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, void* UserData)
@@ -309,68 +322,16 @@ void FCurlHttpManager::HttpThreadAddTask()
 
 bool FCurlHttpManager::SetupLocalRequest(CurlHttpRequestPtr creq)
 {
-    CURLU* urlp{ nullptr };
-    CURLUcode rc{ CURLUcode::CURLUE_OK };
-    char* url{ nullptr };
     // Mark as in-flight to prevent overlapped requests using the same object
     creq->CompletionStatus = EHttpRequestStatus::Processing;
-
     if (creq->URL.empty()) {
-        if (creq->Host.empty()) {
+        if (!creq->GenerateURL()) {
             return false;
         }
-        urlp = curl_url();
-        //rc = curl_url_set(urlp, CURLUPART_FRAGMENT, "anchor", 0);
-        //rc = curl_url_set(urlp, CURLUPART_USER, "john", 0);
-        //rc = curl_url_set(urlp, CURLUPART_PASSWORD, "doe", 0);
-        //rc = curl_url_set(urlp, CURLUPART_ZONEID, "eth0", 0);
-        rc = curl_url_set(urlp, CURLUPART_HOST, creq->Host.c_str(), 0);
-        if (rc != CURLUcode::CURLUE_OK) {
-            goto end;
-        }
-        if (!creq->Scheme.empty()) {
-            rc = curl_url_set(urlp, CURLUPART_SCHEME, creq->Scheme.c_str(), 0);
-            if (rc != CURLUcode::CURLUE_OK) {
-                goto end;
-            }
-        }
-        if (!creq->Path.empty()) {
-            rc = curl_url_set(urlp, CURLUPART_PATH, creq->Path.c_str(), 0);
-            if (rc != CURLUcode::CURLUE_OK) {
-                goto end;
-            }
-        }
-        if (creq->Port < std::numeric_limits<uint16_t>::max()) {
-            rc = curl_url_set(urlp, CURLUPART_PORT, std::to_string(creq->Port).c_str(), 0);
-            if (rc != CURLUcode::CURLUE_OK) {
-                goto end;
-            }
-        }
-        for (auto& pair : creq->Queries) {
-            rc = curl_url_set(urlp, CURLUPART_QUERY, (pair.first + "=" + pair.second).c_str(), CURLU_APPENDQUERY | CURLU_URLENCODE);
-            if (rc != CURLUcode::CURLUE_OK) {
-                goto end;
-            }
-        }
-
-        rc = curl_url_get(urlp, CURLUPART_URL, &url, 0);
-        if (rc != CURLUcode::CURLUE_OK) {
-            goto end;
-        }
-        creq->URL = url;
     }
     creq->RequestID = RequestIDCounter.fetch_add(1);
-end:
-    if (urlp) {
-        curl_url_cleanup(urlp);
-    }
-    if (url) {
-        curl_free(url);
-    }
-    if (rc == CURLUcode::CURLUE_OK) {
-        return true;
-    }
-    return false;
+    creq->RequestStartTime = std::chrono::steady_clock::now();
+    return true;
 }
 
 bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
@@ -708,7 +669,7 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
     {
         // cleanup the handle first (that order is used in howtos)
         curl_easy_cleanup(creq->EasyHandle);
-
+        creq->EasyHandle = nullptr;
         // destroy headers list
         if (creq->HeaderList)
         {

@@ -1,10 +1,10 @@
 #pragma once
-#include "HTTP/IHttpRequest.h"
-
 #include <unordered_map>
+#include <chrono>
 #include <list>
+#include <CharBuffer.h>
 #include <curl/curl.h>
-
+#include "HTTP/IHttpRequest.h"
 class FCurlHttpManager;
 class FCurlHttpResponse;
 
@@ -23,6 +23,7 @@ public:
 
     std::string_view GetVerb()const override;
     void SetVerb(std::string_view Verb) override;
+    bool GenerateURL()override;
     void SetURL(std::string_view URL) override;
     void SetHost(std::string_view) override;
     void SetPath(std::string_view Path) override;
@@ -47,11 +48,13 @@ public:
     void Clear();
     HttpRequestCompleteDelegateType& OnProcessRequestComplete() override;
     HttpRequestProgressDelegateType& OnRequestProgress() override;
+    HttpThreadRespContentReceiveDelegateType& OnHttpThreadRespContentReceive() override;
     void CancelRequest() override;
     EHttpRequestStatus GetStatus() override;
     const HttpResponsePtr GetResponse() const override;
     void Tick(float DeltaSeconds) override;
     float GetElapsedTime() override;
+    void EnableRespContent(bool bEnable) override;
     friend class FCurlHttpManager;
 private:
 
@@ -66,12 +69,13 @@ private:
     curl_slist* HeaderList{ 0 };
     curl_mime* Mime{ 0 };
     int32_t BytesSent{ 0 };
-    /** Elapsed time since the last received HTTP response. */
-    float TimeSinceLastResponse{ 0 };
+    std::chrono::steady_clock::time_point RequestStartTime;
+    std::chrono::steady_clock::time_point LastServerRespondTime;
     CURLMcode CurlAddToMultiResult;
     CURLcode CurlCompletionResult;
     bool bCompleted{ false };
-    bool bCanceled{ false };
+
+    bool bEnableRespContent{ true };
     std::list<std::pair<uint64_t, uint64_t>> Ranges;
 
     FCurlHttpManager* Manager;
@@ -95,6 +99,7 @@ private:
     uint32_t RequestID{ 0 };
     HttpRequestCompleteDelegateType HttpRequestCompleteDelegate;
     HttpRequestProgressDelegateType HttpRequestProgressDelegate;
+    HttpThreadRespContentReceiveDelegateType HttpThreadRespContentReceiveDelegate;
 };
 
 
