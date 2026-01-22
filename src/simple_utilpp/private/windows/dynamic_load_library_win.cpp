@@ -1,6 +1,6 @@
 #include "dynamic_load_library.h"
 #include "simple_os_defs.h"
-
+#include "module_util.h"
 #include <filesystem>
 typedef struct LibraryInfoWin_t{
     HMODULE lib_handle;
@@ -11,7 +11,9 @@ void* simple_dlopen(const char* lib_name)
     std::filesystem::path libPath(lib_name);
     if (libPath.is_absolute()) {
         auto u16sdkpath = libPath.parent_path().u16string();
-        ::SetDllDirectoryW((LPCWSTR)u16sdkpath.c_str());
+        if (!add_module_wpath((LPCWSTR)u16sdkpath.c_str(), u16sdkpath.size())) {
+            return NULL;
+        }
     }
     auto lib_handle = ::LoadLibraryW((LPCWSTR)libPath.u16string().c_str());
     if (lib_handle == NULL)

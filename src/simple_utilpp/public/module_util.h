@@ -7,12 +7,12 @@
 #include "simple_export_defs.h"
 #include "simple_export_ppdefs.h"
 
-/// DEPRECATED
-SIMPLE_UTIL_API int util_dll_path(char* path, size_t* size);
-/// DEPRECATED
-SIMPLE_UTIL_API int util_exe_path(char* path, size_t* size);
-SIMPLE_UTIL_API int util_exe_wpath(wchar_t* path, size_t* size);
-SIMPLE_UTIL_API int util_dll_wpath(wchar_t* path, size_t* size);
+SIMPLE_UTIL_API bool util_dll_path(char* path, size_t* size);
+SIMPLE_UTIL_API bool util_exe_path(char* path, size_t* size);
+SIMPLE_UTIL_API bool util_exe_wpath(wchar_t* path, size_t* size);
+SIMPLE_UTIL_API bool util_dll_wpath(wchar_t* path, size_t* size);
+SIMPLE_UTIL_API bool add_module_path(const char* path, size_t size);
+SIMPLE_UTIL_API bool add_module_wpath(const wchar_t* path, size_t size);
 
 SIMPLE_UTIL_API typedef void (*util_thread_func)(void*);
 SIMPLE_UTIL_API typedef void* util_thread_t;
