@@ -1,93 +1,110 @@
-/**
- *  raw_file.cpp
- */
-
-#include "raw_file.h"
+#include "RawFile.h"
 #include "logger_header.h"
 #include "string_convert.h"
 #include "dir_util.h"
 #include <filesystem>
 #include <format>
 #include <system_error>
-#ifdef WIN32
-#else
 #include <fcntl.h>
+#ifdef WIN32
+#include <io.h>
+#else
+
 #include <sys/mman.h>
 #include <unistd.h>
 #endif // WIN32
 
-int32_t CRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
+
+int32_t FRawFile::InternalOpen(uint32_t uOpenFlag, uint64_t uExpectSize)
 {
-    return Open(lpFileName.data(), uOpenFlag, uExpectSize);
-}
-
-
-#ifdef WIN32
-
-CRawFile::CRawFile()
-{
-    handle_ = INVALID_HANDLE_VALUE;
-    file_size_ = 0;
-}
-
-CRawFile::~CRawFile()
-{
-    if (handle_ != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(INVALID_HANDLE_VALUE);
-    }
-}
-
-int32_t CRawFile::Open(const char8_t*file_name, uint32_t flag, uint64_t expect_size)
-{
-    if (file_name == NULL)
-    {
-        return ERR_ARGUMENT;
-    }
+    Close();
     DWORD err = 0;
 
-    handle_ = DirUtil::RecursiveCreateFile(file_name, flag);
+    handle_ = DirUtil::RecursiveCreateFile(filePath, uOpenFlag);
     if (handle_ == INVALID_HANDLE_VALUE)
     {
         return ERR_FILE;
     }
 
-    if (!DirUtil::SetWritable(file_name))
+    if (!DirUtil::SetWritable(filePath))
     {
         err = GetLastError();
         SIMPLELOG_LOGGER_WARN(nullptr, "Failed to set writable, file: {}, error: {}", file_name, err);
         return ERR_FILE;
     }
 
-    if ((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && (file_size_ != expect_size))
+    if ((uOpenFlag == UTIL_CREATE_ALWAYS || uOpenFlag == UTIL_OPEN_ALWAYS) && (file_size_ != uExpectSize))
     {
         // set the physic size
-        if (expect_size != 0 && ERR_SUCCESS == Seek(expect_size - 1))
+        if (uExpectSize != 0 && ERR_SUCCESS == Seek(uExpectSize - 1))
         {
             uint8_t uDummy = 0;
             if (ERR_SUCCESS != Write(&uDummy, 1))
             {
                 err = GetLastError();
-                SIMPLELOG_LOGGER_WARN(nullptr,"Can't create the file: {} with size:{}, ErrorCode is {}", file_name, expect_size, err);
+                SIMPLELOG_LOGGER_WARN(nullptr, "Can't create the file: {} with size:{}, ErrorCode is {}", file_name, expect_size, err);
                 CloseHandle(handle_);
                 handle_ = INVALID_HANDLE_VALUE;
                 return ERR_FILE;
             }
-            file_size_ = expect_size;
+            file_size_ = uExpectSize;
             SetEndOfFile(handle_);
         }
+        Seek(0);
     }
 
-    name_ = (const char*)file_name;
     return ERR_SUCCESS;
 }
 
-bool CRawFile::IsOpen()
+int32_t FRawFile::Open(FPathBuf& pathBuf, uint32_t uOpenFlag, uint64_t uExpectSize)
+{
+    pathBuf.ToPathW();
+    if (pathBuf.PathLenW == 0)
+    {
+        return ERR_ARGUMENT;
+    }
+    filePath.SetPathW(pathBuf.GetBufW(), pathBuf.PathLenW);
+    return InternalOpen(uOpenFlag, uExpectSize);
+
+}
+
+int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
+{
+    if (lpFileName.size() == 0)
+    {
+        return ERR_ARGUMENT;
+    }
+    filePath.SetPath(ConvertU8ViewToView(lpFileName).data(), lpFileName.size());
+    filePath.ToPathW();
+    return InternalOpen(uOpenFlag, uExpectSize);
+}
+
+const char* FRawFile::GetFilePath()
+{
+    filePath.ToPath();
+    return filePath.GetBuf();
+}
+
+#ifdef WIN32
+
+FRawFile::FRawFile()
+{
+    handle_ = INVALID_HANDLE_VALUE;
+    fd = -1;
+    file_size_ = 0;
+}
+
+FRawFile::~FRawFile()
+{
+    Close();
+}
+
+bool FRawFile::IsOpen()
 {
     return (handle_ != INVALID_HANDLE_VALUE);
 }
 
-int32_t CRawFile::Read(void *buf, uint32_t size)
+int32_t FRawFile::Read(void* buf, uint32_t size)
 {
     if (buf == NULL || handle_ == INVALID_HANDLE_VALUE)
     {
@@ -98,14 +115,14 @@ int32_t CRawFile::Read(void *buf, uint32_t size)
     BOOL res = ReadFile(handle_, buf, size, &readed, NULL);
     if (FALSE == res || readed != size)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Read file: {} error ...", name_);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Read file: {} error ...", GetFilePath());
         return ERR_FILE;
     }
 
     return ERR_SUCCESS;
 }
 
-int32_t CRawFile::Write(const void *buf, uint32_t size)
+int32_t FRawFile::Write(const void* buf, uint32_t size)
 {
     if (buf == NULL || handle_ == INVALID_HANDLE_VALUE)
     {
@@ -116,14 +133,14 @@ int32_t CRawFile::Write(const void *buf, uint32_t size)
     BOOL res = WriteFile(handle_, buf, size, &written, NULL);
     if (FALSE == res || written != size)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Write file: {} error ...", name_);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Write file: {} error ...", GetFilePath());
         return ERR_FILE;
     }
 
     return ERR_SUCCESS;
 }
 
-int32_t CRawFile::Delete()
+int32_t FRawFile::Delete()
 {
     if (handle_ == INVALID_HANDLE_VALUE)
     {
@@ -132,27 +149,28 @@ int32_t CRawFile::Delete()
 
     CloseHandle(handle_);
     handle_ = INVALID_HANDLE_VALUE;
-    if (!DirUtil::Delete({ (const char8_t*)name_.c_str(),name_.size()}))
+    if (!DirUtil::Delete(filePath))
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Can't delete the file : {}", name_);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Can't delete the file : {}", GetFilePath());
         return ERR_FILE;
     }
 
     return ERR_SUCCESS;
 }
 
-void CRawFile::Close()
+void FRawFile::Close()
 {
-    if (handle_ == INVALID_HANDLE_VALUE)
+    if (fd!= -1) {
+        close(fd);
+        fd = -1;
+    }else if (handle_ != INVALID_HANDLE_VALUE)
     {
-        return;
+        CloseHandle(handle_);
+        handle_ = INVALID_HANDLE_VALUE;
     }
-
-    CloseHandle(handle_);
-    handle_ = INVALID_HANDLE_VALUE;
 }
 
-int32_t CRawFile::Seek(uint64_t pos)
+int32_t FRawFile::Seek(uint64_t pos)
 {
     if (handle_ == INVALID_HANDLE_VALUE)
     {
@@ -163,7 +181,7 @@ int32_t CRawFile::Seek(uint64_t pos)
 
     if (iPos < 0 && pos > file_size_)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Wrong position({}/{}) to seek.", pos, file_size_);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Wrong position({}/{}) to seek.", pos, file_size_);
         return ERR_ARGUMENT;
     }
 
@@ -171,14 +189,14 @@ int32_t CRawFile::Seek(uint64_t pos)
     LONG high = iPos >> 32;
     if (INVALID_SET_FILE_POINTER == SetFilePointer(handle_, low, &high, FILE_BEGIN))
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Seek the file {} error ... error code: {}", name_, GetLastError());
+        SIMPLELOG_LOGGER_WARN(nullptr, "Seek the file {} error ... error code: {}", GetFilePath(), GetLastError());
         return ERR_FILE;
     }
 
     return ERR_SUCCESS;
 }
 
-uint64_t CRawFile::Tell()
+uint64_t FRawFile::Tell()
 {
     if (handle_ == INVALID_HANDLE_VALUE)
     {
@@ -189,14 +207,14 @@ uint64_t CRawFile::Tell()
     uint32_t low = SetFilePointer(handle_, 0, &high, FILE_CURRENT);
     if (INVALID_SET_FILE_POINTER == low)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Tell the file {} error ... error code: {}", name_, GetLastError());
+        SIMPLELOG_LOGGER_WARN(nullptr, "Tell the file {} error ... error code: {}", GetFilePath(), GetLastError());
         return ERR_FILE;
     }
 
     return (static_cast<uint64_t>(low) | (static_cast<uint64_t>(high) << 32));
 }
 
-void CRawFile::Flush()
+void FRawFile::Flush()
 {
     if (handle_ == INVALID_HANDLE_VALUE)
     {
@@ -206,11 +224,11 @@ void CRawFile::Flush()
     BOOL res = FlushFileBuffers(handle_);
     if (res == FALSE)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,"Can't flush file buffer, error code: {}", GetLastError());
+        SIMPLELOG_LOGGER_WARN(nullptr, "Can't flush file buffer, error code: {}", GetLastError());
     }
 }
 
-uint64_t CRawFile::GetSize()
+uint64_t FRawFile::GetSize()
 {
     if (handle_ == INVALID_HANDLE_VALUE)
     {
@@ -223,7 +241,7 @@ uint64_t CRawFile::GetSize()
 
     if (low == 0xffffffff && (err = GetLastError()) != NO_ERROR)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr, "Can't get the size of file: {}. ErrorCode is {}", name_.c_str(), err);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Can't get the size of file: {}. ErrorCode is {}", GetFilePath(), err);
         CloseHandle(handle_);
         handle_ = INVALID_HANDLE_VALUE;
         return 0;
@@ -232,32 +250,37 @@ uint64_t CRawFile::GetSize()
     file_size_ = ((uint64_t)high << 32) | ((uint64_t)low);
     return file_size_;
 }
-
-F_HANDLE CRawFile::GetHandle()
+F_HANDLE FRawFile::GetHandle()
 {
+    if (fd!= -1) {
+        return (F_HANDLE)_get_osfhandle(fd);
+    }
     return handle_;
 }
 
-const char *CRawFile::GetFileName()
+int FRawFile::GetFD()
 {
-    return name_.c_str();
+    if (handle_!= INVALID_HANDLE_VALUE) {
+        fd= _open_osfhandle(reinterpret_cast<intptr_t>(handle_), _O_RDWR);
+        handle_ = INVALID_HANDLE_VALUE;
+    }
+    return fd;
 }
+
 #else
-CRawFile::CRawFile()
+FRawFile::FRawFile()
 {
-    handle_ = -1;
+    handle_ = INVALID_HANDLE_VALUE;
+    fd = -1;
     file_size_ = 0;
 }
 
-CRawFile::~CRawFile()
+FRawFile::~FRawFile()
 {
-    if (handle_ != -1)
-    {
-        close(handle_);
-    }
+    Close();
 }
 
-int32_t MakeDir(const char *lpPath)
+int32_t MakeDir(const char* lpPath)
 {
     if (lpPath == NULL)
     {
@@ -284,7 +307,7 @@ int32_t MakeDir(const char *lpPath)
     }
 }
 
-int32_t CRawFile::Open(const char8_t*lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
+int32_t FRawFile::Open(const char8_t* lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
     if (lpFileName == NULL)
     {
@@ -295,15 +318,15 @@ int32_t CRawFile::Open(const char8_t*lpFileName, uint32_t uOpenFlag, uint64_t uE
     int filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
     handle_ = open(name_.c_str(), uOpenFlag, filePerms);
-    if (handle_ == -1)
+    if (handle_ == INVALID_HANDLE_VALUE)
     {
         if (errno != ENOENT)
             return ERR_FILE;
         std::filesystem::path curPath(name_);
-        if (ERR_SUCCESS != MakeDir((const char *)curPath.parent_path().u8string().c_str()))
+        if (ERR_SUCCESS != MakeDir((const char*)curPath.parent_path().u8string().c_str()))
             return ERR_FILE;
         handle_ = open(name_.c_str(), uOpenFlag, filePerms);
-        if (handle_ == -1)
+        if (handle_ == INVALID_HANDLE_VALUE)
             return ERR_FILE;
     }
     file_size_ = std::filesystem::file_size(name_);
@@ -312,7 +335,7 @@ int32_t CRawFile::Open(const char8_t*lpFileName, uint32_t uOpenFlag, uint64_t uE
         // make file as desized size
         if (-1 == truncate(name_.c_str(), uExpectSize))
         {
-            SIMPLELOG_LOGGER_ERROR(nullptr,std::format("failed to set file size, file:{}, size:{}, error:{}", name_.c_str(), uExpectSize, errno));
+            SIMPLELOG_LOGGER_ERROR(nullptr, std::format("failed to set file size, file:{}, size:{}, error:{}", name_.c_str(), uExpectSize, errno));
             return ERR_FILE;
         }
         file_size_ = uExpectSize;
@@ -321,12 +344,12 @@ int32_t CRawFile::Open(const char8_t*lpFileName, uint32_t uOpenFlag, uint64_t uE
     return ERR_SUCCESS;
 }
 
-bool CRawFile::IsOpen()
+bool FRawFile::IsOpen()
 {
     return (handle_ != -1);
 }
 
-int32_t CRawFile::Read(void *pBuf, uint32_t size)
+int32_t FRawFile::Read(void* pBuf, uint32_t size)
 {
     if (pBuf == NULL || !IsOpen())
     {
@@ -336,14 +359,14 @@ int32_t CRawFile::Read(void *pBuf, uint32_t size)
     auto readed = read(handle_, pBuf, size);
     if (readed < 0 or readed != size)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,std::format("Read file: {} error ...", name_));
+        SIMPLELOG_LOGGER_WARN(nullptr, std::format("Read file: {} error ...", GetFilePath()));
         return ERR_FILE;
     }
 
     return ERR_SUCCESS;
 }
 
-int32_t CRawFile::Write(const void *pBuf, uint32_t size)
+int32_t FRawFile::Write(const void* pBuf, uint32_t size)
 {
     if (pBuf == NULL || !IsOpen())
     {
@@ -359,7 +382,7 @@ int32_t CRawFile::Write(const void *pBuf, uint32_t size)
     return ERR_SUCCESS;
 }
 
-int32_t CRawFile::Delete()
+int32_t FRawFile::Delete()
 {
     if (!IsOpen())
     {
@@ -368,7 +391,7 @@ int32_t CRawFile::Delete()
 
     close(handle_);
     handle_ = -1;
-    if (0 == unlink(name_.c_str()))
+    if (0 == unlink(GetFilePath()))
     {
         return ERR_FILE;
     }
@@ -376,7 +399,7 @@ int32_t CRawFile::Delete()
     return ERR_SUCCESS;
 }
 
-void CRawFile::Close()
+void FRawFile::Close()
 {
     if (!IsOpen())
     {
@@ -387,7 +410,7 @@ void CRawFile::Close()
     handle_ = -1;
 }
 
-int32_t CRawFile::Seek(uint64_t uPos)
+int32_t FRawFile::Seek(uint64_t uPos)
 {
     if (!IsOpen())
     {
@@ -396,7 +419,7 @@ int32_t CRawFile::Seek(uint64_t uPos)
 
     if (uPos > file_size_)
     {
-        SIMPLELOG_LOGGER_WARN(nullptr,std::format("Wrong position({}/{}) to seek.", uPos, file_size_));
+        SIMPLELOG_LOGGER_WARN(nullptr, std::format("Wrong position({}/{}) to seek.", uPos, file_size_));
         return ERR_ARGUMENT;
     }
 
@@ -408,9 +431,9 @@ int32_t CRawFile::Seek(uint64_t uPos)
     return ERR_SUCCESS;
 }
 
-uint64_t CRawFile::Tell()
+uint64_t FRawFile::Tell()
 {
-    if (handle_ == -1)
+    if (handle_ == INVALID_HANDLE_VALUE)
     {
         return ERR_ARGUMENT;
     }
@@ -423,23 +446,22 @@ uint64_t CRawFile::Tell()
     return uPos;
 }
 
-void CRawFile::Flush()
+void FRawFile::Flush()
 {
 }
 
-uint64_t CRawFile::GetSize()
+uint64_t FRawFile::GetSize()
 {
     return file_size_;
 }
-
-int CRawFile::GetHandle()
+F_HANDLE FRawFile::GetHandle()
 {
     return handle_;
 }
 
-const char *CRawFile::GetFileName()
-{
-    return name_.c_str();
-}
+int FRawFile::GetFD()
 
+    return handle_;
+}
 #endif
+

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 #include "system_info_export_defs.h"
 
 namespace utilpp {

@@ -5,7 +5,7 @@
 #include <optional>
 #include <variant>
 #include <string>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 #include "delegate_macros.h"
 #include "rpc_parser_common.h"
 #pragma warning(push)
@@ -30,7 +30,7 @@ public:
         Params.Assign(view.data(), view.size());
     }
     std::string_view GetParams()const {
-        return std::string_view(Params.CStr(),Params.Length());
+        return std::string_view(Params.Data(),Params.Length());
     }
     FCharBuffer& GetParamsBuf(){
         return Params;
@@ -72,7 +72,7 @@ public:
         Result.Assign(view.data(), view.size());
     }
     std::string_view GetResult()const {
-        return std::string_view(Result.CStr(), Result.Length());
+        return std::string_view(Result.Data(), Result.Length());
     }
     FCharBuffer& GetResultBuf() {
         return Result;

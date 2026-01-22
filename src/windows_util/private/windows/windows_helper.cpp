@@ -3,7 +3,7 @@
 #include <psapi.h>
 #include <sddl.h>
 #include <string_convert.h>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 
 static bool bsystem_path_inited;
 static WCHAR system_path[MAX_PATH];
@@ -146,8 +146,9 @@ fail:
         *name = (char*)mallocptr(strlen("unknown") + 1);
         strcpy(*name, "unknown");
     }
-
-    CloseHandle(process);
+    if (process) {
+        CloseHandle(process);
+    }
     return true;
 }
 

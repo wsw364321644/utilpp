@@ -1,4 +1,4 @@
-#include <string_buffer.h>
+#include <CharBuffer.h>
 #include <cstring>
 #include <string>
 #include <stdarg.h>
@@ -47,7 +47,7 @@ FCharBuffer& FCharBuffer::operator=(FCharBuffer&& r)noexcept {
 FCharBuffer& FCharBuffer::operator=(const FCharBuffer& r)noexcept {
     freeptr = r.freeptr;
     mallocptr = r.mallocptr;
-    Assign(r.CStr(), r.Length());
+    Assign(r.Data(), r.Length());
     readCursor = r.readCursor;
     return *this;
 }
@@ -60,11 +60,6 @@ void Swap(FCharBuffer& l, FCharBuffer& r) {
     std::swap(l.freeptr,r.freeptr);
 }
 
-void FCharBuffer::Append(const char* cstr)
-{
-    Append(cstr, strlen(cstr));
-}
-
 void FCharBuffer::Append(const char *str, size_t size)
 {
     if(size <= 0) {
@@ -72,12 +67,15 @@ void FCharBuffer::Append(const char *str, size_t size)
     }
     if (bufSize == 0 || size + cursor > bufSize - 1)
     {
-        Reverse(std::max(GetIncreasedSize(), size + cursor + 1));
+        Reverse(std::max(GetIncreasedSize(), size + cursor + 2));
     }
     memcpy(pBuf + cursor, str, size);
     cursor += size;
 }
 
+void FCharBuffer::Append(std::string_view view) {
+    Append(view.data(), view.size());
+}
 void FCharBuffer::Append(FCharBuffer &inbuf)
 {
     Append(inbuf.CStr(), inbuf.Length());
@@ -232,7 +230,7 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
         cursor += num;
         return true;
     }
-    Reverse(std::max(GetIncreasedSize(), num + cursor + 1));
+    Reverse(std::max(GetIncreasedSize(), num + cursor + 2));
     available = bufSize - cursor;
     num = vsnprintf(pBuf + cursor, available, format, args);
     if (num < 0) {
@@ -244,7 +242,7 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
 
 void FCharBuffer::ReverseAssign(const char* cstr, size_t size)
 {
-    Reverse(size + 1);
+    Reverse(size + 2);
     if (size > 0)
     {
         memcpy(pBuf, cstr, size);
@@ -252,14 +250,24 @@ void FCharBuffer::ReverseAssign(const char* cstr, size_t size)
     cursor = size;
 }
 
+void FCharBuffer::ReverseAssign(std::string_view view)
+{
+    ReverseAssign(view.data(), view.size());
+}
+
 void FCharBuffer::Assign(const char *cstr, size_t size)
 {
-    Resize(size + 1);
+    Resize(size + 2);
     if (size > 0)
     {
         memcpy(pBuf, cstr, size);
     }
     cursor = size;
+}
+
+void FCharBuffer::Assign(std::string_view view)
+{
+    Assign(view.data(), view.size());
 }
 
 void FCharBuffer::Clear()
@@ -272,18 +280,25 @@ void FCharBuffer::Clear()
     }
 }
 
-const char *FCharBuffer::CStr() const
+const char* FCharBuffer::CStr()
 {
+    if (cursor >= bufSize) {
+        Reverse(cursor + 1);
+    }
     pBuf[cursor] = 0;
     return pBuf;
 }
-char *FCharBuffer::Data()
+std::string_view FCharBuffer::View() const
+{
+    return std::string_view(Data(),Length());
+}
+char *FCharBuffer::Data() const
 {
     return pBuf;
 }
 void FCharBuffer::SetLength(size_t l)
 {
-    if (l < bufSize) {
+    if (l <= bufSize) {
         cursor = l;
     }
 }
@@ -339,7 +354,7 @@ void FCharBuffer::Put(FCharBuffer::Ch c)
 }
 void FCharBuffer::Reverse(uint32_t size)
 {
-    auto desiredSize = size + 1; // +1 for null terminator
+    auto desiredSize = size;
     if (desiredSize <= bufSize)
     {
         return;
@@ -357,7 +372,7 @@ void FCharBuffer::Reverse(uint32_t size)
 
 void FCharBuffer::Resize(uint32_t size)
 {
-    auto desiredSize = size + 1; // +1 for null terminator
+    auto desiredSize = size;
     if (desiredSize == bufSize)
     {
         return;

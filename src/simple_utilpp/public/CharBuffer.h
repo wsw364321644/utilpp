@@ -1,8 +1,6 @@
-/**
- *  string_buffer.h
- */
 #pragma once
 #include <stdint.h>
+#include <string>
 #include <stddef.h>
 #include "simple_export_ppdefs.h"
 
@@ -24,8 +22,8 @@ public:
     // template <typename T,
     //     class = typename std::enable_if<std::is_same<typename std::decay<T>::type, char>::value>::type>
     //     void Push(T&& c);
-    void Append(const char * cstr);
     void Append(const char *cstr, size_t size);
+    void Append(std::string_view);
     void Append(FCharBuffer &);
     void Append(int);
     void Append(double);
@@ -35,19 +33,22 @@ public:
     void Reverse(uint32_t size);
     void Resize(uint32_t size);
     void ReverseAssign(const char* cstr, size_t size);
+    void ReverseAssign(std::string_view view);
     template <typename T>
-    void ReverseAssign(const T* first, const T* last) {
+    void ReverseAssign(const T first, const T last) {
         ReverseAssign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
     }
     void Assign(const char *cstr, size_t size);
+    void Assign(std::string_view view);
     template <typename T>
-    void Assign(const char* first, const char* last) {
+    void Assign(T first, T last) {
         Assign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
     }
 
     void Clear();
-    const char *CStr() const;
-    char *Data();
+    const char *CStr();
+    std::string_view View() const;
+    char *Data() const;
     void SetLength(size_t);
     size_t Length() const;
     size_t Size() const;
