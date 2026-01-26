@@ -12,6 +12,7 @@ AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
 function(add_simple_util TARGET_NAME)
+    target_compile_definitions(${TARGET_NAME} PUBLIC -DNOMINMAX)
     set_target_properties(${TARGET_NAME} PROPERTIES C_STANDARD 23)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED OFF)

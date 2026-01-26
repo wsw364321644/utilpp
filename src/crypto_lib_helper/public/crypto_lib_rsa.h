@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <handle.h>
 #include <string>
-#include <string_buffer.h>
+#include <CharBuffer.h>
 
 #include "crypto_lib_types.h"
 #include "crypto_lib_export_defs.h"

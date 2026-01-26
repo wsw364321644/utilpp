@@ -4,11 +4,11 @@
 #include <vector>
 #include "net_export_defs.h"
 
-typedef struct SIMPLE_NET_EXPORT DownloadTaskHandle : CommonHandle32_t
+typedef struct DownloadTaskHandle : CommonHandle32_t
 {
     DownloadTaskHandle() :CommonHandle32_t() {}
     DownloadTaskHandle(const CommonHandle32_t h) :CommonHandle32_t(h) {}
-    static std::atomic_uint32_t task_count;
+    inline static std::atomic_uint32_t task_count;
 }DownloadTaskHandle_t ;
 
 namespace std
