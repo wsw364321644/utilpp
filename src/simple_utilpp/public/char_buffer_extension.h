@@ -15,12 +15,12 @@ inline const char* GetStringViewCStr(std::string_view view, FCharBuffer& buf) {
 }
 
 inline const wchar_t* GetWStringViewCStr(std::wstring_view view, FCharBuffer& buf) {
-    if (view.data()[view.size()] == L'0') {
+    if (view.data()[view.size()] == L'\0') {
         return view.data();
     }
     else {
         buf.Assign((const char*)view.data(), view.size()*sizeof(wchar_t));
-        ((wchar_t*)buf.Data())[view.size()] = L'0';
+        ((wchar_t*)buf.Data())[view.size()] = L'\0';
         return (const wchar_t*)buf.Data();
     }
 }
