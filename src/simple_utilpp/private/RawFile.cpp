@@ -101,7 +101,7 @@ FRawFile::~FRawFile()
 
 bool FRawFile::IsOpen()
 {
-    return (handle_ != INVALID_HANDLE_VALUE);
+    return (handle_ != INVALID_HANDLE_VALUE)|| fd!= -1;
 }
 
 int32_t FRawFile::Read(void* buf, uint32_t size)
@@ -346,7 +346,7 @@ int32_t FRawFile::Open(const char8_t* lpFileName, uint32_t uOpenFlag, uint64_t u
 
 bool FRawFile::IsOpen()
 {
-    return (handle_ != -1);
+    return (handle_ != INVALID_HANDLE_VALUE);
 }
 
 int32_t FRawFile::Read(void* pBuf, uint32_t size)
