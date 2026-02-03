@@ -21,7 +21,7 @@ public:
     ~FChildProcessManager() {}
     static FChildProcessManager* GetInstance();
     CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr);
-    CommonHandle32_t SpawnProcess(SpawnData_t);
+    CommonHandle32_t SpawnProcess(SpawnData_t&);
     typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
     void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate);
     typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;
@@ -120,7 +120,7 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const
     return SpawnProcess(spawnData);
 }
 
-CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t spawnData)
+CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t& spawnData)
 {
     if (spawnData.Filepath.empty()) {
         return NullHandle;
