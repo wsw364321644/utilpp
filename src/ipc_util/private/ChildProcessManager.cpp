@@ -13,6 +13,7 @@ typedef struct uv_loop_s uv_loop_t;
 typedef struct uv_pipe_s uv_pipe_t;
 typedef struct uv_stream_s uv_stream_t;
 typedef struct uv_buf_t uv_buf_t;
+typedef struct UVProcess_t UVProcess_t;
 
 class FChildProcessManager :public IChildProcessManager {
 public:
@@ -20,6 +21,7 @@ public:
     ~FChildProcessManager() {}
     static FChildProcessManager* GetInstance();
     CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr);
+    CommonHandle32_t SpawnProcess(SpawnData_t);
     typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
     void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate);
     typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;
@@ -59,7 +61,7 @@ typedef struct UVProcess_t {
     char** args{ nullptr };
     uv_process_t process{ 0 };
     uv_process_options_t options{ 0 };
-    uv_stdio_container_t child_stdio[4];
+    uv_stdio_container_t child_stdio[4]{};
     uv_pipe_t pipe{};
     uv_async_t async{};
     FChildProcessManager* ChildProcessManager{ NULL };
@@ -67,6 +69,8 @@ typedef struct UVProcess_t {
     FChildProcessManager::FOnExitDelegate  OnExitDelegate;
     CommonHandle32_t handle{ NullHandle };
     FCharBuffer Buf;
+    bool bHideWindow{ true };
+    bool bDetach{ false };
 }UVProcess_t;
 void alloc_buffer(uv_handle_t* handle,
     size_t suggested_size,
@@ -106,7 +110,19 @@ FChildProcessManager* FChildProcessManager::GetInstance()
 }
 CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const char** _args)
 {
-    if (!_filepath) {
+    SpawnData_t spawnData;
+    spawnData.Filepath = _filepath;
+    if (_args) {
+        for (int i = 0; _args[i] != nullptr; i++) {
+            spawnData.Argvs.push_back(_args[i]);
+        }
+    }
+    return SpawnProcess(spawnData);
+}
+
+CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t spawnData)
+{
+    if (spawnData.Filepath.empty()) {
         return NullHandle;
     }
     auto pair = processes.emplace(processCount, std::make_shared< UVProcess_t>());
@@ -116,26 +132,22 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const
     UVProcess_t* pp = pair.first->second.get();
     pp->ChildProcessManager = this;
     pp->handle = pair.first->first;
-    int argc = 1;
-    if (_args != nullptr)
-    {
-        for (int i = 0;; i++) {
-            if (_args[i] == 0) {
-                break;
-            }
-            argc++;
-        }
-    }
-    pp->AllocArgs(argc);
-    pp->AllocArgsIndex(0, strlen(_filepath) + 1);
-    strcpy(pp->args[0], _filepath);
-    for (int i = 0; argc - i > 1; i++) {
-        pp->AllocArgsIndex(i + 1, strlen(_args[i]) + 1);
-        strcpy(pp->args[i + 1], _args[i]);
-    }
+    int argc = 1+ spawnData.Argvs.size();
 
+    pp->AllocArgs(argc);
+    pp->AllocArgsIndex(0, spawnData.Filepath.size() + 1);
+    memcpy(pp->args[0], spawnData.Filepath.data(), spawnData.Filepath.size());
+    pp->args[0][spawnData.Filepath.size()] = '\0';
+    for (int i = 0; argc - i > 1; i++) {
+        auto& argv = spawnData.Argvs[i];
+        pp->AllocArgsIndex(i + 1, argv.size() + 1);
+        memcpy(pp->args[i + 1], argv.data(), argv.size());
+        pp->args[i + 1][argv.size()] = '\0';
+    }
+    pp->bHideWindow = spawnData.bHideWindow;
     return pair.first->first;
 }
+
 void FChildProcessManager::RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate)
 {
     auto pair = processes.find(handle);
@@ -223,6 +235,13 @@ void FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     int r;
     UVProcess_t& UVProcess = *pp;
     auto& p = *pp;
+    int flags =0;
+    if (p.bHideWindow) {
+        flags |= UV_PROCESS_WINDOWS_HIDE;
+    }
+    if (p.bDetach) {
+        flags |= UV_PROCESS_DETACHED;
+    }
     uv_pipe_init(ploop, &p.pipe, 0);
     p.pipe.data = pp;
     p.process.data = pp;
@@ -234,7 +253,7 @@ void FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     p.options.stdio = p.child_stdio;
     p.options.file = pp->args[0];
     p.options.args = pp->args;
-    p.options.flags = UV_PROCESS_WINDOWS_HIDE;
+    p.options.flags = flags;
     p.options.exit_cb = [](uv_process_t* process, int64_t exit_status, int term_signal) {
         UVProcess_t& p = *(UVProcess_t*)process->data;
         p.ChildProcessManager->OnUvProcessClosed((UVProcess_t*)process->data, exit_status, term_signal);
