@@ -6,7 +6,8 @@
 
 typedef struct SpawnData_t {
     std::string_view Filepath;
-    std::vector<std::string_view> Argvs;
+    std::string_view* Argvs;
+    int Argc;
     bool bHideWindow{ false };
     bool bDetach{ false };
 }SpawnData_t;
@@ -14,7 +15,7 @@ typedef struct SpawnData_t {
 class IChildProcessManager {
 public:
     virtual CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr) = 0;
-    virtual CommonHandle32_t SpawnProcess(SpawnData_t&) = 0;
+    virtual CommonHandle32_t SpawnProcess(SpawnData_t) = 0;
     typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
     virtual void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate) = 0;
     typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;

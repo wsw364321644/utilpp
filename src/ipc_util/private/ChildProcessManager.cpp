@@ -1,5 +1,5 @@
 #include "ChildProcessManager.h"
-
+#include <FunctionExitHelper.h>
 #include <singleton.h>
 #include <LoggerHelper.h>
 #include <CharBuffer.h>
@@ -21,7 +21,7 @@ public:
     ~FChildProcessManager() {}
     static FChildProcessManager* GetInstance();
     CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr);
-    CommonHandle32_t SpawnProcess(SpawnData_t&);
+    CommonHandle32_t SpawnProcess(SpawnData_t);
     typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
     void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate);
     typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;
@@ -114,13 +114,25 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const
     spawnData.Filepath = _filepath;
     if (_args) {
         for (int i = 0; _args[i] != nullptr; i++) {
-            spawnData.Argvs.push_back(_args[i]);
+            ++spawnData.Argc;
+        }
+        spawnData.Argvs = new std::string_view[spawnData.Argc];
+        for (int i = 0; _args[i] != nullptr; i++) {
+            spawnData.Argvs[i] = _args[i];
         }
     }
+    FunctionExitHelper_t deleteArgvs(
+        [&]() {
+            if (spawnData.Argvs) {
+                delete[] spawnData.Argvs;
+                spawnData.Argvs = nullptr;
+            }
+        }
+    );
     return SpawnProcess(spawnData);
 }
 
-CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t& spawnData)
+CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t spawnData)
 {
     if (spawnData.Filepath.empty()) {
         return NullHandle;
@@ -132,7 +144,7 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t& spawnData)
     UVProcess_t* pp = pair.first->second.get();
     pp->ChildProcessManager = this;
     pp->handle = pair.first->first;
-    int argc = 1+ spawnData.Argvs.size();
+    int argc = 1+ spawnData.Argc;
 
     pp->AllocArgs(argc);
     pp->AllocArgsIndex(0, spawnData.Filepath.size() + 1);
