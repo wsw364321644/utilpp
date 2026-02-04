@@ -1,13 +1,13 @@
 #pragma once
 
 #include <string>
-#include <optional>
+#include <singleton.h>
 #include <filesystem>
 #include "dir_definition.h"
 #include "string_convert.h"
 #include "CharBuffer.h"
 #include "simple_export_ppdefs.h"
-class SIMPLE_UTIL_EXPORT FPathBuf{
+class SIMPLE_UTIL_EXPORT FPathBuf :public TProvideThreadSingletonClass<FPathBuf>{
 public:
     FPathBuf() {
     }

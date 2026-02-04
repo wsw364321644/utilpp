@@ -179,14 +179,14 @@ bool FDownloadFile::Init()
             WorkPath = Path.parent_path();
         }
     }
-    auto& pathBuf = *TClassThreadSingletonHelper<FPathBuf>::GetClassSingleton();
+    auto& pathBuf = *FPathBuf::GetThreadSingleton();
     pathBuf.SetPathW(WorkPath.wstring());
     if (!DirUtil::CreateDir(pathBuf)) {
         return false;
     }
 
     if (ID.empty()) {
-        auto& buf = *TClassThreadSingletonHelper<FCharBuffer>::GetClassSingleton();
+        auto& buf = *FCharBuffer::GetThreadSingleton();
         buf.Reverse(bin_to_hex_length(16));
         uint8_t uuidBuf[16];
         generate_uuid_128(uuidBuf);
@@ -670,7 +670,7 @@ DownloadTaskHandle_t FDownloader::AddTask(std::u8string_view url, const std::fil
 
 void FDownloader::LoadDiskTask(std::u8string_view pathStr)
 {
-    auto& pathBuf = *TClassThreadSingletonHelper<FPathBuf>::GetClassSingleton();
+    auto& pathBuf = *FPathBuf::GetThreadSingleton();
     pathBuf.SetPath(ConvertU8ViewToView(pathStr));
     DirUtil::IterateDir(pathBuf,
         [this, pathStr](DirEntry_t& entry)->bool {
@@ -679,7 +679,7 @@ void FDownloader::LoadDiskTask(std::u8string_view pathStr)
             if (!filePath.extension().string().contains(DownloadDiskDataExtensionStr)) {
                 return true;
             }
-            auto& file = *TClassThreadSingletonHelper<FRawFile>::GetClassSingleton();
+            auto& file = *FRawFile::GetThreadSingleton();
             if (file.Open(pathBuf, UTIL_OPEN_EXISTING)!= ERR_SUCCESS) {
                 return false;
             }
@@ -840,7 +840,7 @@ void FDownloader::Tick(float delSec)
                     pfile->GetFileInfoDelegate(handle, GetTaskInfo(pfile));
                 }
                 if (!pfile->Content) {
-                    auto& pathBuf = *TClassThreadSingletonHelper<FPathBuf>::GetClassSingleton();
+                    auto& pathBuf = *FPathBuf::GetThreadSingleton();
                     pathBuf.SetPathW(pfile->Path.wstring());
                     if (DirUtil::IsExist(pathBuf)) {
                         pfile->Finish(EDownloadCode::OK, "file exist");

@@ -2,9 +2,10 @@
 #include <stdint.h>
 #include <string>
 #include <stddef.h>
+#include <singleton.h>
 #include "simple_export_ppdefs.h"
 
-class SIMPLE_UTIL_EXPORT FCharBuffer
+class SIMPLE_UTIL_EXPORT FCharBuffer :public TProvideThreadSingletonClass<FCharBuffer>
 {
 public:
     FCharBuffer();
