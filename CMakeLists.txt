@@ -48,7 +48,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG b55adca7544d2e2612afb18388a3ae9175ebb2ae
+  GIT_TAG db3523e171d5734ae46d7939dca8ef159b4df7c8
 )
 FetchContent_MakeAvailable(OCmakeUtil)
 include(ResourceDownload)
@@ -61,8 +61,9 @@ if(UTILPP_ENABLE_CPUID)
   ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
 endif()
 if(UTILPP_ENABLE_NET)
-  ImportProject(CapnProto ${STATIC_CRT} STATIC SSH TAG v1.3.0)
+  ImportProject(CapnProto ${STATIC_CRT} STATIC ${SSH} TAG v1.3.0)
 endif()
+ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
 set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
@@ -103,17 +104,6 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(concurrentqueue)
-
-set(BUILD_SHARED_LIBS ON CACHE INTERNAL "")
-set(SIMDJSON_BUILD_STATIC_LIB ON CACHE INTERNAL "")
-FetchContent_Declare(
-  simdjson
-  GIT_REPOSITORY https://github.com/simdjson/simdjson.git
-  GIT_TAG v3.13.0
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(simdjson)
-
 
 FetchContent_Declare(
   ctre
