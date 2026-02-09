@@ -57,12 +57,15 @@ include(ProgramImport)
 include(TargetImport)
 
 ImportTarget(RapidJSON ${SSH} TAG origin/master)
+
 if(UTILPP_ENABLE_CPUID)
   ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
 endif()
+
 if(UTILPP_ENABLE_NET)
   ImportProject(CapnProto ${STATIC_CRT} STATIC ${SSH} TAG v1.3.0)
 endif()
+
 ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
 
 set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
@@ -127,7 +130,7 @@ if(WIN32)
 endif()
 
 if(UTILPP_ENABLE_IPC)
-  ImportProject(libuv ${STATIC_CRT} ${SSH} TAG be6b81a352d17513c95be153afcb3148f1a451cd) # 1.47.0
+  ImportProject(libuv ${STATIC_CRT} ${SSH} TAG v1.51.0)
   add_subdirectory(src/ipc_util)
 endif()
 
@@ -138,7 +141,7 @@ if(UTILPP_ENABLE_NET)
     unset(STATIC)
   endif()
 
-  ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} TAG 45d2ff6f8521524cbfa22e8be6a71a55578ccc4c) # 8.4.0
+  ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} TAG curl-8_18_0)
   add_subdirectory(src/net_util)
 endif()
 
@@ -151,31 +154,33 @@ if(UTILPP_ENABLE_STEAM)
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_util/generated)
 
   if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
-    set(WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-    execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_GENERATOR_ARGV} ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator
-      -B BuildSteamMsgGenerator
-      WORKING_DIRECTORY ${WORKING_DIRECTORY}
-      RESULT_VARIABLE result
-    )
+    set(WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/BuildSteamMsgGenerator)
+    if(NOT EXISTS ${WORKING_DIRECTORY}/rundir/bin/SteamLanguageParser.exe)
+      execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator
+        -A win32
+        -B BuildSteamMsgGenerator
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        RESULT_VARIABLE result
+      )
 
-    if(NOT ${result} EQUAL 0)
-      message(FATAL_ERROR "Failed to generate SteamMsgGenerator")
-    endif()
+      if(NOT ${result} EQUAL 0)
+        message(FATAL_ERROR "Failed to generate SteamMsgGenerator")
+      endif()
 
-    set(WORKING_DIRECTORY ${WORKING_DIRECTORY}/BuildSteamMsgGenerator)
-    execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install --config Release
-      WORKING_DIRECTORY ${WORKING_DIRECTORY}
-      RESULT_VARIABLE result
-    )
+      execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install --config Release
+        WORKING_DIRECTORY ${WORKING_DIRECTORY}
+        RESULT_VARIABLE result
+      )
 
-    if(NOT ${result} EQUAL 0)
-      message(FATAL_ERROR "Failed to build SteamMsgGenerator")
+      if(NOT ${result} EQUAL 0)
+        message(FATAL_ERROR "Failed to build SteamMsgGenerator")
+      endif()
     endif()
 
     ResourceDownload(
       SteamKit
       GIT_REPOSITORY https://github.com/SteamRE/SteamKit.git
-      GIT_TAG 47fa00b0a1886dfdb24a59c24ebd4d4555ebcb2d
+      GIT_TAG 3.4.0
     )
 
     execute_process(COMMAND ${WORKING_DIRECTORY}/rundir/bin/SteamLanguageParser.exe

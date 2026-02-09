@@ -35,7 +35,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   cxxopts
   GIT_REPOSITORY git@github.com:jarro2783/cxxopts.git
-  GIT_TAG 44380e5a44706ab7347f400698c703eb2a196202 # v3.3.1
+  GIT_TAG v3.3.1
 )
 FetchContent_MakeAvailable(cxxopts)
 
@@ -45,12 +45,12 @@ set(UTILPP_ENABLE_NET ON CACHE BOOL "" FORCE)
 set(UTILPP_WITH_STATIC_LIBCURL ON CACHE BOOL "" FORCE)
 add_subdirectory(.. utilpp)
 
-ImportProject(absl ${STATIC_CRT} SSH FIND TAG bc257a88f7c1939f24e0379f14a3589e926c950c) # 20250512.0
+ImportProject(absl ${STATIC_CRT} SSH FIND TAG 20260107.0)
 
 FetchContent_Declare(
   re2
   GIT_REPOSITORY git@github.com:google/re2.git
-  GIT_TAG 6dcd83d60f7944926bfd308cc13979fc53dd69ca # 2024-07-02
+  GIT_TAG 2025-11-05
 )
 FetchContent_MakeAvailable(re2)
 add_subdirectory(src/SteamLanguageParser)
