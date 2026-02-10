@@ -235,9 +235,9 @@ public:
     wchar_t* CurrentPrifixW{ nullptr };
     char Buf[PATH_MAX]{0};
     wchar_t BufW[PATH_MAX]{0};
-    size_t PathLen{ 0 };
-    size_t PathLenW{ 0 };
-    size_t PathPrependLen{ 0 };
+    uint32_t PathLen{ 0 };
+    uint32_t PathLenW{ 0 };
+    uint32_t PathPrependLen{ 0 };
     bool Synced{ true };
     bool WSynced{ true };
 };
