@@ -62,10 +62,10 @@ namespace utilpp {
         }
         MutexInfoWin_t& info = *(MutexInfoWin_t*)handle.ID;
         auto dwWaitResult = WaitForSingleObject(info.Handle, DWORD(microSec / 1000));
-        if (dwWaitResult != WAIT_OBJECT_0) {
-            return false;
+        if (dwWaitResult == WAIT_OBJECT_0|| dwWaitResult== WAIT_ABANDONED) {
+            return true;
         }
-        return true;
+        return false;
     }
 
     bool ReleaseProcMutex(const CommonHandlePtr_t handle, std::error_code& ec)
