@@ -9,7 +9,7 @@
 #include "dir_util.h"
 #include "dir_util_internal.h"
 #include "string_convert.h"
-
+#include "simple_error.h"
 #include <stack>
 #include <assert.h>
 #include <filesystem>
@@ -79,7 +79,7 @@ bool DirUtil::IsExist(std::u8string_view path)
     return err == 0;
 }
 
-bool DirUtil::IsExist(FPathBuf& pathBuf)
+bool DirUtil::IsExist(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -96,7 +96,7 @@ bool DirUtil::IsDirectory(std::u8string_view path)
     return S_ISDIR(s.st_mode);
 }
 
-bool DirUtil::IsDirectory(FPathBuf& pathBuf)
+bool DirUtil::IsDirectory(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -113,7 +113,7 @@ bool DirUtil::IsRegular(std::u8string_view path)
     return S_ISREG(s.st_mode);
 }
 
-bool DirUtil::IsRegular(FPathBuf& pathBuf)
+bool DirUtil::IsRegular(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -122,14 +122,14 @@ bool DirUtil::IsRegular(FPathBuf& pathBuf)
 
 bool DirUtil::SetCWD(std::u8string_view path)
 {
-    int err = chdir((const char*)path.data());
+    int err = chdir((const char *)path.data());
     if (err == -1)
         return false;
 
     return true
 }
 
-bool DirUtil::SetCWD(FPathBuf& pathBuf)
+bool DirUtil::SetCWD(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -139,14 +139,14 @@ bool DirUtil::SetCWD(FPathBuf& pathBuf)
 uint64_t DirUtil::FileSize(std::u8string_view path)
 {
     struct stat s;
-    int err = stat((const char*)path.data(), &s);
+    int err = stat((const char *)path.data(), &s);
     if (err == -1)
         return 0;
 
     return s.st_size;
 }
 
-uint64_t DirUtil::FileSize(FPathBuf& pathBuf)
+uint64_t DirUtil::FileSize(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -156,17 +156,17 @@ uint64_t DirUtil::FileSize(FPathBuf& pathBuf)
 bool DirUtil::SetWritable(std::u8string_view path)
 {
     struct stat s;
-    int err = stat((const char*)path.data(), &s);
+    int err = stat((const char *)path.data(), &s);
     if (err == -1)
         return false;
     mode_t new_mode = s.st_mode | S_IWUSR;
-    err = chmod((const char*)path.data(), new_mode);
+    err = chmod((const char *)path.data(), new_mode);
     if (err == -1)
         return false;
     return true;
 }
 
-bool DirUtil::SetWritable(FPathBuf& pathBuf)
+bool DirUtil::SetWritable(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -180,7 +180,7 @@ bool DirUtil::CreateDir(std::u8string_view path)
     return InternalCreateDir(norPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-bool DirUtil::CreateDir(FPathBuf& pathBuf)
+bool DirUtil::CreateDir(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
@@ -208,7 +208,8 @@ F_HANDLE DirUtil::RecursiveCreateFile(std::u8string_view path, uint32_t flag)
     return open(norPath, flag, mode);
 }
 
-F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf) {
+F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf &pathBuf)
+{
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
     return RecursiveCreateFile(ConvertViewToU8View(path));
@@ -217,33 +218,47 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf) {
 bool DirUtil::Delete(std::u8string_view path)
 {
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* norPath = PathBuf.GetBufInternal();
+    char *norPath = PathBuf.GetBufInternal();
     return remove(norPath) == 0;
 }
 
-bool DirUtil::Delete(FPathBuf& pathBuf)
+bool DirUtil::Delete(FPathBuf &pathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
     return Delete(ConvertViewToU8View(path));
 }
 
-bool DirUtil::Rename(std::u8string_view  oldpath, std::u8string_view  path)
+bool DirUtil::Rename(std::u8string_view oldpath, std::u8string_view path)
 {
     PathBuf.SetNormalizePath(path.data(), path.length());
-    char* OldPathStr = PathBuf.GetBufInternal();
+    char *OldPathStr = PathBuf.GetBufInternal();
     PathBuf2.SetNormalizePath(path.data(), path.length());
-    char* PathStr = PathBuf2.GetBufInternal();
-    return rename(OldPathStr, PathStr)==0;
+    char *PathStr = PathBuf2.GetBufInternal();
+    return rename(OldPathStr, PathStr) == 0;
 }
 
-bool DirUtil::Rename(FPathBuf& pathBuf, FPathBuf& newPathBuf)
+bool DirUtil::Rename(FPathBuf &pathBuf, FPathBuf &newPathBuf)
 {
     pathBuf.ToPath();
     auto path = pathBuf.GetPrependFileNamespaces();
     newPathBuf.ToPath();
     auto newPath = newPathBuf.GetPrependFileNamespaces();
     return Rename(ConvertViewToU8View(path), ConvertViewToU8View(newPath));
+}
+
+bool DirUtil::Copy(std::u8string_view  oldpath, std::u8string_view  path, CopyProgressCallback cb) {
+    std::error_code ec;
+    std::filesystem::copy(oldpath, path,ec);
+    return !ec;
+}
+
+bool DirUtil::Copy(FPathBuf& pathBuf, FPathBuf& newfilePathBuf, CopyProgressCallback cb) {
+    pathBuf.ToPath();
+    auto path = pathBuf.GetPrependFileNamespaces();
+    newPathBuf.ToPath();
+    auto newPath = newPathBuf.GetPrependFileNamespaces();
+    return Rename(ConvertViewToU8View(path), ConvertViewToU8View(newPath),cb);
 }
 
 bool RecursiveIterateDir(uint32_t depth)
@@ -292,16 +307,87 @@ bool DirUtil::IterateDir(std::u8string_view path, IterateDirCallback _cb, uint32
     return RecursiveIterateDir(depth);
 }
 
-
-
-
-bool IsValidFilename(const char* filenameStr, int32_t length) {
-    //todo
+bool IsValidFilename(const char *filenameStr, int32_t length)
+{
+    // todo
     return false;
 }
 
-
-bool IsValidPath(const char* pathStr, int32_t length) {
-    //todo
+bool IsValidPath(const char *pathStr, int32_t length)
+{
+    // todo
     return false;
+}
+
+std::u8string_view DirUtil::SearchFileInPath(std::u8string_view fileName, std::error_code &ec)
+{
+    PathBuf.SetPath((char *)fileName.data(), fileName.size());
+    return SearchFileInPath(PathBuf, ec);
+}
+
+std::vector<std::string> split_path(const std::string &path_str)
+{
+    std::vector<std::string> dirs;
+    size_t start = 0;
+    size_t end = 0;
+    // Delimiter is colon (:) on Unix, semicolon (;) on Windows
+    char delimiter = (
+#ifdef _WIN32
+        ';'
+#else
+        ':'
+#endif
+    );
+
+    while ((end = path_str.find(delimiter, start)) != std::string::npos)
+    {
+        dirs.push_back(path_str.substr(start, end - start));
+        start = end + 1;
+    }
+    dirs.push_back(path_str.substr(start)); // Add the last directory
+    return dirs;
+}
+
+std::u8string_view DirUtil::SearchFileInPath(FPathBuf &pathBuf, std::error_code &ec)
+{
+    pathBuf.ToPath();
+    auto file_name = pathBuf.GetPrependFileNamespaces();
+
+    std::filesystem::path program_path = std::filesystem::current_path() / file_name;
+    if (std::filesystem::exists(program_path) && std::filesystem::is_regular_file(program_path))
+    {
+        pathBuf2.SetPath(ConvertU8StringToView(program_path.u8string()).data(), ConvertU8StringToView(program_path.u8string()).size());
+        return ConvertViewToU8View(PathBuf2.GetBuf());
+    }
+
+    const char *path_env = std::getenv("PATH");
+    if (path_env)
+    {
+        std::vector<std::string> paths = split_path(path_env);
+
+        for (const std::string &dir : paths)
+        {
+            std::filesystem::path program_path = std::filesystem::path(dir) / file_name;
+            // Check if the path exists and is a regular file
+            if (std::filesystem::exists(program_path) && std::filesystem::is_regular_file(program_path))
+            {
+                pathBuf2.SetPath(ConvertU8StringToView(program_path.u8string()).data(), ConvertU8StringToView(program_path.u8string()).size());
+                return ConvertViewToU8View(PathBuf2.GetBuf());
+            }
+        }
+    }
+
+    return std::u8string_view();
+}
+
+std::u8string_view DirUtil::GetVSwherePath(std::error_code& ec)
+{
+    ec=make_common_used_error(ECommonUsedError::CUE_NOT_SUPPORT);
+    return std::u8string_view();
+}
+
+std::u8string_view DirUtil::GetOSDirectory(std::error_code& ec)
+{
+    ec=make_common_used_error(ECommonUsedError::CUE_NOT_SUPPORT);
+    return std::u8string_view();
 }

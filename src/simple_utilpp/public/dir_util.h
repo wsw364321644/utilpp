@@ -61,6 +61,9 @@ public:
     static bool Delete(FPathBuf& pathBuf);
     static bool Rename(std::u8string_view  oldpath, std::u8string_view  path);
     static bool Rename(FPathBuf& pathBuf, FPathBuf& newfilePathBuf);
+    typedef std::function<bool(DirEntry_t&, uint64_t)> CopyProgressCallback;
+    static bool Copy(std::u8string_view  oldpath, std::u8string_view  path, CopyProgressCallback cb= nullptr);
+    static bool Copy(FPathBuf& pathBuf, FPathBuf& newfilePathBuf, CopyProgressCallback cb= nullptr);
     static F_HANDLE RecursiveCreateFile(std::u8string_view  path, uint32_t flag);
     static F_HANDLE RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag);
 
@@ -71,4 +74,10 @@ public:
 
     static bool IsValidFilename(const char* filenameStr, int32_t length);
     static bool IsValidPath(const char* pathStr, int32_t length);
+
+    static std::u8string_view SearchFileInPath(std::u8string_view fileName,std::error_code& ec);
+    static std::u8string_view SearchFileInPath(FPathBuf& pathBuf, std::error_code& ec);
+
+    static std::u8string_view GetVSwherePath(std::error_code& ec);
+    static std::u8string_view GetOSDirectory(std::error_code& ec);
 };

@@ -9,11 +9,14 @@
 #include "dir_util.h"
 #include "dir_util_internal.h"
 #include "logger_header.h"
+#include "simple_error.h"
+#include "RawFile.h"
 #include "FunctionExitHelper.h"
 #include <wchar.h>
-#include <simple_os_defs.h>
 #include <ctre-unicode.hpp>
-
+#include <simple_os_defs.h>
+ //https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid
+#include <shlobj_core.h>
 
 thread_local DirEntry_t out;
 bool InternalCreateDir(wchar_t* pathw, size_t prependlen, size_t len) {
@@ -122,7 +125,7 @@ bool DirUtil::AbsolutePath(std::u8string_view  path, FPathBuf& pathBuf)
     PathBuf.SetPath((char*)path.data(), path.size());
     PathBuf.ToPathW();
     auto length = GetFullPathNameW((LPCWSTR)PathBuf.GetBufW(), (DWORD)PATH_MAX, pathBuf.GetBufInternalW(), NULL);
-    if (length == 0){
+    if (length == 0) {
         return false;
     }
     pathBuf.UpdatePathLenW(length);
@@ -262,7 +265,7 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag)
     DWORD attr = GetFileAttributesW((LPCWSTR)pathw);
     if (attr != INVALID_FILE_ATTRIBUTES) {
         if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-            return NULL;
+            return INVALID_HANDLE_VALUE;
         }
     }
 
@@ -373,6 +376,112 @@ bool DirUtil::Rename(FPathBuf& pathBuf, FPathBuf& newfilePathBuf)
     return MoveFileExW(path_oldw, pathw, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
 }
 
+bool DirUtil::Copy(std::u8string_view  oldpath, std::u8string_view  path, CopyProgressCallback cb) {
+    PathBuf.SetPath((char*)oldpath.data(), oldpath.size());
+    PathBuf2.SetPath((char*)path.data(), path.size());
+    return Copy(PathBuf, PathBuf2, cb);
+}
+bool DirUtil::Copy(FPathBuf& pathBuf, FPathBuf& newfilePathBuf, CopyProgressCallback cb) {
+    pathBuf.ToPathW();
+    newfilePathBuf.ToPathW();
+    if (!IsExist(pathBuf)) {
+        return false;
+    }
+    bool bCopyFile{ true };
+    if (IsDirectory(pathBuf)) {
+        bCopyFile = false;
+    }
+    if (IsExist(newfilePathBuf)) {
+        if (!bCopyFile && !IsDirectory(newfilePathBuf)) {
+            return false;
+        }
+    }
+    else {
+        if (!bCopyFile) {
+            newfilePathBuf.AppendPathW(nullptr, 0);
+        }
+        if (!CreateDir(newfilePathBuf)) {
+            return false;
+        }
+    }
+    if (bCopyFile) {
+        bool bAddFileName{ false };
+        if (newfilePathBuf.IsFolderW()) {
+            bAddFileName = true;
+            newfilePathBuf.AppendPathW(pathBuf.FileNameW());
+        }
+        FunctionExitHelper_t newfilePathBufGuard(
+            [&]() {
+                if (bAddFileName) {
+                    newfilePathBuf.PopPathW();
+                }
+            }
+        );
+        return CopyFileW(pathBuf.GetBufW(), newfilePathBuf.GetBufW(), false);
+    }
+    else {
+        constexpr int bufLen = 1 << 12;
+        char buf[bufLen];
+        FRawFile oldFile;
+        FRawFile newFile;
+        bool bres;
+        int64_t writed;
+        int16_t needread;
+        IterateDir(pathBuf,
+            [&](DirEntry_t& entry)->bool {
+                auto relatePath = entry.pPathBuf->PopPathW(entry.Depth + 1, false);
+                newfilePathBuf.AppendPathW(ConvertU16ViewToWView(relatePath));
+                FunctionExitHelper_t newfilePathBufGuard(
+                    [&]() {
+                        newfilePathBuf.PopPathW(entry.Depth + 1);
+                    }
+                );
+                if (entry.bDir) {
+                    CreateDir(newfilePathBuf);
+                }
+                else {
+                    if (cb) {
+                        if (!cb(entry, 0)) {
+                            return true;
+                        }
+                    }
+                    if (oldFile.Open(*entry.pPathBuf, UTIL_OPEN_EXISTING) != ERR_SUCCESS) {
+                        bres = false;
+                        return false;
+                    }
+                    auto fileSize = oldFile.GetSize();
+                    if (newFile.Open(newfilePathBuf, UTIL_CREATE_ALWAYS, fileSize) != ERR_SUCCESS) {
+                        bres = false;
+                        return false;
+                    }
+
+                    for (writed = 0; writed < fileSize;) {
+                        needread = fileSize - writed > bufLen ? bufLen : fileSize - writed;
+                        if (oldFile.Read(buf, needread) != ERR_SUCCESS) {
+                            bres = false;
+                            return false;
+                        }
+                        if (newFile.Write(buf, needread) != ERR_SUCCESS) {
+                            bres = false;
+                            return false;
+                        }
+                        writed += needread;
+                        if (cb) {
+                            if (!cb(entry, writed)) {
+                                newFile.Close();
+                                DirUtil::Delete(newfilePathBuf);
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+        );
+    }
+    return true;
+}
+
 bool DirUtil::IterateDir(std::u8string_view  path, IterateDirCallback _cb, uint32_t depth, EIterateDirOrder IterateDirOrder)
 {
     PathBuf.SetNormalizePathW(path.data(), path.length());
@@ -409,4 +518,52 @@ bool DirUtil::IsValidPath(const char* pathStr, int32_t length) {
         return true;
     }
     return false;
+}
+
+std::u8string_view DirUtil::SearchFileInPath(std::u8string_view fileName, std::error_code& ec)
+{
+    PathBuf.SetPath((char*)fileName.data(), fileName.size());
+    return SearchFileInPath(PathBuf, ec);
+}
+
+std::u8string_view DirUtil::SearchFileInPath(FPathBuf& pathBuf, std::error_code& ec)
+{
+    pathBuf.ToPathW();
+    auto pathw = (wchar_t*)pathBuf.GetPrependFileNamespacesW();
+    LPWSTR lastCursor = nullptr;
+    auto len = SearchPathW(NULL, pathw, NULL, PATH_MAX, PathBuf2.GetBufInternalW(), &lastCursor);
+    if (len == 0) {
+        ec = std::error_code(GetLastError(), std::system_category());
+        return std::u8string_view();
+    }
+    PathBuf2.ToPath();
+    return ConvertViewToU8View({ PathBuf2.GetBuf(),PathBuf.PathLen });
+}
+
+std::u8string_view DirUtil::GetVSwherePath(std::error_code& ec)
+{
+    PWSTR programFilesX86Path = nullptr;
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_ProgramFilesX86, 0, NULL, &programFilesX86Path);
+    if (FAILED(hr)) {
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_NOT_SUPPORT);
+        return std::u8string_view();
+    }
+    PathBuf.SetPathW(programFilesX86Path, GetStringLengthW(programFilesX86Path));
+    CoTaskMemFree(programFilesX86Path);
+    PathBuf.AppendPathW(L"Microsoft Visual Studio");
+    PathBuf.AppendPathW(L"Installer");
+    PathBuf.AppendPathW(L"vswhere.exe");
+    PathBuf.ToPath();
+    return ConvertViewToU8View({ PathBuf.GetBuf(),PathBuf.PathLen });
+}
+
+std::u8string_view DirUtil::GetOSDirectory(std::error_code& ec)
+{
+    auto len = GetSystemDirectoryA(PathBuf.GetBufInternal(), PATH_MAX);
+    if (len == 0) {
+        ec = std::error_code(GetLastError(), std::system_category());
+        return std::u8string_view();
+    }
+    PathBuf.UpdatePathLen(len);
+    return ConvertViewToU8View({ PathBuf.GetBuf(),PathBuf.PathLen });
 }
