@@ -3,8 +3,12 @@
 #include <simple_os_defs.h>
 #include "stdint.h"
 #include "stdbool.h"
-SIMPLE_UTIL_API size_t bin_to_hex_length(size_t insize);
-SIMPLE_UTIL_API size_t hex_to_bin_length(size_t insize);
+constexpr size_t bin_to_hex_length(size_t insize) {
+    return insize * 2;
+}
+constexpr size_t hex_to_bin_length(size_t insize) {
+    return insize / 2;
+}
 
 SIMPLE_UTIL_API bool to_upper_hex(char* const des, const uint8_t* src, size_t insize);
 SIMPLE_UTIL_API bool to_lower_hex(char* const des, const uint8_t* src, size_t insize);

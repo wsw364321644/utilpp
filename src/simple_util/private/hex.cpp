@@ -1,12 +1,5 @@
 #include "hex.h"
 
-size_t bin_to_hex_length(size_t insize) {
-    return insize * 2;
-}
-size_t hex_to_bin_length(size_t insize) {
-    return insize / 2;
-}
-
 const char s_vecUpper[] = "0123456789ABCDEF";
 const char s_vecLower[] = "0123456789abcdef";
 const uint8_t s_array[256] = {

@@ -186,12 +186,11 @@ bool FDownloadFile::Init()
     }
 
     if (ID.empty()) {
-        auto& buf = *FCharBuffer::GetThreadSingleton();
-        buf.Reverse(bin_to_hex_length(16));
-        uint8_t uuidBuf[16];
+        char hexUUIDBuf[bin_to_hex_length(UUID_128_BYTES)+1];
+        uint8_t uuidBuf[UUID_128_BYTES];
         generate_uuid_128(uuidBuf);
-        to_lower_hex(buf.Data(), uuidBuf, 16);
-        ID.assign(buf.Data(), buf.Data() + bin_to_hex_length(16));
+        to_lower_hex(hexUUIDBuf, uuidBuf, UUID_128_BYTES);
+        ID.assign(hexUUIDBuf, hexUUIDBuf + bin_to_hex_length(UUID_128_BYTES));
     }
 
     std::filesystem::path TempPath = WorkPath;
