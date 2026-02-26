@@ -18,6 +18,7 @@ public:
     FCharBuffer& operator()(const char *cstr);
     FCharBuffer& operator=(FCharBuffer&& r) noexcept;
     FCharBuffer& operator=(const FCharBuffer& r)noexcept;
+    char& operator[](const size_t pos)noexcept;
     friend void Swap(FCharBuffer& l, FCharBuffer& r);
 
     // template <typename T,

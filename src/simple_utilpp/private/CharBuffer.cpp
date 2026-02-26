@@ -51,6 +51,10 @@ FCharBuffer& FCharBuffer::operator=(const FCharBuffer& r)noexcept {
     readCursor = r.readCursor;
     return *this;
 }
+char& FCharBuffer::operator[](const size_t pos) noexcept
+{
+    return Data()[pos];
+}
 void Swap(FCharBuffer& l, FCharBuffer& r) {
     std::swap(l.bufSize,r.bufSize);
     std::swap(l.cursor,r.cursor);
