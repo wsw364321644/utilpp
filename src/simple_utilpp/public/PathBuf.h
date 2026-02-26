@@ -7,7 +7,7 @@
 #include "string_convert.h"
 #include "CharBuffer.h"
 #include "simple_export_ppdefs.h"
-class SIMPLE_UTIL_EXPORT FPathBuf :public TProvideThreadSingletonClass<FPathBuf>{
+class SIMPLE_UTIL_EXPORT FPathBuf :public TProvideThreadSingletonClass<FPathBuf> {
 public:
     FPathBuf() {
     }
@@ -30,16 +30,16 @@ public:
         SetPathW(view.data(), view.size());
     }
     void SetPathW(const wchar_t* path, size_t len) {
-        memcpy(GetBufInternalW(), path, len*sizeof(wchar_t));
+        memcpy(GetBufInternalW(), path, len * sizeof(wchar_t));
         GetBufInternalW()[len] = L'\0';
         PathLenW = len;
         OnPathChanged(true);
     }
-    void ToPathW(bool force=false) {
+    void ToPathW(bool force = false) {
         if (WSynced && !force) {
             return;
         }
-        PathLenW=U8ToU16Buf(GetBufInternal(), PathLen, GetBufInternalW(), PATH_MAX);
+        PathLenW = U8ToU16Buf(GetBufInternal(), PathLen, GetBufInternalW(), PATH_MAX);
         GetBufInternalW()[PathLenW] = '\0';
         OnPathSynced();
     }
@@ -47,7 +47,7 @@ public:
         if (Synced && !force) {
             return;
         }
-        PathLen=U16ToU8Buf(GetBufInternalW(), PathLenW, GetBufInternal(), PATH_MAX);
+        PathLen = U16ToU8Buf(GetBufInternalW(), PathLenW, GetBufInternal(), PATH_MAX);
         GetBufInternal()[PathLen] = '\0';
         OnPathSynced();
     }
@@ -107,7 +107,7 @@ public:
     char* GetBufInternal() {
         return const_cast<char*>(GetBuf());
     }
-    void UpdatePathLen(size_t newSize=std::numeric_limits<size_t>::max()) {
+    void UpdatePathLen(size_t newSize = std::numeric_limits<size_t>::max()) {
         if (newSize == std::numeric_limits<size_t>::max()) {
             PathLen = GetStringLength(GetBuf());
         }
@@ -132,8 +132,11 @@ public:
         AppendPath(view.data(), view.size());
     }
     void AppendPath(const char* path, size_t len) {
-        if (GetBufInternal()[PathLen-1] !='\\'&& GetBufInternal()[PathLen-1] != '/') {
+        if (GetBufInternal()[PathLen - 1] != '\\' && GetBufInternal()[PathLen - 1] != '/') {
             GetBufInternal()[PathLen++] = static_cast<char>(std::filesystem::path::preferred_separator);
+        }
+        if (!path || len == 0) {
+            return;
         }
         memcpy(GetBufInternal() + PathLen, path, len);
         PathLen += len;
@@ -144,8 +147,11 @@ public:
         AppendPathW(view.data(), view.size());
     }
     void AppendPathW(const wchar_t* path, size_t len) {
-        if (GetBufInternalW()[PathLenW -1] != L'\\' && GetBufInternalW()[PathLenW -1] != L'/') {
+        if (GetBufInternalW()[PathLenW - 1] != L'\\' && GetBufInternalW()[PathLenW - 1] != L'/') {
             GetBufInternalW()[PathLenW++] = static_cast<wchar_t>(std::filesystem::path::preferred_separator);
+        }
+        if (!path || len == 0) {
+            return;
         }
         memcpy(GetBufInternalW() + PathLenW, path, len * sizeof(wchar_t));
         PathLenW += len;
@@ -153,30 +159,53 @@ public:
         OnPathChanged(true);
     }
 
-    std::u8string_view PopPath() {
-        char* lastCursor = strrchr(GetBufInternal() , static_cast<char>(std::filesystem::path::preferred_separator));
+    std::u8string_view PopPath(uint32_t depth = 1, bool bRemove = true) {
+        char* lastCursor{ nullptr };
+        for (int i = int(PathLen) - 1; i >= 0; i--) {
+            if (depth == 0) {
+                break;
+            }
+            if (GetBufInternal()[i] == static_cast<char>(std::filesystem::path::preferred_separator)) {
+                lastCursor = GetBufInternal() + i;
+                depth--;
+            }
+        }
+
         if (lastCursor == NULL) {
             return std::u8string_view();
         }
-        *lastCursor = '\0';
         char* endCursor = GetBufInternal() + PathLen;
-        PathLen = lastCursor - GetBufInternal();
-        OnPathChanged(false);
+        if (bRemove) {
+            *lastCursor = '\0';
+            PathLen = lastCursor - GetBufInternal();
+            OnPathChanged(false);
+        }
         return ConvertViewToU8View(std::string_view(lastCursor + 1, endCursor));
     }
-    std::u16string_view PopPathW() {
-        wchar_t* lastCursor = wcsrchr(GetBufInternalW() , static_cast<wchar_t>(std::filesystem::path::preferred_separator));
+    std::u16string_view PopPathW(uint32_t depth = 1, bool bRemove = true) {
+        wchar_t* lastCursor{ nullptr };
+        for (int i = int(PathLenW) - 1; i >= 0; i--) {
+            if (depth == 0) {
+                break;
+            }
+            if (GetBufInternalW()[i] == static_cast<wchar_t>(std::filesystem::path::preferred_separator)) {
+                lastCursor = GetBufInternalW() + i;
+                depth--;
+            }
+        }
         if (lastCursor == NULL) {
             return std::u16string_view();
         }
-        *lastCursor = L'\0';
         wchar_t* endCursor = GetBufInternalW() + PathLenW;
-        PathLenW = lastCursor - GetBufInternalW();
-        OnPathChanged(true);
+        if (bRemove) {
+            *lastCursor = L'\0';
+            PathLenW = lastCursor - GetBufInternalW();
+            OnPathChanged(true);
+        }
         return ConvertWViewToU16View(std::wstring_view(lastCursor + 1, endCursor));
     }
 
-    bool PopRootPath(FCharBuffer* buf=nullptr) {
+    bool PopRootPath(FCharBuffer* buf = nullptr) {
         char* firstCursor = strchr(GetBufInternal(), static_cast<char>(std::filesystem::path::preferred_separator));
         if (firstCursor == NULL) {
             return false;
@@ -203,6 +232,13 @@ public:
         return true;
     }
 
+    const char* FileName() const {
+        const char* lastCursor = strrchr(GetBuf(), static_cast<char>(std::filesystem::path::preferred_separator));
+        if (lastCursor == NULL) {
+            return nullptr;
+        }
+        return lastCursor + 1;
+    }
     const wchar_t* FileNameW() const {
         const wchar_t* lastCursor = wcsrchr(GetBufW(), static_cast<wchar_t>(std::filesystem::path::preferred_separator));
         if (lastCursor == NULL) {
@@ -210,12 +246,18 @@ public:
         }
         return lastCursor + 1;
     }
-    const char* FileName() const {
-        const char* lastCursor = strrchr(GetBuf(), static_cast<char>(std::filesystem::path::preferred_separator));
-        if (lastCursor == NULL) {
-            return nullptr;
+
+    bool IsFolder() const {
+        if (GetBuf()[PathLen] == '/' || GetBuf()[PathLen] == '\\') {
+            return true;
         }
-        return lastCursor + 1;
+        return false;
+    }
+    bool IsFolderW() const {
+        if (GetBufW()[PathLenW] == L'/' || GetBufW()[PathLen] == L'\\') {
+            return true;
+        }
+        return false;
     }
     void OnPathChanged(bool isWide) {
         if (isWide) {
@@ -231,10 +273,10 @@ public:
         Synced = true;
         WSynced = true;
     }
-    char* CurrentPrifix{nullptr};
+    char* CurrentPrifix{ nullptr };
     wchar_t* CurrentPrifixW{ nullptr };
-    char Buf[PATH_MAX]{0};
-    wchar_t BufW[PATH_MAX]{0};
+    char Buf[PATH_MAX]{ 0 };
+    wchar_t BufW[PATH_MAX]{ 0 };
     uint32_t PathLen{ 0 };
     uint32_t PathLenW{ 0 };
     uint32_t PathPrependLen{ 0 };
