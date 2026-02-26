@@ -90,12 +90,12 @@ FetchContent_MakeAvailable(spdlog)
 # )
 set(TF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(TF_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(TF_BUILD_PROFILER ON CACHE BOOL "" FORCE)
+set(TF_BUILD_PROFILER OFF CACHE BOOL "" FORCE)
 set(TF_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   taskflow
   GIT_REPOSITORY https://github.com/taskflow/taskflow.git
-  GIT_TAG v3.10.0
+  GIT_TAG v4.0.0
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(taskflow)

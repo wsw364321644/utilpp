@@ -17,6 +17,7 @@
 
 int32_t FRawFile::InternalOpen(uint32_t uOpenFlag, uint64_t uExpectSize)
 {
+    auto& filePath = *pFilePath;
     Close();
     DWORD err = 0;
 
@@ -58,6 +59,7 @@ int32_t FRawFile::InternalOpen(uint32_t uOpenFlag, uint64_t uExpectSize)
 
 int32_t FRawFile::Open(FPathBuf& pathBuf, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
+    auto& filePath = *pFilePath;
     pathBuf.ToPathW();
     if (pathBuf.PathLenW == 0)
     {
@@ -70,6 +72,7 @@ int32_t FRawFile::Open(FPathBuf& pathBuf, uint32_t uOpenFlag, uint64_t uExpectSi
 
 int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
+    auto& filePath = *pFilePath;
     if (lpFileName.size() == 0)
     {
         return ERR_ARGUMENT;
@@ -81,6 +84,7 @@ int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64
 
 const char* FRawFile::GetFilePath()
 {
+    auto& filePath = *pFilePath;
     filePath.ToPath();
     return filePath.GetBuf();
 }
@@ -89,6 +93,7 @@ const char* FRawFile::GetFilePath()
 
 FRawFile::FRawFile()
 {
+    pFilePath = new FPathBuf;
     handle_ = INVALID_HANDLE_VALUE;
     fd = -1;
     file_size_ = 0;
@@ -97,6 +102,7 @@ FRawFile::FRawFile()
 FRawFile::~FRawFile()
 {
     Close();
+    delete pFilePath;
 }
 
 bool FRawFile::IsOpen()
@@ -142,6 +148,7 @@ int32_t FRawFile::Write(const void* buf, uint32_t size)
 
 int32_t FRawFile::Delete()
 {
+    auto& filePath = *pFilePath;
     if (handle_ == INVALID_HANDLE_VALUE)
     {
         return ERR_ARGUMENT;

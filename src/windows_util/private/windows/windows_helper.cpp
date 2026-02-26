@@ -309,37 +309,3 @@ WINDOWS_UTIL_API DWORD get_process_id_from_handle(HANDLE hProcess)
 {
     return ::GetProcessId(hProcess);
 }
-
-UINT get_system_module_path(WCHAR* base_path, const char* module_name) {
-    if (!bsystem_path_inited) {
-        UINT ret = GetSystemDirectoryW(system_path, MAX_PATH);
-        if (!ret) {
-            // log("Failed to get windows system path: %lu", GetLastError());
-            return ret;
-        }
-        bsystem_path_inited = true;
-    }
-    lstrcpyW(base_path, system_path);
-    lstrcatW(base_path, L"\\");
-    auto module_name16 = U8ToU16(module_name, GetStringLength(module_name));
-    lstrcatW(base_path, (WCHAR*)module_name16.c_str());
-    return NULL;
-}
-HMODULE get_system_module(const char* module_name)
-{
-
-    WCHAR base_path[MAX_PATH];
-    if (get_system_module_path(base_path, module_name) != NULL) {
-        return NULL;
-    }
-    return GetModuleHandleW(base_path);
-}
-
-HMODULE load_system_library(const char* module_name)
-{
-    WCHAR base_path[MAX_PATH];
-    if (get_system_module_path(base_path, module_name) != NULL) {
-        return NULL;
-    }
-    return LoadLibraryW(base_path);
-}

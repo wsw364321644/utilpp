@@ -31,7 +31,7 @@ private:
     int32_t InternalOpen(uint32_t uOpenFlag, uint64_t uExpectSize);
     F_HANDLE handle_;
     int fd;
-    FPathBuf filePath;
+    FPathBuf* pFilePath;
     uint64_t file_size_;
 };
 
