@@ -5,9 +5,10 @@
 #include "ipc_util_export.h"
 
 typedef struct SpawnData_t {
+    std::string_view CWD;
     std::string_view Filepath;
     std::string_view* Argvs;
-    int Argc;
+    int Argc{ 0 };
     bool bHideWindow{ false };
     bool bDetach{ false };
 }SpawnData_t;
