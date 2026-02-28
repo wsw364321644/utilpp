@@ -1,4 +1,7 @@
-#include"access_control.h"
+#include "dir_util_ex.h"
+#include "dir_util_internal.h"
+#include <FunctionExitHelper.h>
+#include <string_convert.h>
 #include <simple_os_defs.h>
 #include <stdio.h>
 #include <aclapi.h>
@@ -393,87 +396,28 @@ uint64_t GetAccess(AUTHZ_CLIENT_CONTEXT_HANDLE hAuthzClient, PSECURITY_DESCRIPTO
 
 
 
-
-
-bool GetFolderAccessControlForUser(const char* path, EUserType userType, uint64_t* mask)
-{
-    DWORD                dw;
-    PACL                 pacl{0};
-    PSECURITY_DESCRIPTOR psd;
-
+bool GetFolderAccessControlForUserInternal(PSECURITY_DESCRIPTOR psd,EUserType userType, uint64_t* mask) {
     AUTHZ_RESOURCE_MANAGER_HANDLE hManager;
     BOOL bResult = FALSE;
-
     PSID pSid = NULL;
     LUID unusedId = { 0 };
     AUTHZ_CLIENT_CONTEXT_HANDLE hAuthzClientContext = NULL;
     LPSTR str;
-
-
-
     HANDLE hToken{ NULL };
     DWORD dwLength;
     PTOKEN_USER ptUser{};
-
-    dw = GetNamedSecurityInfoA(path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION |
-        OWNER_SECURITY_INFORMATION |
-        GROUP_SECURITY_INFORMATION, NULL, NULL, &pacl, NULL, &psd);
-    if (dw != ERROR_SUCCESS)
-    {
-        return false;
-    }
-
-    //print ace in acl
-    //for (int i = 0;; i++) {
-    //    ACE_HEADER* ace;
-    //    ACCESS_MASK _mask;
-    //    if (!GetAce(pacl, i, (void**)&ace)) {
-    //        auto err = GetLastError();
-    //        break;
-    //    }
-    //    switch (ace->AceType) {
-    //    case ACCESS_ALLOWED_ACE_TYPE: {
-    //        pSid = &((ACCESS_ALLOWED_ACE*)ace)->SidStart;
-    //        _mask = ((ACCESS_ALLOWED_ACE*)ace)->Mask;
-    //        break;
-    //    }
-    //    case ACCESS_DENIED_ACE_TYPE: {
-    //        pSid = &((ACCESS_ALLOWED_ACE*)ace)->SidStart;
-    //        _mask = ((ACCESS_DENIED_ACE*)ace)->Mask;
-    //        break;
-    //    }
-    //    default:
-    //        break;
-    //    }
-    //    auto tmask = TransAccessMask(_mask);
-    //    SID_NAME_USE SidType;
-    //    char name[S_INFO_BUFFER_SIZE];
-    //    DWORD count = S_INFO_BUFFER_SIZE;
-    //    DWORD domainnamelen{ 0 };
-    //    char* domainname;
-    //    if (!LookupAccountSidA(NULL, pSid, name, &count, NULL, &domainnamelen, &SidType)) {
-    //        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-    //        {
-    //            domainname = (char*)malloc(domainnamelen);
-    //            auto res = LookupAccountSidA(NULL, pSid, name, &count, domainname, &domainnamelen, &SidType);
-    //            printf("%s", name);
-    //            free(domainname);
-    //        }
-    //    }
-    //}
 
 
     bResult = AuthzInitializeResourceManager(AUTHZ_RM_FLAG_NO_AUDIT,
         NULL, NULL, NULL, NULL, &hManager);
     if (!bResult)
     {
-        goto psdend;
+        return false;
     }
 
     switch (userType) {
     case EUserType::ProcessUser: {
         OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken);
-
         if (!GetTokenInformation(hToken, TokenUser, NULL, 0, &dwLength)) {
             if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
             {
@@ -505,9 +449,8 @@ bool GetFolderAccessControlForUser(const char* path, EUserType userType, uint64_
     }
     default: {
         str = GetUserSIDStr(userType);
-
         if (!str) {
-            goto psdend;
+            goto rmend;
         }
         bResult = ConvertStringSidToSidA(str, &pSid);
         LocalFree(str);
@@ -536,24 +479,91 @@ bool GetFolderAccessControlForUser(const char* path, EUserType userType, uint64_
     *mask = GetAccess(hAuthzClientContext, psd);
     AuthzFreeContext(hAuthzClientContext);
 
-    
+
 psidend:
     pSid = NULL;
     LocalFree(pSid);
 rmend:
     AuthzFreeResourceManager(hManager);
-psdend:
-    LocalFree(psd);
-
     return bResult;
+}
+
+bool GetFolderAccessControlForUser(std::u8string_view  path, EUserType userType, uint64_t* mask, std::error_code& ec) {
+    PathBuf.SetPath((char*)path.data(), path.size());
+    return GetFolderAccessControlForUser(PathBuf, userType, mask,ec);
+}
+bool GetFolderAccessControlForUser(FPathBuf& pathBuf, EUserType userType, uint64_t* mask, std::error_code& ec)
+{
+    DWORD                dw;
+    PACL                 pacl{ 0 };
+    PSECURITY_DESCRIPTOR psd;
+    ec.clear();
+    pathBuf.ToPathW();
+    auto pathw = pathBuf.GetPrependFileNamespacesW();
+    dw = GetNamedSecurityInfoW(pathw, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION |
+        OWNER_SECURITY_INFORMATION |
+        GROUP_SECURITY_INFORMATION, NULL, NULL, &pacl, NULL, &psd);
+    if (dw != ERROR_SUCCESS)
+    {
+        ec = std::error_code(dw, std::system_category());
+        printf("GetNamedSecurityInfoW failed with %d\n", dw);
+        return false;
+    }
+    //print ace in acl
+//for (int i = 0;; i++) {
+//    ACE_HEADER* ace;
+//    ACCESS_MASK _mask;
+//    if (!GetAce(pacl, i, (void**)&ace)) {
+//        auto err = GetLastError();
+//        break;
+//    }
+//    switch (ace->AceType) {
+//    case ACCESS_ALLOWED_ACE_TYPE: {
+//        pSid = &((ACCESS_ALLOWED_ACE*)ace)->SidStart;
+//        _mask = ((ACCESS_ALLOWED_ACE*)ace)->Mask;
+//        break;
+//    }
+//    case ACCESS_DENIED_ACE_TYPE: {
+//        pSid = &((ACCESS_ALLOWED_ACE*)ace)->SidStart;
+//        _mask = ((ACCESS_DENIED_ACE*)ace)->Mask;
+//        break;
+//    }
+//    default:
+//        break;
+//    }
+//    auto tmask = TransAccessMask(_mask);
+//    SID_NAME_USE SidType;
+//    char name[S_INFO_BUFFER_SIZE];
+//    DWORD count = S_INFO_BUFFER_SIZE;
+//    DWORD domainnamelen{ 0 };
+//    char* domainname;
+//    if (!LookupAccountSidA(NULL, pSid, name, &count, NULL, &domainnamelen, &SidType)) {
+//        if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+//        {
+//            domainname = (char*)malloc(domainnamelen);
+//            auto res = LookupAccountSidA(NULL, pSid, name, &count, domainname, &domainnamelen, &SidType);
+//            printf("%s", name);
+//            free(domainname);
+//        }
+//    }
+//}
+    bool bres = GetFolderAccessControlForUserInternal(psd, userType, mask);
+    LocalFree(psd);
+    return bres;
 }
 
 
 
+bool GrantFolderAccessControlForUser(std::u8string_view  path, EUserType userType, uint64_t mask, std::error_code& ec) {
+    PathBuf.SetPath((char*)path.data(), path.size());
+    return GrantFolderAccessControlForUser(PathBuf, userType, mask, ec);
+}
 
-
-bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t mask)
+bool GrantFolderAccessControlForUser(FPathBuf& pathBuf, EUserType type, uint64_t mask, std::error_code& ec)
 {
+    ec.clear();
+    pathBuf.ToPathW();
+    auto pathw = pathBuf.GetPrependFileNamespacesW();
     // Type of object, file or directory.  Here we test on directory
     SE_OBJECT_TYPE ObjectType = SE_FILE_OBJECT;
     // Access mask for new ACE equal to 0x001F0000 flags (bit 0 till 15)
@@ -587,37 +597,41 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
     char* username = NULL;
     username = (char*)malloc(S_INFO_BUFFER_SIZE);
     uint64_t count = S_INFO_BUFFER_SIZE;
-    char* interpath{NULL};
-    if (path == NULL)
+    wchar_t* interpath{NULL};
+    if (pathBuf.PathLenW == 0)
     {
+        ec = std::make_error_code(std::errc::invalid_argument);
         return false;
     }
     else {
-        interpath=(char*)malloc(strlen(path));
+        interpath=(wchar_t*)malloc((pathBuf.PathLenW +1)*sizeof(wchar_t));
         if (!interpath) {
             return false;
         }
-        strcpy(interpath, path);
+        memcpy(interpath, pathw, pathBuf.PathLenW * sizeof(wchar_t));
+        interpath[pathBuf.PathLenW] = L'\0';
     }
-    auto Cleanup = [&]() {
-        if (pSD != NULL)
-            LocalFree((HLOCAL)pSD);
-        if (pNewDACL != NULL)
-            LocalFree((HLOCAL)pNewDACL);
-        if (interpath) {
-            free(interpath);
+    FunctionExitHelper_t exithelper(
+        [&]() {
+            if (pSD != NULL)
+                LocalFree((HLOCAL)pSD);
+            if (pNewDACL != NULL)
+                LocalFree((HLOCAL)pNewDACL);
+            if (interpath) {
+                free(interpath);
+            }
+            if (username) {
+                free(username);
+            }
         }
-        if (username) {
-            free(username);
-        }
-    };
+    );
 
     if (!GetUserNameByType(username, &count, LocalUser)) {
         return false;
     }
 
     // Get a pointer to the existing DACL.
-    dwRes = GetNamedSecurityInfoA(interpath, ObjectType,
+    dwRes = GetNamedSecurityInfoW(interpath, ObjectType,
         DACL_SECURITY_INFORMATION,
         NULL,
         NULL,
@@ -628,7 +642,7 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
 
     if (dwRes != ERROR_SUCCESS)
     {
-        Cleanup();
+        ec = std::error_code(dwRes, std::system_category());
         return false;
     }
 
@@ -650,12 +664,12 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
     dwRes = SetEntriesInAclA(1, &ea, pOldDACL, &pNewDACL);
     if (dwRes != ERROR_SUCCESS)
     {
-        Cleanup();
+        ec = std::error_code(dwRes, std::system_category());
         return false;
     }
 
     // Attach the new ACL as the object's DACL.
-    dwRes = SetNamedSecurityInfoA(interpath, ObjectType,
+    dwRes = SetNamedSecurityInfoW(interpath, ObjectType,
         DACL_SECURITY_INFORMATION,
         NULL,
         NULL,
@@ -663,9 +677,8 @@ bool GrantFolderAccessControlForUser(const char* path, EUserType type, uint64_t 
         NULL);
     if (dwRes != ERROR_SUCCESS)
     {
-        Cleanup();
+        ec = std::error_code(dwRes, std::system_category());
         return false;
     }
-    Cleanup();
     return true;
 }
