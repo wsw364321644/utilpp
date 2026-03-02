@@ -48,7 +48,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG db3523e171d5734ae46d7939dca8ef159b4df7c8
+  GIT_TAG 9f2f645054fce339c6f00ce727564eb7f45e66fc
 )
 FetchContent_MakeAvailable(OCmakeUtil)
 include(ResourceDownload)
@@ -67,21 +67,7 @@ if(UTILPP_ENABLE_NET)
 endif()
 
 ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
-
-set(SPDLOG_WCHAR_SUPPORT ON CACHE BOOL "" FORCE)
-set(SPDLOG_FMT_EXTERNAL_HO OFF CACHE BOOL "" FORCE)
-set(SPDLOG_INSTALL ON CACHE BOOL "" FORCE)
-set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "" FORCE)
-set(SPDLOG_BUILD_PIC ON CACHE BOOL "" FORCE)
-FetchContent_Declare(
-  spdlog
-  GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG v1.15.3
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(spdlog)
+ImportProject(spdlog ${STATIC_CRT} STATIC SSH TAG v1.17.0)
 
 # FetchContent_Declare(
 # gcem
@@ -146,6 +132,7 @@ if(UTILPP_ENABLE_NET)
 endif()
 
 if(UTILPP_ENABLE_WEBSOCKET)
+  ImportProject(libwebsockets ${STATIC_CRT} SSH TAG v4.5.2)
   add_subdirectory(src/websocket_util)
 endif()
 
@@ -155,6 +142,7 @@ if(UTILPP_ENABLE_STEAM)
 
   if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
     set(WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/BuildSteamMsgGenerator)
+
     if(NOT EXISTS ${WORKING_DIRECTORY}/rundir/bin/SteamLanguageParser.exe)
       execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator
         -A win32
@@ -198,7 +186,7 @@ if(UTILPP_ENABLE_STEAM)
     set(GEN_STEAM_LANGUAGE FALSE CACHE BOOL "Generate Steam Language C++ files" FORCE)
   endif()
 
-  ImportTarget(ValveFileVDF ${SSH} TAG 277a5836e76b59d958847beb169ae1ac04238d19) # v1.1.1
+  ImportTarget(ValveFileVDF ${SSH} TAG v1.1.1)
   add_subdirectory(src/steam_util)
 endif()
 
