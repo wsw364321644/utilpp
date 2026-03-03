@@ -48,7 +48,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 9f2f645054fce339c6f00ce727564eb7f45e66fc
+  GIT_TAG 7fecb6371614818ab5d198bee0b80f4ff05c4b59
 )
 FetchContent_MakeAvailable(OCmakeUtil)
 include(ResourceDownload)
