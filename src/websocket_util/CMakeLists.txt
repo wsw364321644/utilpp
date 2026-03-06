@@ -17,7 +17,11 @@ function(add_lib TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
 
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME websocket_util)

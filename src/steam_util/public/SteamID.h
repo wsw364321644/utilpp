@@ -1,6 +1,7 @@
 #pragma once
-#include "SteamLanguage.h"
+#include <SteamLanguage/enums.h>
 #include <bit_vector.h>
+#include "steam_util_export_defs.h"
 class FSteamID {
 public:
     static constexpr char UnknownAccountTypeChar = 'i';

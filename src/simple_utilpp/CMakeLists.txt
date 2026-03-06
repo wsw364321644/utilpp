@@ -15,13 +15,17 @@ function(add_simple_utilpp TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
     target_link_libraries(${TARGET_NAME} PRIVATE ctre::ctre)
-    AddTargetInclude(${TARGET_NAME})
 
     # if(UTILPP_ENABLE_LOG)
     # target_compile_definitions(${TARGET_NAME} PRIVATE UTILPP_ENABLE_LOG)
     # target_link_libraries (${TARGET_NAME} PRIVATE simple_logger)
     # endif()
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    AddTargetInclude(${TARGET_NAME})
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME simple_utilpp)

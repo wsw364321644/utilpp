@@ -24,7 +24,11 @@ if(MbedTLS_FOUND OR OpenSSL_FOUND)
         endif()
 
         AddTargetInclude(${TARGET_NAME})
-        AddTargetInstall(${TARGET_NAME} UTILPP)
+        add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+        if(NOT UTILPP_DISABLE_INSTALL)
+            AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+        endif()
     endfunction()
 
     set(TARGET_NAME crypto_lib_helper)

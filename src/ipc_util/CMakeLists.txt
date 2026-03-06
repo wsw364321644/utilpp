@@ -12,15 +12,21 @@ function(add_ipc_util TARGET_NAME)
     target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
     target_compile_definitions(${TARGET_NAME} PRIVATE -DNOMINMAX)
+
     if(UTILPP_WITH_STATIC_LIBUV)
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv_a)
     else()
         target_link_libraries(${TARGET_NAME} PRIVATE libuv::uv)
     endif()
+
     target_link_libraries(${TARGET_NAME} PUBLIC RapidJSON)
 
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME ipc_util)

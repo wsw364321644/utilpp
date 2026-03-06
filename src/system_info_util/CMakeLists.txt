@@ -9,14 +9,20 @@ function(add_lib TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 
     find_package(cpuid)
+
     if(cpuid_FOUND)
         target_compile_definitions(${TARGET_NAME} PRIVATE -DHAS_CPUID)
         target_link_libraries(${TARGET_NAME} PRIVATE cpuid::cpuid)
     endif()
 
     target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON)
+
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME system_info_util)

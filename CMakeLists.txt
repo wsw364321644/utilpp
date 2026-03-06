@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24)
 include(FetchContent)
 
 set(VERSION "0.0.1")
-project(utilpp VERSION ${VERSION})
+project(UTILPP VERSION ${VERSION})
 include(GNUInstallDirs)
 enable_language(C CXX ASM)
 
@@ -15,6 +15,7 @@ option(UTILPP_WITH_STATIC_LIBCURL "net_util use static libcurl" OFF)
 option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
 option(UTILPP_ENABLE_WEBSOCKET "enable websocket_util" OFF)
 option(UTILPP_ENABLE_CPUID "enable system info cpuid feature" OFF)
+option(UTILPP_DISABLE_INSTALL "disable installation" OFF)
 
 if(UTILPP_STATIC_CRT)
   set(STATIC_CRT STATIC_CRT)
@@ -48,7 +49,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 FetchContent_Declare(
   OCmakeUtil
   GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG 7fecb6371614818ab5d198bee0b80f4ff05c4b59
+  GIT_TAG main
 )
 FetchContent_MakeAvailable(OCmakeUtil)
 include(ResourceDownload)
@@ -137,60 +138,20 @@ if(UTILPP_ENABLE_WEBSOCKET)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_msg/generated/SteamMsg)
-  file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_util/generated)
-
-  if(NOT DEFINED GEN_STEAM_LANGUAGE OR GEN_STEAM_LANGUAGE)
-    set(WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/BuildSteamMsgGenerator)
-
-    if(NOT EXISTS ${WORKING_DIRECTORY}/rundir/bin/SteamLanguageParser.exe)
-      execute_process(COMMAND ${CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/SteamMsgGenerator
-        -A win32
-        -B BuildSteamMsgGenerator
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        RESULT_VARIABLE result
-      )
-
-      if(NOT ${result} EQUAL 0)
-        message(FATAL_ERROR "Failed to generate SteamMsgGenerator")
-      endif()
-
-      execute_process(COMMAND ${CMAKE_COMMAND} --build . --target install --config Release
-        WORKING_DIRECTORY ${WORKING_DIRECTORY}
-        RESULT_VARIABLE result
-      )
-
-      if(NOT ${result} EQUAL 0)
-        message(FATAL_ERROR "Failed to build SteamMsgGenerator")
-      endif()
-    endif()
-
-    ResourceDownload(
-      SteamKit
-      GIT_REPOSITORY https://github.com/SteamRE/SteamKit.git
-      GIT_TAG 3.4.0
-    )
-
-    execute_process(COMMAND ${WORKING_DIRECTORY}/rundir/bin/SteamLanguageParser.exe
-      ${SteamKit_DIR}/Resources/SteamLanguage/steammsg.steamd
-      -o ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_msg/generated/SteamMsg
-      -e ${CMAKE_CURRENT_SOURCE_DIR}/src/steam_util/generated/SteamLanguage.h
-      WORKING_DIRECTORY ${SteamKit_DIR}/Resources/SteamLanguage
-      RESULT_VARIABLE result
-    )
-
-    if(NOT ${result} EQUAL 0)
-      message(FATAL_ERROR "Failed to gen steamlanguage")
-    endif()
-
-    set(GEN_STEAM_LANGUAGE FALSE CACHE BOOL "Generate Steam Language C++ files" FORCE)
-  endif()
-
   ImportTarget(ValveFileVDF ${SSH} TAG v1.1.1)
+  ImportProject(absl ${STATIC_CRT} SSH TAG 20260107.1)
+  ImportProject(Protobuf ${STATIC_CRT} SSH TAG v34.0)
+  ImportProject(re2 ${STATIC_CRT} SSH TAG 2025-11-05)
+  ImportProgram(SteamLanguageParser SSH TAG origin/master) # path too long
+  ImportProject(steamdatapp ${STATIC_CRT} SSH TAG main)
+
   add_subdirectory(src/steam_util)
 endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
-  add_subdirectory(src/steam_protobufs)
   add_subdirectory(src/steam_msg)
+endif()
+
+if(NOT UTILPP_DISABLE_INSTALL)
+  ExportFromInstall(${PROJECT_NAME})
 endif()

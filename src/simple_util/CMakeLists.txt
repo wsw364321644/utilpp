@@ -20,7 +20,11 @@ function(add_simple_util TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE C)
 
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME simple_util)

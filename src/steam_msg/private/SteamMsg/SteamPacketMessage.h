@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <SteamTypes.h>
-#include <SteamLanguage.h>
+#include <SteamLanguage/emsg.h>
 #include <steam/steammessages_base.pb.h>
 
 constexpr uint32_t ProtoMask = 0x80000000;

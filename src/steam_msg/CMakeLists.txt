@@ -51,15 +51,20 @@ function(add_lib TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::steam_util)
-    target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::steam_protobufs)
     target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::crypto_lib_helper)
+    target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_language)
+    target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_protobufs)
     target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
     target_link_libraries(${TARGET_NAME} PRIVATE jwt-cpp::jwt-cpp)
     target_link_libraries(${TARGET_NAME} PRIVATE sqlpp23::sqlpp23)
 
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME steam_msg)
@@ -83,5 +88,4 @@ target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_logger_a)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::net_util_a)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::websocket_util_a)
 target_link_libraries(${TARGET_NAME} PRIVATE SQLite3::SQLite3_a)
-
 add_lib(${TARGET_NAME})

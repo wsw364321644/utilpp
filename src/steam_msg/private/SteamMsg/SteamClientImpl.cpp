@@ -3,7 +3,7 @@
 #include "SteamMsg/SteamDDl.h"
 #include <steam_web_api_util.h>
 #include <FunctionExitHelper.h>
-#include <SteamLanguage.h>
+#include <SteamLanguage/eresult.h>
 #include <SteamLanguageInternal.h>
 #include <hex.h>
 #include <os_info_helper.h>

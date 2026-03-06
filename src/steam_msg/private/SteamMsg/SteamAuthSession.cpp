@@ -7,7 +7,7 @@
 #include <os_sock_helper.h>
 #include <os_info_helper.h>
 #include <SteamLanguageInternal.h>
-
+#include <SteamLanguage/eresult.h>
 #include <steam/steammessages_clientserver_login.pb.h>
 #include <crypto_lib_rsa.h>
 #include <crypto_lib_base64.h>

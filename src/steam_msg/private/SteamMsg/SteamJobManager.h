@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <SteamTypes.h>
-#include <SteamLanguage.h>
+
 #include <unordered_map>
 #include <functional>
 #include <steam/steammessages_base.pb.h>

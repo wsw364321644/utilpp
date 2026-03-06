@@ -119,7 +119,9 @@ std::tuple<std::string_view, bool> FSteamPacketMsg::SerializeToOstream(uint32_t 
             auto& ProtoBufHeader = *pProtoBufHeader;
             int32_t HeaderLen = ProtoBufHeader.ByteSizeLong();
             stream.write((char*)&HeaderLen, sizeof(HeaderLen));
-            ProtoBufHeader.SerializeToOstream(&stream);
+            if (!ProtoBufHeader.SerializeToOstream(&stream)) {
+                return { "",false };
+            }
         }
         else {
             stream.write((char*)&MsgType, sizeof(int32_t));

@@ -7,7 +7,7 @@ if(NOT NET_UTIL_GENERATE_CAPNP_FILES)
         ./download-file.capnp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE result)
-        message(STATUS "result --output=${CAPNPC_CXX_EXECUTABLE}:private/Downloader")
+    message(STATUS "result --output=${CAPNPC_CXX_EXECUTABLE}:private/Downloader")
     set(NET_UTIL_GENERATE_CAPNP_FILES ON CACHE BOOL "net uitl Generate capnp files")
 endif()
 
@@ -31,9 +31,13 @@ function(add_lib TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
     target_link_libraries(${TARGET_NAME} PRIVATE CapnProto::kj)
     target_link_libraries(${TARGET_NAME} PRIVATE CapnProto::capnp)
-    
+
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME net_util)

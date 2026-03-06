@@ -1,6 +1,5 @@
 NewTargetSource()
 AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
-AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/generated")
 AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
@@ -11,11 +10,16 @@ function(add_lib TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
     target_link_libraries(${TARGET_NAME} PRIVATE ValveFileVDF::ValveFileVDF)
+    target_link_libraries(${TARGET_NAME} PUBLIC steamdatapp::steam_language)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
     target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON)
 
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME steam_util)

@@ -5,8 +5,13 @@ source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 function(configure_library TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
     target_compile_features(${TARGET_NAME} INTERFACE cxx_std_20)
+
     AddTargetInclude(${TARGET_NAME})
-    AddTargetInstall(${TARGET_NAME} UTILPP)
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
 endfunction()
 
 set(TARGET_NAME simple_utilpp_header)
