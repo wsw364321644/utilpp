@@ -5,7 +5,7 @@ set(VERSION "0.0.1")
 project(UTILPP VERSION ${VERSION})
 include(GNUInstallDirs)
 enable_language(C CXX ASM)
-
+set(CMAKE_DEBUG_POSTFIX d)
 option(UTILPP_STATIC_CRT "determine build STATIC CRT Build ." OFF)
 option(UTILPP_GIT_SSH "git via ssh" OFF)
 option(UTILPP_ENABLE_IPC "enable ipc_util" OFF)
@@ -138,7 +138,13 @@ if(UTILPP_ENABLE_WEBSOCKET)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  ImportTarget(ValveFileVDF ${SSH} TAG v1.1.1)
+  FetchContent_Declare(
+    ValveFileVDF
+    GIT_REPOSITORY https://github.com/TinyTinni/ValveFileVDF.git
+    GIT_TAG v1.1.1
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(ValveFileVDF)
   ImportProject(absl ${STATIC_CRT} SSH TAG 20260107.1)
   ImportProject(Protobuf ${STATIC_CRT} SSH TAG v34.0)
   ImportProject(re2 ${STATIC_CRT} SSH TAG 2025-11-05)
@@ -149,6 +155,18 @@ if(UTILPP_ENABLE_STEAM)
 endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
+  set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    jwt-cpp
+    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+    GIT_TAG v0.7.1
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(jwt-cpp)
+  ImportProject(SQLite3 ${STATIC_CRT} URL https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip)
+  ImportProject(sqlpp23 ${SSH} TAG 0.66)
+  ImportProgram(Python3 URL https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip)
+
   add_subdirectory(src/steam_msg)
 endif()
 

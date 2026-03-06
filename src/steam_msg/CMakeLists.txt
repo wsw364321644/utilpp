@@ -1,17 +1,5 @@
-set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-    jwt-cpp
-    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
-    GIT_TAG v0.7.1
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(jwt-cpp)
-
-ImportProject(SQLite3 ${STATIC_CRT} URL https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip)
-ImportProject(sqlpp23 ${SSH} TAG 0.66)
 
 if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
-    ImportProgram(Python3 URL https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip)
     find_package(Python3 REQUIRED)
 
     execute_process(COMMAND ${Python3_EXECUTABLE} -m pip install pyparsing
