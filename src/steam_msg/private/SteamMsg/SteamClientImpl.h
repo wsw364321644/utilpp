@@ -2,7 +2,7 @@
 #include <string>
 #include <zlib.h>
 #include <zconf.h>
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 
 #include <TimeRecorder.h>
 #include "SteamMsg/SteamPacketMessage.h"

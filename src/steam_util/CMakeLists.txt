@@ -11,7 +11,7 @@ function(add_lib TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PRIVATE ValveFileVDF::ValveFileVDF)
     target_link_libraries(${TARGET_NAME} PUBLIC steamdatapp::steam_language)
-    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
     target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON)
 
     AddTargetInclude(${TARGET_NAME})

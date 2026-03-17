@@ -43,7 +43,7 @@ function(add_lib TARGET_NAME)
     target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_language)
     target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_protobufs)
     target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
-    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
     target_link_libraries(${TARGET_NAME} PRIVATE jwt-cpp::jwt-cpp)
     target_link_libraries(${TARGET_NAME} PRIVATE sqlpp23::sqlpp23)
 

@@ -3,7 +3,7 @@ function(add_lib TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 
     target_link_libraries(${TARGET_NAME} PRIVATE Taskflow)
-    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
 
     # target_link_libraries(${TARGET_NAME} PRIVATE TBB::tbb)
     AddTargetInclude(${TARGET_NAME})

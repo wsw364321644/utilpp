@@ -8,7 +8,7 @@
 
 #include <unordered_set>
 #include <array>
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 class FWebsocketConnectionManagerLWS;
 constexpr char LWS_MANAGER_NAME[] = "LWS";
 static TNamedClassAutoRegister_t<FWebsocketConnectionManagerLWS> NamedClassAutoRegister(LWS_MANAGER_NAME);

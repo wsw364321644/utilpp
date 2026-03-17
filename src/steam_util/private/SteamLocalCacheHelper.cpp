@@ -5,7 +5,7 @@
 #include <string_convert.h>
 #include <FunctionExitHelper.h>
 #include <vdf_parser.hpp>
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 #include <filesystem>
 #include <set>
 #include <mutex>

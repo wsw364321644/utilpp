@@ -14,7 +14,7 @@ function(add_lib TARGET_NAME)
         set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:LIBCMTD.LIB /NODEFAULTLIB:msvcrtd")
     endif()
 
-    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
 
     AddTargetInclude(${TARGET_NAME})
     add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})

@@ -28,7 +28,7 @@ function(add_lib TARGET_NAME)
     endif()
 
     target_link_libraries(${TARGET_NAME} PRIVATE CURL::libcurl)
-    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
     target_link_libraries(${TARGET_NAME} PRIVATE CapnProto::kj)
     target_link_libraries(${TARGET_NAME} PRIVATE CapnProto::capnp)
 

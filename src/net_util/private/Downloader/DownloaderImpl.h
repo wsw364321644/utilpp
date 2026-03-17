@@ -7,7 +7,7 @@
 #include <optional>
 #include <RawFile.h>
 #include <HTTP/HttpManager.h>
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 #include "Downloader/Downloader.h"
 
 class FDownloadFile;

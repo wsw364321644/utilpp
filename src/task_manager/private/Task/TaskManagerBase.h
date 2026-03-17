@@ -1,7 +1,7 @@
 #pragma once
 #include "Task/TaskManager.h"
 #include <TimeRecorder.h>
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 #include <unordered_map>
 
 enum class ETaskType {

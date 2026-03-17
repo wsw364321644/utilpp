@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <std_ext.h>
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 #include "HTTP/HttpManager.h"
 #include "HTTP/CurlHttpRequest.h"
 #include "net_export_defs.h"
