@@ -296,7 +296,7 @@ std::string_view FCharBuffer::View() const
 {
     return std::string_view(Data(),Length());
 }
-char *FCharBuffer::Data() const
+char *const& FCharBuffer::Data() const
 {
     return pBuf;
 }

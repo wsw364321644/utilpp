@@ -68,7 +68,8 @@ if(UTILPP_ENABLE_NET)
 endif()
 
 ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
-ImportProject(spdlog ${STATIC_CRT} STATIC SSH TAG v1.17.0)
+ImportProject(spdlog ${STATIC_CRT} STATIC ${SSH} TAG v1.17.0)
+ImportProject(concurrentqueue ${SSH} TAG master)
 
 # FetchContent_Declare(
 # gcem
@@ -86,14 +87,6 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(taskflow)
-
-FetchContent_Declare(
-  concurrentqueue
-  GIT_REPOSITORY https://github.com/cameron314/concurrentqueue.git
-  GIT_TAG origin/master
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(concurrentqueue)
 
 FetchContent_Declare(
   ctre

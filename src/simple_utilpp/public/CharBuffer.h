@@ -50,7 +50,7 @@ public:
     void Clear();
     const char *CStr();
     std::string_view View() const;
-    char *Data() const;
+    char*const & Data() const;
     void SetLength(size_t);
     size_t Length() const;
     size_t Size() const;
