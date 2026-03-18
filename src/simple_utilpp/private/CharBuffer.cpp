@@ -382,12 +382,13 @@ void FCharBuffer::Resize(uint32_t size)
         return;
     }
     char *newbuf = (char *)mallocptr(desiredSize);
-    cursor = desiredSize > cursor ? cursor : size;
+    
     if (bufSize > 0)
     {
-        memcpy(newbuf, pBuf, cursor);
+        memcpy(newbuf, pBuf, std::min(uint32_t(cursor),desiredSize));
         freeptr(pBuf);
     }
+    cursor = desiredSize;
     bufSize = desiredSize;
     pBuf = newbuf;
     readCursor = 0;;
