@@ -131,18 +131,12 @@ if(UTILPP_ENABLE_WEBSOCKET)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  FetchContent_Declare(
-    ValveFileVDF
-    GIT_REPOSITORY https://github.com/TinyTinni/ValveFileVDF.git
-    GIT_TAG v1.1.1
-    GIT_SHALLOW TRUE
-  )
-  FetchContent_MakeAvailable(ValveFileVDF)
-  ImportProject(absl ${STATIC_CRT} SSH TAG 20260107.1)
-  ImportProject(Protobuf ${STATIC_CRT} SSH TAG v34.0)
-  ImportProject(re2 ${STATIC_CRT} SSH TAG 2025-11-05)
-  ImportProgram(SteamLanguageParser SSH TAG origin/master) # path too long
-  ImportProject(steamdatapp ${STATIC_CRT} SSH TAG main)
+  ImportProject(ValveFileVDF TAG v1.1.1)
+  ImportProject(absl ${STATIC_CRT} ${SSH} TAG 20260107.1)
+  ImportProject(Protobuf ${STATIC_CRT} ${SSH} TAG v34.0)
+  ImportProject(re2 ${STATIC_CRT} ${SSH} TAG 2025-11-05)
+  ImportProgram(SteamLanguageParser ${SSH} TAG origin/master) # path too long
+  ImportProject(steamdatapp ${STATIC_CRT} ${SSH} TAG main)
 
   add_subdirectory(src/steam_util)
 endif()
