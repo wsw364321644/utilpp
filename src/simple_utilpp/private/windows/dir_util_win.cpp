@@ -84,7 +84,7 @@ bool RecursiveIterateDir(FPathBuf& pathBuf, DirUtil::IterateDirCallback& cb, uin
                         out.Depth--;
                     }
                 );
-                if (!RecursiveIterateDir(pathBuf, cb, depth - 1)) {
+                if (!RecursiveIterateDir(pathBuf, cb, depth - 1, IterateDirOrder)) {
                     return false;
                 }
             }
@@ -353,7 +353,11 @@ bool DirUtil::Delete(FPathBuf& pathBuf)
                 return RemoveDirectoryW((LPCWSTR)pathw) == TRUE;
             }
             };
-        return RecursiveIterateDir(pathBuf, cb, std::numeric_limits<uint32_t>::max(), EIterateDirOrder::IDO_LRN);
+        auto bres= RecursiveIterateDir(pathBuf, cb, std::numeric_limits<uint32_t>::max(), EIterateDirOrder::IDO_LRN);
+        if (bres) {
+            bres= RemoveDirectoryW((LPCWSTR)pathw) == TRUE;
+        }
+        return bres;
     }
     else {
         return DeleteFileW((LPCWSTR)pathw) == TRUE;
@@ -373,7 +377,15 @@ bool DirUtil::Rename(FPathBuf& pathBuf, FPathBuf& newfilePathBuf)
     newfilePathBuf.ToPathW();
     auto path_oldw = PathBuf.GetPrependFileNamespacesW();
     auto pathw = PathBuf2.GetPrependFileNamespacesW();
-    return MoveFileExW(path_oldw, pathw, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
+    auto bres= MoveFileExW(path_oldw, pathw, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
+    if (!bres) {
+        auto winerr = GetLastError();
+        if (winerr == ERROR_PATH_NOT_FOUND) {
+            CreateDir(PathBuf2);
+            bres = MoveFileExW(path_oldw, pathw, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
+        }
+    }
+    return bres;
 }
 
 bool DirUtil::Copy(std::u8string_view  oldpath, std::u8string_view  path, CopyProgressCallback cb) {
