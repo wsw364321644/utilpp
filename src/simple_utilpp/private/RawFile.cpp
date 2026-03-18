@@ -1,6 +1,7 @@
 #include "RawFile.h"
 #include "logger_header.h"
 #include "string_convert.h"
+#include "dir_util_internal.h"
 #include "dir_util.h"
 #include <filesystem>
 #include <format>
@@ -11,13 +12,14 @@
 #else
 
 #include <sys/mman.h>
+#include <sys/param.h>
+#include <fcntl.h>
 #include <unistd.h>
 #endif // WIN32
 
 
-int32_t FRawFile::InternalOpen(uint32_t uOpenFlag, uint64_t uExpectSize)
+int32_t FRawFile::InternalOpen(FPathBuf& filePath, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
-    auto& filePath = *pFilePath;
     Close();
     DWORD err = 0;
 
@@ -59,41 +61,39 @@ int32_t FRawFile::InternalOpen(uint32_t uOpenFlag, uint64_t uExpectSize)
 
 int32_t FRawFile::Open(FPathBuf& pathBuf, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
-    auto& filePath = *pFilePath;
     pathBuf.ToPathW();
     if (pathBuf.PathLenW == 0)
     {
         return ERR_ARGUMENT;
     }
-    filePath.SetPathW(pathBuf.GetBufW(), pathBuf.PathLenW);
-    return InternalOpen(uOpenFlag, uExpectSize);
+    return InternalOpen(pathBuf,uOpenFlag, uExpectSize);
 
 }
 
 int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
-    auto& filePath = *pFilePath;
+    auto ptr = std::make_shared<FPathBuf>();
+    auto& filePath = *ptr;
     if (lpFileName.size() == 0)
     {
         return ERR_ARGUMENT;
     }
     filePath.SetPath(ConvertU8ViewToView(lpFileName).data(), lpFileName.size());
     filePath.ToPathW();
-    return InternalOpen(uOpenFlag, uExpectSize);
+    return InternalOpen(filePath,uOpenFlag, uExpectSize);
 }
 
 const char* FRawFile::GetFilePath()
 {
-    auto& filePath = *pFilePath;
-    filePath.ToPath();
-    return filePath.GetBuf();
+    GetFilePath(PathBuf);
+    PathBuf.ToPath();
+    return PathBuf.GetBuf();
 }
 
 #ifdef WIN32
 
 FRawFile::FRawFile()
 {
-    pFilePath = new FPathBuf;
     handle_ = INVALID_HANDLE_VALUE;
     fd = -1;
     file_size_ = 0;
@@ -102,7 +102,18 @@ FRawFile::FRawFile()
 FRawFile::~FRawFile()
 {
     Close();
-    delete pFilePath;
+}
+
+void FRawFile::GetFilePath(FPathBuf& pathBuf)
+{
+    auto dRes=GetFinalPathNameByHandleW(handle_, pathBuf.GetBufInternalW(), PATH_MAX, FILE_NAME_NORMALIZED);
+    if (dRes == 0) {
+        pathBuf.UpdatePathLenW(0);
+        //GetLastError();
+        return;
+    }
+    pathBuf.UpdatePathLenW(dRes);
+    return;
 }
 
 bool FRawFile::IsOpen()
@@ -110,21 +121,39 @@ bool FRawFile::IsOpen()
     return (handle_ != INVALID_HANDLE_VALUE)|| fd!= -1;
 }
 
-int32_t FRawFile::Read(void* buf, uint32_t size)
+int32_t FRawFile::Read(void* pBuf, uint32_t size)
 {
-    if (buf == NULL || handle_ == INVALID_HANDLE_VALUE)
+    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
     {
         return ERR_ARGUMENT;
     }
 
     DWORD readed = 0;
-    BOOL res = ReadFile(handle_, buf, size, &readed, NULL);
+    BOOL res = ReadFile(handle_, pBuf, size, &readed, NULL);
     if (FALSE == res || readed != size)
     {
         SIMPLELOG_LOGGER_WARN(nullptr, "Read file: {} error ...", GetFilePath());
         return ERR_FILE;
     }
 
+    return ERR_SUCCESS;
+}
+
+int32_t FRawFile::Read(void* pBuf, uint32_t size, uint32_t& outreaded)
+{
+    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
+    {
+        return ERR_ARGUMENT;
+    }
+
+    DWORD readed = 0;
+    BOOL res = ReadFile(handle_, pBuf, size, &readed, NULL);
+    if (FALSE == res)
+    {
+        SIMPLELOG_LOGGER_WARN(nullptr, "Read file: {} error ...", GetFilePath());
+        return ERR_FILE;
+    }
+    outreaded = readed;
     return ERR_SUCCESS;
 }
 
@@ -148,15 +177,14 @@ int32_t FRawFile::Write(const void* buf, uint32_t size)
 
 int32_t FRawFile::Delete()
 {
-    auto& filePath = *pFilePath;
     if (handle_ == INVALID_HANDLE_VALUE)
     {
         return ERR_ARGUMENT;
     }
-
+    GetFilePath(PathBuf);
     CloseHandle(handle_);
     handle_ = INVALID_HANDLE_VALUE;
-    if (!DirUtil::Delete(filePath))
+    if (!DirUtil::Delete(PathBuf))
     {
         SIMPLELOG_LOGGER_WARN(nullptr, "Can't delete the file : {}", GetFilePath());
         return ERR_FILE;
@@ -285,6 +313,28 @@ FRawFile::FRawFile()
 FRawFile::~FRawFile()
 {
     Close();
+}
+
+void FRawFile::GetFilePath(FPathBuf& pathBuf)
+{
+    ssize_t count;
+    char proc_path[PATH_MAX];
+    snprintf(proc_path, sizeof(proc_path), "/proc/self/fd/%d", handle_);
+    count = readlink(proc_path, pathBuf.GetBufInternal(), PATH_MAX);
+    if (count == -1) {
+        pathBuf.UpdatePathLen(0);
+        return;
+    }
+    pathBuf.UpdatePathLen(count);
+    return
+
+    // F_GETPATH not exist in linux
+    if (fcntl(fd, F_GETPATH, pathBuf.GetBufInternal()) == -1)
+    {
+        return;
+    }
+    pathBuf.UpdatePathLen();
+    return;
 }
 
 int32_t MakeDir(const char* lpPath)
