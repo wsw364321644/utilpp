@@ -124,3 +124,98 @@ struct function_signature {
 
 template <typename Ret, typename... Args>
 using function_signature_t = typename function_signature<Ret, Args...>::type;
+
+
+
+
+
+
+
+
+
+
+
+
+template <class T>
+struct allocator_save_memory_operator {
+public:
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+
+    using new_ptr_type = void* (*)(std::size_t);
+    using delete_ptr_type = void (*)(void*);
+    template <typename U>
+    struct rebind {
+        using other = allocator_save_memory_operator<U>;
+    };
+
+    constexpr allocator_save_memory_operator() noexcept :new_ptr(&::operator new), delete_ptr(&::operator delete) {
+
+    }
+
+    allocator_save_memory_operator(const allocator_save_memory_operator& other) noexcept {
+
+        new_ptr = other.new_ptr;
+        delete_ptr = other.delete_ptr;
+    }
+
+    allocator_save_memory_operator(allocator_save_memory_operator&& other) noexcept {
+        new_ptr = other.new_ptr;
+        delete_ptr = other.delete_ptr;
+    }
+
+    template <typename U>
+    constexpr allocator_save_memory_operator(const allocator_save_memory_operator<U>& other) noexcept {
+        new_ptr = other.new_ptr;
+        delete_ptr = other.delete_ptr;
+    }
+
+    allocator_save_memory_operator select_on_container_copy_construction() const {
+        return allocator_save_memory_operator(*this);
+    }
+
+    [[nodiscard]] T* allocate(std::size_t n) {
+        if (n > max_size()) {
+            throw std::bad_alloc{};
+        }
+        void* ptr = new_ptr(n * sizeof(T));
+        return static_cast<T*>(ptr);
+    }
+
+    void deallocate(T* p, std::size_t n) noexcept {
+        delete_ptr(p);
+    }
+
+    template <typename U, typename... Args>
+    void construct(U* p, Args&&... args) {
+        ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
+    }
+
+    template <typename U>
+    void destroy(U* p) {
+        p->~U();
+    }
+
+    [[nodiscard]] std::size_t max_size() const noexcept {
+        return std::size_t(-1) / sizeof(T);
+    }
+
+    new_ptr_type new_ptr;
+    delete_ptr_type delete_ptr;
+};
+
+template <typename T, typename U>
+constexpr bool operator==(const allocator_save_memory_operator<T>& l, const allocator_save_memory_operator<U>& r) noexcept {
+    return l.new_ptr == r.new_ptr;
+}
+
+template <typename T, typename U>
+constexpr bool operator!=(const allocator_save_memory_operator<T>& l, const allocator_save_memory_operator<U>& r) noexcept {
+    return l.new_ptr != r.new_ptr;
+}
+using string_save_memory_operator = std::basic_string<char, std::char_traits<char>, allocator_save_memory_operator<char>>;
