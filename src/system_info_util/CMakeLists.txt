@@ -15,7 +15,7 @@ function(add_lib TARGET_NAME)
         target_link_libraries(${TARGET_NAME} PRIVATE cpuid::cpuid)
     endif()
 
-    target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON)
+    target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON::RapidJSON)
 
     AddTargetInclude(${TARGET_NAME})
     add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
