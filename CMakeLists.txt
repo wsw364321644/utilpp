@@ -57,7 +57,7 @@ include(ProjectImport)
 include(ProgramImport)
 include(TargetImport)
 
-ImportTarget(RapidJSON ${SSH} TAG origin/master)
+
 
 if(UTILPP_ENABLE_CPUID)
   ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
@@ -67,6 +67,7 @@ if(UTILPP_ENABLE_NET)
   ImportProject(CapnProto ${STATIC_CRT} STATIC ${SSH} TAG v1.3.0)
 endif()
 
+ImportProject(RapidJSON ${SSH} TAG origin/master)
 ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
 ImportProject(spdlog ${STATIC_CRT} STATIC ${SSH} TAG v1.17.0)
 ImportProject(concurrentqueue ${SSH} TAG master)

@@ -15,6 +15,7 @@ function(add_simple_utilpp TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
     target_link_libraries(${TARGET_NAME} PRIVATE ctre::ctre)
+    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
 
     # if(UTILPP_ENABLE_LOG)
     # target_compile_definitions(${TARGET_NAME} PRIVATE UTILPP_ENABLE_LOG)

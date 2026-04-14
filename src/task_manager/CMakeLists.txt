@@ -4,7 +4,7 @@ function(add_lib TARGET_NAME)
 
     target_link_libraries(${TARGET_NAME} PRIVATE Taskflow)
     target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
-
+    target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
     # target_link_libraries(${TARGET_NAME} PRIVATE TBB::tbb)
     AddTargetInclude(${TARGET_NAME})
     add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
