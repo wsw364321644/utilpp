@@ -127,15 +127,6 @@ using function_signature_t = typename function_signature<Ret, Args...>::type;
 
 
 
-
-
-
-
-
-
-
-
-
 template <class T>
 struct allocator_save_memory_operator {
 public:
@@ -219,3 +210,21 @@ constexpr bool operator!=(const allocator_save_memory_operator<T>& l, const allo
     return l.new_ptr != r.new_ptr;
 }
 using string_save_memory_operator = std::basic_string<char, std::char_traits<char>, allocator_save_memory_operator<char>>;
+
+
+#if (defined(_MSVC_LANG) &&_MSVC_LANG <= 202400L )
+#include <time.h>
+namespace std {
+    inline struct tm* gmtime_r(const time_t* timer, struct tm* buf) {
+        return gmtime_s(buf, timer) == 0 ? buf : nullptr;
+    }
+}
+inline time_t mkgmtime(struct tm* const _Tm) {
+#ifdef WIN32
+    return _mkgmtime(_Tm);
+#else
+    return timegm(_Tm);
+#endif // WIN32
+}
+//mkgmtime
+#endif
