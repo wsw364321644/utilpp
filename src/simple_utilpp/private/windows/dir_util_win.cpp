@@ -549,6 +549,7 @@ std::u8string_view DirUtil::SearchFileInPath(FPathBuf& pathBuf, std::error_code&
         return std::u8string_view();
     }
     PathBuf2.ToPath();
+    ec.clear();
     return ConvertViewToU8View({ PathBuf2.GetBuf(),PathBuf.PathLen });
 }
 
@@ -577,5 +578,6 @@ std::u8string_view DirUtil::GetOSDirectory(std::error_code& ec)
         return std::u8string_view();
     }
     PathBuf.UpdatePathLen(len);
+    ec.clear();
     return ConvertViewToU8View({ PathBuf.GetBuf(),PathBuf.PathLen });
 }

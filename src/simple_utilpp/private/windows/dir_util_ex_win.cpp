@@ -564,7 +564,6 @@ namespace utilpp {
 
         bool GrantAccessControlForUser(FPathBuf& pathBuf, EUserType type, uint64_t mask, std::error_code& ec)
         {
-            ec.clear();
             pathBuf.ToPathW();
             auto pathw = pathBuf.GetPrependFileNamespacesW();
             // Type of object, file or directory.  Here we test on directory
@@ -683,6 +682,7 @@ namespace utilpp {
                 ec = std::error_code(dwRes, std::system_category());
                 return false;
             }
+            ec.clear();
             return true;
         }
 
@@ -693,7 +693,6 @@ namespace utilpp {
         }
         bool GetVersionInfo(FPathBuf& pathBuf, FileVersionInfo_t& info, std::error_code& ec)
         {
-            ec.clear();
             pathBuf.ToPathW();
             auto pathw = pathBuf.GetPrependFileNamespacesW();
             VS_FIXEDFILEINFO* pFileInfoLocal = NULL;
@@ -731,6 +730,7 @@ namespace utilpp {
             info.FileDate = ((uint64_t)pFileInfoLocal->dwFileDateMS << 32) | pFileInfoLocal->dwFileDateLS;
             info.bDebug = !!(pFileInfoLocal->dwFileFlags & VS_FF_DEBUG);
             info.bPreRelease = !!(pFileInfoLocal->dwFileFlags & VS_FF_PRERELEASE);
+            ec.clear();
             return true;
         }
     }
