@@ -22,7 +22,7 @@ template<typename T>
 struct CommonHandle_t:public ICommonHandle
 {
     typedef  T CommonHandleID_t;
-    static constexpr CommonHandleID_t NullCommonHandleID{ 0 };
+    static constexpr CommonHandleID_t NullCommonHandleID{ std::numeric_limits<T>::max()};
 
     constexpr CommonHandle_t() :ID(NullCommonHandleID) {}
     constexpr CommonHandle_t(const NullCommonHandle_t):CommonHandle_t() { }
@@ -70,6 +70,7 @@ struct CommonHandle_t:public ICommonHandle
 };
 
 typedef CommonHandle_t<uint32_t> CommonHandle32_t;
+typedef CommonHandle_t<uint64_t> CommonHandle64_t;
 typedef CommonHandle_t<intptr_t> CommonHandlePtr_t;
 
 namespace std
