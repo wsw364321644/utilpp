@@ -16,6 +16,7 @@ function(add_lib TARGET_NAME)
     endif()
 
     target_link_libraries(${TARGET_NAME} PRIVATE RapidJSON::RapidJSON)
+    target_link_libraries(${TARGET_NAME} PUBLIC magic_enum::magic_enum)
 
     AddTargetInclude(${TARGET_NAME})
     add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})

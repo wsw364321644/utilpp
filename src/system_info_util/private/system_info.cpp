@@ -2,6 +2,7 @@
 #include "system_info_inner.h"
 #include <std_ext.h>
 #include <string_convert.h>
+#include <FunctionExitHelper.h>
 
 #include <simdjson.h>
 #include <rapidjson/document.h>
@@ -19,18 +20,28 @@ namespace utilpp {
     // CPU 信息
     void GetCpuInfo(CpuInfo_t& info)
     {
+        bool bRes{ true };
+        FunctionExitHelper_t resGuard(
+            [&]() {
+                if (!bRes) {
+                    GetCpuInfoPlat(info);
+                }
+            }
+        );
 #ifdef HAS_CPUID
-        if (!cpuid_present()) {
-            GetCpuInfoPlat(info);
+        bRes = cpuid_present();
+        if (!bRes) {
+            return;
         }
         struct cpu_raw_data_t raw;                                             // contains only raw data
         struct cpu_id_t data;                                                  // contains recognized CPU features data
-
-        if (cpuid_get_raw_data(&raw) < 0) {                                    // obtain the raw CPUID data
-            GetCpuInfoPlat(info);
+        bRes = cpuid_get_raw_data(&raw) >= 0;
+        if (!bRes) {                                    // obtain the raw CPUID data
+            return;
         }
-        if (cpu_identify(&raw, &data) < 0) {                                   // identify the CPU, using the given raw data.
-            GetCpuInfoPlat(info);
+        bRes = cpu_identify(&raw, &data) >= 0;
+        if (!bRes) {                                   // identify the CPU, using the given raw data.
+            return;
         }
 
         int CPUInfo[4] = { -1 };
@@ -57,6 +68,37 @@ namespace utilpp {
             info.MaximumFrequencyMHz = info.ProcessorBaseFrequencyMHz = cpu_clock();
             info.BusFrequencyMHz = 0;
         }
+
+        if (data.flags[CPU_FEATURE_SSE]) {
+            info.SIMDFeatures.set(ESIMDFeature::SSE);
+        }
+        if (data.flags[CPU_FEATURE_SSE2]) {
+            info.SIMDFeatures.set(ESIMDFeature::SSE2);
+        }
+        if (data.flags[CPU_FEATURE_SSSE3]) {
+            info.SIMDFeatures.set(ESIMDFeature::SSSE3);
+        }
+        if (data.flags[CPU_FEATURE_SSE4_1]) {
+            info.SIMDFeatures.set(ESIMDFeature::SSE4_1);
+        }
+        if (data.flags[CPU_FEATURE_SSE4_2]) {
+            info.SIMDFeatures.set(ESIMDFeature::SSE4_2);
+        }
+        if (data.flags[CPU_FEATURE_AVX]) {
+            info.SIMDFeatures.set(ESIMDFeature::AVX);
+        }
+        if (data.flags[CPU_FEATURE_AVX2]) {
+            info.SIMDFeatures.set(ESIMDFeature::AVX2);
+        }
+        if (data.flags[CPU_FEATURE_AVX512BW]) {
+            info.SIMDFeatures.set(ESIMDFeature::AVX512BW);
+        }
+        if (data.flags[CPU_FEATURE_AVX512F]) {
+            info.SIMDFeatures.set(ESIMDFeature::AVX512F);
+        }
+
+#else
+        GetCpuInfoPlat(info);
 #endif
     }
 

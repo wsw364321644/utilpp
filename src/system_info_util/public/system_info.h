@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 #include <CharBuffer.h>
+
+#include <magic_enum/magic_enum_containers.hpp>
 #include "system_info_export_defs.h"
 
 namespace utilpp {
@@ -45,6 +47,20 @@ namespace utilpp {
         default:       return "UNKNOWN";
         }
     }
+
+    enum class ESIMDFeature : uint8_t {
+        NONE,
+        SSE,
+        SSE2,
+        SSSE3,
+        SSE4_1,
+        SSE4_2,
+        AVX,
+        AVX2,
+        AVX512F,
+        AVX512BW,
+    };
+
     typedef struct CpuInfo_t {
         char ProcessorBrandString[BRAND_STR_MAX];
         char IdentificationString[VENDOR_STR_MAX];
@@ -53,6 +69,8 @@ namespace utilpp {
         uint64_t BusFrequencyMHz;
         uint32_t LogicalCoreNum;
         uint32_t CoreNum;
+
+        magic_enum::containers::bitset<ESIMDFeature> SIMDFeatures;
     }CpuInfo_t;
 
     typedef struct PhysicalMemoryInfo_t {
