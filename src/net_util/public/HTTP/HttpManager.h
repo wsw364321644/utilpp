@@ -16,7 +16,10 @@ constexpr char VERB_HEAD[] = "HEAD";
 constexpr char VERB_DELETE[] = "DELETE";
 constexpr char SCHEME_HTTPS[] = "https";
 constexpr char SCHEME_HTTP[] = "http";
-
+constexpr char CONTENT_TYPE_NAME[] = "Content-Type";
+constexpr char CONTENT_TYPE_FORM[] = "application/x-www-form-urlencoded";
+constexpr char CONTENT_TYPE_JSON[] = "application/json";
+constexpr char CONTENT_TYPE_XML[] = "application/xml";
 
 typedef std::shared_ptr<class IHttpManager> HttpManagerPtr;
 

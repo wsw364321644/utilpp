@@ -58,7 +58,9 @@ void FCurlHttpManager::FreeRequest(HttpRequestPtr req)
 bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
 {
     auto creq = std::dynamic_pointer_cast<FCurlHttpRequest>(req);
-    SetupLocalRequest(creq);
+    if (!SetupLocalRequest(creq)) {
+        return false;
+    }
 
     auto ThreadedRequest = creq;
     if (!SetupRequest(ThreadedRequest))
