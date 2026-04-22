@@ -1,0 +1,58 @@
+# FetchContent_Declare(
+#     cmake-optimize-architecture-flag
+#     GIT_REPOSITORY https://github.com/miurahr/cmake-optimize-architecture-flag.git
+#     GIT_TAG master
+#     GIT_SHALLOW TRUE
+#     SOURCE_SUBDIR "avoid_add_subdirectory"
+# )
+# FetchContent_MakeAvailable(cmake-optimize-architecture-flag)
+# FetchContent_GetProperties(cmake-optimize-architecture-flag}
+#     SOURCE_DIR cmake-optimize-architecture-flag_SOURCE_DIR
+# )
+# list(APPEND CMAKE_MODULE_PATH "${cmake-optimize-architecture-flag_SOURCE_DIR}/Modules")
+
+# # set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "CMAKE_MODULE_PATH")
+# include(CMakeHostSystemInformationExtra)
+# cmake_host_system_information_extra(RESULT HAS_AVX2 QUERY HAS_AVX2)
+# cmake_host_system_information_extra(RESULT HAS_SSE4_1 QUERY HAS_SSE4_1)
+
+# if(NOT HAS_SSE4_1)
+#     message(STATUS "HAS_SSE4_1: ${HAS_SSE4_1}")
+# endif()
+
+# if(NOT HAS_AVX2)
+#     message(FATAL_ERROR "HAS_AVX2: ${HAS_AVX2}")
+# endif()
+
+NewTargetSource()
+AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
+AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
+source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
+
+function(add_lib TARGET_NAME)
+    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
+    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
+    set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
+    set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    AddTargetInclude(${TARGET_NAME})
+    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+
+    if(NOT UTILPP_DISABLE_INSTALL)
+        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+    endif()
+endfunction()
+
+set(TARGET_NAME simple_hash)
+add_library(${TARGET_NAME} SHARED ${SourceFiles})
+target_compile_definitions(${TARGET_NAME} PRIVATE -DSIMPLE_HASH_API_EXPORTS)
+target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
+#target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::system_info_util)
+add_lib(${TARGET_NAME})
+
+set(TARGET_NAME simple_hash_a)
+add_library(${TARGET_NAME} STATIC ${SourceFiles})
+target_compile_definitions(${TARGET_NAME} PUBLIC -DSIMPLE_HASH_API_NODLL)
+target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIBSTATIC)
+#target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::system_info_util_a)
+add_lib(${TARGET_NAME})

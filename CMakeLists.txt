@@ -14,6 +14,7 @@ option(UTILPP_ENABLE_NET "enable net_util" OFF)
 option(UTILPP_WITH_STATIC_LIBCURL "net_util use static libcurl" OFF)
 option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
 option(UTILPP_ENABLE_WEBSOCKET "enable websocket_util" OFF)
+option(UTILPP_ENABLE_ZLIB "enable module depend on zlib" OFF)
 option(UTILPP_ENABLE_CPUID "enable system info cpuid feature" OFF)
 option(UTILPP_DISABLE_INSTALL "disable installation" OFF)
 
@@ -57,7 +58,9 @@ include(ProjectImport)
 include(ProgramImport)
 include(TargetImport)
 
-
+if(UTILPP_ENABLE_ZLIB)
+  ImportProject(ZLIB STATIC ${STATIC_CRT} ${SSH} FIND TAG v1.3.2)
+endif()
 
 if(UTILPP_ENABLE_CPUID)
   ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
@@ -71,6 +74,7 @@ ImportProject(RapidJSON ${SSH} TAG origin/master)
 ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
 ImportProject(spdlog ${STATIC_CRT} STATIC ${SSH} TAG v1.17.0)
 ImportProject(concurrentqueue ${SSH} TAG master)
+ImportProject(magic_enum ${SSH} TAG master)
 
 # FetchContent_Declare(
 # gcem
@@ -105,6 +109,10 @@ add_subdirectory(src/task_manager)
 add_subdirectory(src/rpc_parser)
 add_subdirectory(src/crypto_lib_helper)
 add_subdirectory(src/system_info_util)
+
+if(UTILPP_ENABLE_ZLIB)
+  add_subdirectory(src/simple_hash)
+endif()
 
 if(WIN32)
   add_subdirectory(src/windows_util)
