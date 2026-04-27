@@ -70,11 +70,11 @@ struct string_hash
     using is_transparent = void;
 
     std::size_t operator()(const char* str) const { return hash_type{}(str); }
-    std::size_t operator()(std::string_view str) const { return hash_type{}(str); }
+    std::size_t operator()(const std::string_view str) const { return hash_type{}(str); }
     std::size_t operator()(std::string const& str) const { return hash_type{}(str); }
     std::size_t operator()(const char8_t* str) const { return hash_u8type{}(str); }
-    std::size_t operator()(std::u8string_view str) const { return hash_u8type{}(str); }
-    std::size_t operator()(std::u8string str) const { return hash_u8type{}(str); }
+    std::size_t operator()(const std::u8string_view str) const { return hash_u8type{}(str); }
+    std::size_t operator()(std::u8string const& str) const { return hash_u8type{}(str); }
 };
 
 struct pointer_hash
@@ -185,6 +185,14 @@ public:
     template <typename U, typename... Args>
     void construct(U* p, Args&&... args) {
         ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
+        //if constexpr (std::is_aggregate_v<U>) {
+        //    // 对于聚合类型，使用花括号初始化
+        //    ::new (static_cast<void*>(p)) U{ std::forward<Args>(args)... };
+        //}
+        //else {
+        //    // 对于非聚合类型，使用圆括号初始化
+        //    ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
+        //}
     }
 
     template <typename U>

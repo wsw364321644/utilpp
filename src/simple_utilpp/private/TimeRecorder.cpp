@@ -69,5 +69,5 @@ std::chrono::milliseconds FDelayRecorder::GetDelayConfig()
 void FDelayRecorder::Clear()
 {
     DelayEndDelegate = nullptr;
-    Delay = std::chrono::milliseconds(0);
+    Delay = DelayCount = std::chrono::milliseconds(0);
 }

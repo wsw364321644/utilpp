@@ -14,7 +14,7 @@ typedef struct MD5WorkData_t {
 #elif defined HAS_OpenSSL
     EVP_MD_CTX* MD5ctx{};
 #endif
-};
+}MD5WorkData_t;
 
 CommonHandlePtr_t CryptoLibMD5Begin()
 {

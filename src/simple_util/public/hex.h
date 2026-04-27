@@ -1,8 +1,7 @@
 #pragma once
-
-#include <simple_os_defs.h>
-#include "stdint.h"
-#include "stdbool.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include "simple_os_defs.h"
 constexpr size_t bin_to_hex_length(size_t insize) {
     return insize * 2;
 }
