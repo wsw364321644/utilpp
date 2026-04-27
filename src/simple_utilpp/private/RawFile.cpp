@@ -175,6 +175,28 @@ int32_t FRawFile::Write(const void* buf, uint32_t size)
     return ERR_SUCCESS;
 }
 
+int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset)
+{
+    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
+    {
+        return ERR_ARGUMENT;
+    }
+
+    OVERLAPPED ov = { 0 };
+    ov.Offset = (DWORD)(offset & 0xFFFFFFFF);
+    ov.OffsetHigh = (DWORD)(offset >> 32); // 处理 >4GB 偏移
+
+    DWORD written = 0;
+    BOOL res = WriteFile(handle_, pBuf, size, &written, &ov);
+    if (FALSE == res || written != size)
+    {
+        SIMPLELOG_LOGGER_WARN(nullptr, "Write file: {} error ...", GetFilePath());
+        return ERR_FILE;
+    }
+
+    return ERR_SUCCESS;
+}
+
 int32_t FRawFile::Delete()
 {
     if (handle_ == INVALID_HANDLE_VALUE)
@@ -438,7 +460,14 @@ int32_t FRawFile::Write(const void* pBuf, uint32_t size)
 
     return ERR_SUCCESS;
 }
-
+int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset)
+{
+    ssize_t bytes_written = pwrite(handle_, pBuf, size, offset);
+    if (bytes_written == -1) {
+        return ERR_FILE;
+    }
+    return ERR_SUCCESS;
+}
 int32_t FRawFile::Delete()
 {
     if (!IsOpen())
