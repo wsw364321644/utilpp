@@ -49,6 +49,9 @@ void FTaskManagerBase::Run()
                 if (GetMainThread() == wHandle) {
                     continue;
                 }
+                if (NullHandle == wHandle) {
+                    continue;
+                }
                 auto& optfuture = pTaskWorkflow->OptFuture;
                 if (!optfuture.has_value()|| optfuture.value().wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                     ReleaseWorkflow(wHandle);
@@ -89,8 +92,12 @@ void FTaskManagerBase::Tick()
             break;
         }
         for (int i = 0; i < count; i++) {
-            auto TaskWorkflowData=TaskWorkflowDatas[AppendingDelWorkflowHandleBuf[i]];
-            TaskWorkflowDatas.erase(AppendingDelWorkflowHandleBuf[i]);
+            auto TaskWorkflowDataItr=TaskWorkflowDatas.find(AppendingDelWorkflowHandleBuf[i]);
+            if (TaskWorkflowDataItr == TaskWorkflowDatas.end()) {
+                continue;
+            }
+            auto [_,TaskWorkflowData] = *TaskWorkflowDataItr;
+            TaskWorkflowDatas.erase(TaskWorkflowDataItr);
             for (auto& [taskHandle,pTaskData] : TaskWorkflowData->Tasks) {
                 Tasks.erase(taskHandle);
             }
