@@ -84,7 +84,9 @@ public:
     CommonTaskHandle_t AddCancelableTask(WorkflowHandle_t handle, FCancelableTaskBase* task)override;
     CommonTaskHandle_t AddTick(WorkflowHandle_t, TTickTask task) override;
     CommonTaskHandle_t AddTimer(WorkflowHandle_t, TTimerTask task, uint64_t repeat, uint64_t timeout = 0) override;
-    CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask task) override;
+    CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask& task) override;
+    CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask&& task) override;
+
     void RemoveTask(CommonTaskHandle_t) override;
 
     void WorkflowThreadTick(std::shared_ptr<TaskWorkflow_t> pWorkflowData);

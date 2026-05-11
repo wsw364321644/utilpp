@@ -1,5 +1,5 @@
 function(add_lib TARGET_NAME)
-    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_20)
+    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 
     target_link_libraries(${TARGET_NAME} PRIVATE Taskflow)

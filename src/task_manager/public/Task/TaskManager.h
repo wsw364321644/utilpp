@@ -123,7 +123,10 @@ public:
     virtual CommonTaskHandle_t AddCancelableTask(WorkflowHandle_t handle, FCancelableTaskBase* task) = 0;
     virtual CommonTaskHandle_t AddTick(WorkflowHandle_t, TTickTask task) = 0;
     virtual CommonTaskHandle_t AddTimer(WorkflowHandle_t, TTimerTask task, uint64_t repeat, uint64_t timeout = 0) = 0;
-    virtual CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask task) = 0;
+
+    virtual CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask& task) = 0;
+    virtual CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask&& task) = 0;
+
     // pass a task to excuse
     template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
     std::tuple<CommonTaskHandle_t, std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle, F&& task) {

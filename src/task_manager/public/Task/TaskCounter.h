@@ -14,11 +14,20 @@ typedef struct FinishedSlotData_t {
 template <typename R>
 class FTaskSlotCounter {
 public:
-    
+    FTaskSlotCounter() {}
     FTaskSlotCounter(uint8_t ParallelTaskNum) :Futures(ParallelTaskNum), Handles(ParallelTaskNum){
-        for (int i=0; i < ParallelTaskNum; i++) {
+        for (int i = 0; i < ParallelTaskNum; i++) {
             FreeIndex.insert(i);
         }
+    }
+    bool SetSize(uint8_t ParallelTaskNum) {
+        Futures.resize(ParallelTaskNum);
+        Handles.resize(ParallelTaskNum);
+        FreeIndex.clear();
+        for (int i = 0; i < ParallelTaskNum; i++) {
+            FreeIndex.insert(i);
+        }
+        return true;
     }
     bool HasSpace() {
         if (FreeIndex.size() == 0) {
@@ -49,6 +58,9 @@ public:
         Futures[i] = std::move(future);
         Handles[i] = handle;
         return true;
+    }
+    bool SetFuture(uint8_t i, CommonTaskHandle_t handle, std::future<R>&& future) {
+        return SetFuture(i, handle, future);
     }
     std::vector<FinishedSlotData_t>& CheckFinished() {
         OutData.clear();

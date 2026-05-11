@@ -243,20 +243,26 @@ CommonTaskHandle_t FTaskManagerBase::AddTimer(WorkflowHandle_t handle, TTimerTas
     return TaskHandle;
 }
 
-CommonTaskHandle_t FTaskManagerBase::AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask task)
+CommonTaskHandle_t FTaskManagerBase::AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask& task)
+{
+    auto taskcopy = task;
+    return AddTaskNoReturn(handle, std::move(taskcopy));
+}
+
+CommonTaskHandle_t FTaskManagerBase::AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask&& task)
 {
     auto TaskHandle = CommonTaskHandle_t(CommonTaskHandle_t::TaskCount);
-    auto AddFunc = 
-        [&, handle, task, TaskHandle]() {
+    auto AddFunc =
+        [&, handle, task=std::move(task), TaskHandle]() {
         auto itr = TaskWorkflowDatas.find(handle);
         if (itr == TaskWorkflowDatas.end()) {
             return;
         }
-        auto [taskItr,res] = Tasks.try_emplace(TaskHandle, std::make_shared < CommonTaskData_t>(handle, task));
+        auto [taskItr, res] = Tasks.try_emplace(TaskHandle, std::make_shared < CommonTaskData_t>(handle, std::move(task)));
         if (!res) {
             return;
         }
-        auto& [wCommonHandle,pWorkflowData] = *itr;
+        auto& [wCommonHandle, pWorkflowData] = *itr;
         auto& [tCommonHandle, pTaskData] = *taskItr;
         pWorkflowData->AppendingAddTaskDatas.enqueue(std::make_tuple(tCommonHandle, pTaskData));
         }
