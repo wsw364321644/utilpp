@@ -5,6 +5,7 @@ namespace utilpp {
         CUE_NOT_SUPPORT = 0x1,
         CUE_UNKNOW=0x02,
         CUE_REQ_TOO_MANY = 0x03,
+        CUE_CANCELED= 0x04,
         CUE_FILE_OP = 0x10,
         CUE_FILE_NOT_EXIST = 0x11,
         CUE_NET_ERROR = 0x80,

@@ -27,7 +27,6 @@ typedef struct MimePart {
     std::string Name;
     std::string Data;
     std::string FileName;
-    std::string FileData;
 
 }MimePart_t;
 
@@ -35,7 +34,6 @@ typedef struct InMimePart {
     std::string_view Name;
     std::string_view Data;
     std::string_view FileName;
-    std::string_view FileData;
 }InMimePart_t;
 
 

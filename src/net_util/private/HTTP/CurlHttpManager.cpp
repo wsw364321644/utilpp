@@ -376,7 +376,18 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
 
                 part = curl_mime_addpart(creq->Mime);
                 curl_mime_name(part, AllMime[Idx].Name.c_str());
-                curl_mime_data(part, AllMime[Idx].Data.c_str(), CURL_ZERO_TERMINATED);
+                if (AllMime[Idx].FileName.empty()) {
+                    curl_mime_data(part, AllMime[Idx].Data.c_str(), AllMime[Idx].Data.size());
+                }
+                else {
+                    if (AllMime[Idx].Data.empty()) {
+                        curl_mime_filedata(part, AllMime[Idx].FileName.c_str());
+                    }
+                    else {
+                        curl_mime_filename(part, AllMime[Idx].FileName.c_str());
+                        curl_mime_data(part, AllMime[Idx].Data.c_str(), AllMime[Idx].Data.size());
+                    }
+                }
             }
             curl_easy_setopt(creq->EasyHandle, CURLOPT_MIMEPOST, creq->Mime);
         }
