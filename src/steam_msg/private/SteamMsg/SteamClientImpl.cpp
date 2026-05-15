@@ -410,7 +410,7 @@ bool FSteamClient::Logon()
     gethostname(name, sizeof(name));
     body.set_machine_name(name);
     char MachineID[MACHINE_GUID_MAX + 1];
-    auto MachineIDLen = sizeof(MachineID);
+    uint32_t MachineIDLen = sizeof(MachineID);
     bool bGUID;
     GetMachineUUID(MachineID, &MachineIDLen, &bGUID);
     body.set_machine_id(MachineID);

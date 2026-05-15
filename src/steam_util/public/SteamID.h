@@ -21,28 +21,28 @@ public:
     }
 
     void SetAccountID(uint32_t val) {
-        Value.SetBitSet(val, AccountIDBitOffset, AccountIDBitLen);
+        Value.SetBits(val, AccountIDBitOffset, AccountIDBitLen);
     }
     uint32_t GetAccountID() const {
-        return Value.template GetBitSet<uint32_t>(AccountIDBitOffset, AccountIDBitLen);
+        return Value.template GetBits<uint32_t>(AccountIDBitOffset, AccountIDBitLen);
     }
     void SetAccountInstance(uint32_t val) {
-        Value.SetBitSet(val, AccountInstanceBitOffset, AccountInstanceBitLen);
+        Value.SetBits(val, AccountInstanceBitOffset, AccountInstanceBitLen);
     }
     uint32_t GetAccountInstance() const {
-        return Value.template GetBitSet<uint32_t>(AccountInstanceBitOffset, AccountInstanceBitLen);
+        return Value.template GetBits<uint32_t>(AccountInstanceBitOffset, AccountInstanceBitLen);
     }
     void SetAccountUniverse(utilpp::steam::EUniverse val) {
-        Value.SetBitSet(std::to_underlying(val), AccountUniverseBitOffset, AccountUniverseBitLen);
+        Value.SetBits(std::to_underlying(val), AccountUniverseBitOffset, AccountUniverseBitLen);
     }
     utilpp::steam::EUniverse GetAccountUniverse() const {
-        return Value.template GetBitSet<utilpp::steam::EUniverse>(AccountUniverseBitOffset, AccountUniverseBitLen);
+        return Value.template GetBits<utilpp::steam::EUniverse>(AccountUniverseBitOffset, AccountUniverseBitLen);
     }
     void SetAccountType(utilpp::steam::EAccountType val) {
-        Value.SetBitSet(std::to_underlying(val), AccountTypeBitOffset, AccountTypeBitLen);
+        Value.SetBits(std::to_underlying(val), AccountTypeBitOffset, AccountTypeBitLen);
     }
     utilpp::steam::EAccountType GetAccountType() const {
-        return Value.template GetBitSet<utilpp::steam::EAccountType>(AccountTypeBitOffset, AccountTypeBitLen);
+        return Value.template GetBits<utilpp::steam::EAccountType>(AccountTypeBitOffset, AccountTypeBitLen);
     }
     bool Isvalis() {
         if (GetAccountType() <= utilpp::steam::EAccountType::Invalid || GetAccountType() > utilpp::steam::EAccountType::AnonUser)
@@ -72,14 +72,13 @@ public:
         return true;
     }
     uint64_t GetValue()const {
-        return Value.Bits.to_ullong();
+        return Value.GetBits<uint64_t>(0,sizeof(uint64_t) * CHAR_BIT);
     }
     void SetValue(uint64_t val) {
-        Value.Bits.reset();
-        Value.Bits |= val;
+        Value.SetBits(val, 0, sizeof(uint64_t) * CHAR_BIT);
     }
     bool operator==(const FSteamID& rhs)const {
-        return Value.Bits == rhs.Value.Bits;
+        return Value == rhs.Value;
     }
 private:
     static constexpr uint8_t AccountIDBitOffset = 0;

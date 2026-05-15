@@ -1,10 +1,10 @@
 
 if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
     find_package(Python3 REQUIRED)
-
     execute_process(COMMAND ${Python3_EXECUTABLE} -m pip install pyparsing
     )
     find_package(sqlpp23 CONFIG REQUIRED)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg)
     execute_process(COMMAND ${Python3_EXECUTABLE} ${sqlpp23_DIR}/../../../bin/sqlpp23-ddl2cpp -split-tables
         ${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg
         utilpp::steam
@@ -38,8 +38,7 @@ function(add_lib TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 
     target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
-    target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::steam_util)
-    target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::crypto_lib_helper)
+
     target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_language)
     target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_protobufs)
     target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
@@ -63,6 +62,8 @@ target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_logger)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::net_util)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::websocket_util)
+target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::steam_util)
+target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::crypto_lib_helper)
 target_link_libraries(${TARGET_NAME} PRIVATE SQLite3::SQLite3)
 set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_lib(${TARGET_NAME})
@@ -75,5 +76,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_utilpp_a)
 target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::simple_logger_a)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::net_util_a)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::websocket_util_a)
+target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::steam_util_a)
+target_link_libraries(${TARGET_NAME} PRIVATE UTILPP::crypto_lib_helper_a)
 target_link_libraries(${TARGET_NAME} PRIVATE SQLite3::SQLite3_a)
 add_lib(${TARGET_NAME})

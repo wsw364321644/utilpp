@@ -14,41 +14,41 @@ public:
         Value = inID.Value;
     }
     uint32_t GetSequentialCount() const {
-        return Value.template GetBitSet<uint32_t>(SequentialCountBitOffset, SequentialCountBitLen);
+        return Value.template GetBits<uint32_t>(SequentialCountBitOffset, SequentialCountBitLen);
     }
     void SetSequentialCount(uint32_t val) {
-        Value.SetBitSet(val, SequentialCountBitOffset, SequentialCountBitLen);
+        Value.SetBits(val, SequentialCountBitOffset, SequentialCountBitLen);
     }
     std::chrono::time_point<std::chrono::system_clock> GetStartTime() const {
-        auto sec = Value.template GetBitSet<uint64_t>(StartTimeBitOffset, StartTimeBitLen);
+        auto sec = Value.template GetBits<uint64_t>(StartTimeBitOffset, StartTimeBitLen);
         std::chrono::seconds duration_seconds(sec);
         return SteamStartTimeEpoch + duration_seconds;
     }
     void SetStartTime(std::chrono::time_point<std::chrono::system_clock> time) {
         auto sec = std::chrono::duration_cast<std::chrono::seconds>(time - SteamStartTimeEpoch).count();
-        Value.SetBitSet(sec, StartTimeBitOffset, StartTimeBitLen);
+        Value.SetBits(sec, StartTimeBitOffset, StartTimeBitLen);
     }
     uint32_t GetProcessID() const {
-        return Value.template GetBitSet<uint32_t>(ProcessIDBitOffset, ProcessIDBitLen);
+        return Value.template GetBits<uint32_t>(ProcessIDBitOffset, ProcessIDBitLen);
     }
     void SetProcessID(uint32_t val) {
-        Value.SetBitSet(val, ProcessIDBitOffset, ProcessIDBitLen);
+        Value.SetBits(val, ProcessIDBitOffset, ProcessIDBitLen);
     }
     uint32_t GetBoxID() const {
-        return Value.template GetBitSet<uint32_t>(BoxIDBitOffset, BoxIDBitLen);
+        return Value.template GetBits<uint32_t>(BoxIDBitOffset, BoxIDBitLen);
     }
     void SetBoxID(uint32_t val) {
-        Value.SetBitSet(val, BoxIDBitOffset, BoxIDBitLen);
+        Value.SetBits(val, BoxIDBitOffset, BoxIDBitLen);
     }
     uint64_t GetValue()const {
-        return Value.Bits.to_ullong();
+        return Value.template GetBits<uint64_t>(ProcessIDBitOffset, sizeof(uint64_t) * CHAR_BIT);
     }
     void SetValue(uint64_t val) {
-        Value.Bits.reset();
-        Value.Bits |= val;
+        Value.ClearAll();
+        Value.SetBits(val, 0, sizeof(uint64_t)*CHAR_BIT);
     }
     bool operator==(const FSteamGlobalID& rhs)const {
-        return Value.Bits==rhs.Value.Bits;
+        return Value==rhs.Value;
     }
 private:
     static constexpr uint8_t SequentialCountBitOffset = 0;
