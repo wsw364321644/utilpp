@@ -362,3 +362,8 @@ inline char* StrCopy(char* dst,std::string_view view) {
     dst[view.size()] = '\0';
     return dst;
 }
+
+template <typename T>
+std::string_view ConvertSpanToView(std::span<T> span) {
+    std::string_view(span.data(), span.size()*sizeof(T));
+}
