@@ -32,6 +32,10 @@ CommonHandlePtr_t CryptoLibMD5Begin()
     mbedtls_md5_init(&pData->MD5ctx);
 #elif defined HAS_OpenSSL
     Data.MD5ctx = EVP_MD_CTX_create();
+    bRes = Data.MD5ctx;
+    if (!bRes) {
+        return NullHandle;
+    }
     FunctionExitHelper_t ctxGuard(
         [&]() {
             if (!bRes) {
@@ -39,10 +43,6 @@ CommonHandlePtr_t CryptoLibMD5Begin()
             }
         }
     );
-    bRes = Data.MD5ctx;
-    if (!bRes) {
-        return NullHandle;
-    }
     bRes=EVP_MD_CTX_init(Data.MD5ctx) == 1;
     if (!bRes) {
         return NullHandle;
