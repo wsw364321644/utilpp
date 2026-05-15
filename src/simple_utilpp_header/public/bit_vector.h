@@ -102,14 +102,14 @@ public:
         if (bit_num == 0) return T(0);
         assert(offset + bit_num <= kBits);
 
-        T result = 0;
+        uint64_t result{ 0 };
         for (size_t i = 0; i < bit_num; ++i) {
             size_t pos = offset + i;
             if ((data_[pos / 8] >> (pos % 8)) & 1U) {
-                result |= (T(1) << i);
+                result |= (1ull << i);
             }
         }
-        return result;
+        return T(result);
     }
 
     /// @brief 清除指定范围的位
