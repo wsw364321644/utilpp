@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 #include <cuchar>
+#include <span>
 #ifdef WIN32
 #include <simple_os_defs.h>
 #include <Strsafe.h>
@@ -365,5 +366,5 @@ inline char* StrCopy(char* dst,std::string_view view) {
 
 template <typename T>
 std::string_view ConvertSpanToView(std::span<T> span) {
-    std::string_view(span.data(), span.size()*sizeof(T));
+    return std::string_view((const char*)span.data(), span.size()*sizeof(T));
 }
