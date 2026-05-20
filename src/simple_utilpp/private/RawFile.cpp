@@ -220,6 +220,7 @@ void FRawFile::Close()
     if (fd!= -1) {
         close(fd);
         fd = -1;
+        handle_ = INVALID_HANDLE_VALUE;
     }else if (handle_ != INVALID_HANDLE_VALUE)
     {
         CloseHandle(handle_);
@@ -319,7 +320,6 @@ int FRawFile::GetFD()
 {
     if (handle_!= INVALID_HANDLE_VALUE) {
         fd= _open_osfhandle(reinterpret_cast<intptr_t>(handle_), _O_RDWR);
-        handle_ = INVALID_HANDLE_VALUE;
     }
     return fd;
 }
