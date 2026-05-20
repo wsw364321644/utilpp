@@ -93,7 +93,7 @@ public:
     uint64_t GetDownloadSize();
     bool IsIntact();
     void SaveRecoveryInfo();
-    size_t SaveDate(void* ptr,int64_t len);
+    size_t SaveDate(void* ptr, int64_t len);
     size_t SaveDate(std::shared_ptr<file_chunk_t> file_chunk);
     bool CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk);
     uint64_t GetChunkSize(uint32_t index);
@@ -103,11 +103,11 @@ public:
     void Finish(EDownloadCode err, T&& msg) {
         Status = EFileTaskStatus::Finished;
         Code = err;
-        ErrorMsg= msg;
+        ErrorMsg = msg;
         CloseFileStream();
     }
     void Finish(EDownloadCode err) {
-        Finish(err,"");
+        Finish(err, "");
     }
 
     EFileTaskStatus Status{ EFileTaskStatus::Idle };
@@ -142,16 +142,15 @@ public:
 private:
     void GenProgressData(std::shared_ptr<file_chunk_t> file_chunk);
 
-    FDownloadFile()=delete;
+    FDownloadFile() = delete;
 };
 
 
 
-FDownloadFile::FDownloadFile(std::string url, std::filesystem::path folder) : Path(folder), URL(url){
-}
+FDownloadFile::FDownloadFile(std::string url, std::filesystem::path folder) : Path(folder), URL(url) {}
 
 FDownloadFile::FDownloadFile(std::string url, std::string path) : FDownloadFile(url, std::filesystem::path(path)) {}
-FDownloadFile::FDownloadFile(std::string url, FCharBuffer& content) : Content(&content), URL(url),bRecoveryInfo(false) {
+FDownloadFile::FDownloadFile(std::string url, FCharBuffer& content) : Content(&content), URL(url), bRecoveryInfo(false) {
 
 }
 
@@ -171,14 +170,19 @@ bool FDownloadFile::Init()
         Path = std::filesystem::current_path() / Path;
         Path = Path.lexically_normal();
     }
-    if (WorkPath.empty()) {
-        if (*Path.string().rbegin() == std::filesystem::path::preferred_separator) {
-            WorkPath = Path;
-        }
-        else {
-            WorkPath = Path.parent_path();
-        }
+
+    if (DirUtil::IsDirectory(Path.u8string())) {
+        WorkPath = Path;
+        Path.clear();
     }
+    else if (*Path.string().rbegin() == std::filesystem::path::preferred_separator) {
+        WorkPath = Path;
+        Path.clear();
+    }
+    else {
+        WorkPath = Path.parent_path();
+    }
+
     auto& pathBuf = *FPathBuf::GetThreadSingleton();
     pathBuf.SetPathW(WorkPath.wstring());
     if (!DirUtil::CreateDir(pathBuf)) {
@@ -186,7 +190,7 @@ bool FDownloadFile::Init()
     }
 
     if (ID.empty()) {
-        char hexUUIDBuf[bin_to_hex_length(UUID_128_BYTES)+1];
+        char hexUUIDBuf[bin_to_hex_length(UUID_128_BYTES) + 1];
         uint8_t uuidBuf[UUID_128_BYTES];
         generate_uuid_128(uuidBuf);
         to_lower_hex(hexUUIDBuf, uuidBuf, UUID_128_BYTES);
@@ -194,7 +198,7 @@ bool FDownloadFile::Init()
     }
 
     std::filesystem::path TempPath = WorkPath;
-    TempPath.append(ID +"."+ DownloadTempExtensionStr);
+    TempPath.append(ID + "." + DownloadTempExtensionStr);
     pathBuf.SetPathW(TempPath.wstring());
     if (FileStream.Open(pathBuf, UTIL_OPEN_ALWAYS, Size) != ERR_SUCCESS) {
         SIMPLELOG_LOGGER_ERROR(nullptr, "open file failed path:{}", TempPath.string());
@@ -221,10 +225,10 @@ void FDownloadFile::UpdateOnlineFilename(std::string_view filename)
         return;
     }
 
-    if (*Path.string().rbegin() != std::filesystem::path::preferred_separator) {
+    if (!Path.empty()) {
         return;
     }
-    Path.append(filename);
+    Path = WorkPath / filename;
     auto DataBuilder = MessageBuilder.getRoot<DownloadFileDiskData>();
     DataBuilder.setPath(ConvertU8ViewToString(Path.u8string()));
 }
@@ -237,7 +241,7 @@ void FDownloadFile::SetFileSize(int64_t size)
         auto byteNum = CEIL_INTEGER(ChunkNum, CHAR_BIT);
         ChunksCompleteFlag = kj::heapArray<uint8_t>(byteNum);
         ChunksDownloadFlag = kj::heapArray<uint8_t>(byteNum);
-        for (int i = 0; i < byteNum;i++) {
+        for (int i = 0; i < byteNum; i++) {
             ChunksCompleteFlag[i] = 0;
             ChunksDownloadFlag[i] = 0;
         }
@@ -258,20 +262,20 @@ std::shared_ptr<file_chunk_t> FDownloadFile::GetNotDownloadFilechunk()
 {
     std::shared_ptr<FDownloadFile> my;
     try {
-      my = shared_from_this();
+        my = shared_from_this();
     }
     catch (std::bad_weak_ptr& e) {
-        SIMPLELOG_LOGGER_ERROR(nullptr,"GetNotDownloadFilechunk without shared_ptr");
+        SIMPLELOG_LOGGER_ERROR(nullptr, "GetNotDownloadFilechunk without shared_ptr");
         return nullptr;
     }
-    auto pchunk=std::make_shared<file_chunk_t>();
+    auto pchunk = std::make_shared<file_chunk_t>();
     pchunk->File = my;
-    for (int i = 0; i < ChunksDownloadFlag.size()-1; i++) {
+    for (int i = 0; i < ChunksDownloadFlag.size() - 1; i++) {
         if (ChunksDownloadFlag[i] == UCHAR_MAX) {
             continue;
         }
         for (uint32_t j = 0; j < CHAR_BIT; j++) {
-            auto mask=uint8_t(1) << j;
+            auto mask = uint8_t(1) << j;
             if ((ChunksDownloadFlag[i] & mask) == 0) {
                 ChunksDownloadFlag[i] |= mask;
                 pchunk->ChunkIndex = i * CHAR_BIT + j;
@@ -385,7 +389,7 @@ size_t FDownloadFile::SaveDate(std::shared_ptr<file_chunk_t>  file_chunk)
 
 bool FDownloadFile::CompleteChunk(std::shared_ptr<file_chunk_t> file_chunk)
 {
-    assert(file_chunk->File.get() == this );
+    assert(file_chunk->File.get() == this);
     ChunksCompleteFlag[file_chunk->ChunkIndex / 8] |= (uint8_t(1) << file_chunk->ChunkIndex % 8);
     GenProgressData(file_chunk);
     auto DataBuilder = MessageBuilder.getRoot<DownloadFileDiskData>();
@@ -404,19 +408,30 @@ uint64_t FDownloadFile::GetChunkSize(uint32_t index)
 
 void FDownloadFile::CloseFileStream()
 {
+    std::string FilePath = FileStream.GetFilePath();
+    std::string RecoveryFilePath = RecoveryInfoFile.GetFilePath();
+
     if (FileStream.IsOpen()) {
         FileStream.Close();
     }
     if (RecoveryInfoFile.IsOpen()) {
         RecoveryInfoFile.Close();
     }
-
-    if (bRecoveryInfo) {
+    if (Code == EDownloadCode::OK) {
         if (DownloadSize == Size) {
-            DirUtil::Rename((const char8_t*)FileStream.GetFilePath(), Path.u8string());
-            DirUtil::Delete((const char8_t*)RecoveryInfoFile.GetFilePath());
+            DirUtil::Rename(ConvertViewToU8View(FilePath), Path.u8string());
+        }
+        if (bRecoveryInfo) {
+            DirUtil::Delete(ConvertViewToU8View(RecoveryFilePath));
         }
     }
+    else {
+        DirUtil::Delete(ConvertViewToU8View(FilePath));
+        if (bRecoveryInfo) {
+            DirUtil::Delete(ConvertViewToU8View(RecoveryFilePath));
+        }
+    }
+
 
 }
 
@@ -473,7 +488,7 @@ bool FDownloadBuf::InsertInBuf(std::shared_ptr < file_chunk_t> pchunk) {
 
 bool FDownloadBuf::RemoveChunk(std::shared_ptr<file_chunk_t> pchunk)
 {
-    auto itr=std::find(ChunkList.cbegin(), ChunkList.cend(), pchunk);
+    auto itr = std::find(ChunkList.cbegin(), ChunkList.cend(), pchunk);
     if (itr == ChunkList.cend()) {
         return false;
     }
@@ -488,7 +503,7 @@ IDownloader* IDownloader::Instance()
     return FDownloader::Instance();
 }
 
-FDownloader::FDownloader(){
+FDownloader::FDownloader() {
     pHttpManager = IHttpManager::GetNamedClassSingleton(CURL_HTTP_MANAGER_NAME);
 }
 
@@ -518,12 +533,12 @@ std::shared_ptr<DownloadFileInfo> FDownloader::GetTaskInfo(std::shared_ptr<FDown
 }
 DownloadTaskHandle_t FDownloader::AddTask(FDownloadFile* file)
 {
-    for (auto& [handle,pfile] : Files) {
-        if (pfile->URL == file->URL ) {
+    for (auto& [handle, pfile] : Files) {
+        if (pfile->URL == file->URL) {
             return handle;
         }
     }
-    auto respair=Files.try_emplace(CommonHandle32_t(DownloadTaskHandle_t::task_count), file);
+    auto respair = Files.try_emplace(CommonHandle32_t(DownloadTaskHandle_t::task_count), file);
     if (respair.second) {
         file->Init();
         file->SaveRecoveryInfo();
@@ -540,14 +555,14 @@ void FDownloader::TransferBuf()
         auto itr = pbuf->ChunkList.begin();
         for (; itr != pbuf->ChunkList.end(); std::advance(itr, 1)) {
             auto& pchunk = *itr;
-            auto range=pchunk->GetRange();
-            if (pchunk->DownloadSize != range.second-range.first) {
+            auto range = pchunk->GetRange();
+            if (pchunk->DownloadSize != range.second - range.first) {
                 break;
             }
         }
-        if (itr == pbuf->ChunkList.end()&& pbuf->ChunkList.size()>0) {
+        if (itr == pbuf->ChunkList.end() && pbuf->ChunkList.size() > 0) {
             BufInIO.enqueue(pbuf);
-            pool_itr=BufPool.erase(pool_itr);
+            pool_itr = BufPool.erase(pool_itr);
         }
         else {
             std::advance(pool_itr, 1);
@@ -570,7 +585,7 @@ void FDownloader::TransferBuf()
 std::shared_ptr<FDownloadBuf> FDownloader::InsertInBuf(std::shared_ptr < file_chunk_t> chunk)
 {
     for (auto& pbuf : BufPool) {
-        auto res=pbuf->InsertInBuf(chunk);
+        auto res = pbuf->InsertInBuf(chunk);
         if (res) {
             return pbuf;
         }
@@ -609,7 +624,7 @@ void FDownloader::StartDownloadWithoutContentLength(std::shared_ptr<FDownloadFil
 
 FDownloader* FDownloader::Instance() {
     static std::atomic<FDownloader*> atomic_downloader;
-    FDownloader*  downloader = atomic_downloader.load();
+    FDownloader* downloader = atomic_downloader.load();
     if (!downloader) {
         FDownloader* expect{ nullptr };
         if (atomic_downloader.compare_exchange_strong(expect, new FDownloader())) {
@@ -630,12 +645,11 @@ FDownloader* FDownloader::Instance() {
             downloader->OutFileInfo = std::make_shared<DownloadFileInfo_t>();
         }
     }
-    
+
     return atomic_downloader.load();
 }
 FDownloader::~FDownloader()
-{
-}
+{}
 FDownloadTaskIterator FDownloader::Begin() {
     FDownloadTaskIterator outitr;
     auto internalItr = std::make_unique<FIterator>(this);
@@ -673,17 +687,17 @@ void FDownloader::LoadDiskTask(std::u8string_view pathStr)
     pathBuf.SetPath(ConvertU8ViewToView(pathStr));
     DirUtil::IterateDir(pathBuf,
         [this, pathStr](DirEntry_t& entry)->bool {
-            auto& pathBuf=*entry.pPathBuf;
-            std::filesystem::path filePath= pathBuf.FileNameW();
+            auto& pathBuf = *entry.pPathBuf;
+            std::filesystem::path filePath = pathBuf.FileNameW();
             if (!filePath.extension().string().contains(DownloadDiskDataExtensionStr)) {
                 return true;
             }
             auto& file = *FRawFile::GetThreadSingleton();
-            if (file.Open(pathBuf, UTIL_OPEN_EXISTING)!= ERR_SUCCESS) {
+            if (file.Open(pathBuf, UTIL_OPEN_EXISTING) != ERR_SUCCESS) {
                 return false;
             }
             auto diskDataPath = filePath.replace_extension(DownloadDiskDataExtensionStr);
-            if (file.GetSize() == 0||!DirUtil::IsExist(diskDataPath.u8string())) {
+            if (file.GetSize() == 0 || !DirUtil::IsExist(diskDataPath.u8string())) {
                 file.Close();
                 DirUtil::Delete(filePath.u8string());
                 DirUtil::Delete(diskDataPath.u8string());
@@ -698,10 +712,10 @@ void FDownloader::LoadDiskTask(std::u8string_view pathStr)
             df->ChunksCompleteFlag = kj::heapArray<uint8_t>(downloadFileDiskData.getChunksCompleteFlag().size());
             df->ChunksDownloadFlag = kj::heapArray<uint8_t>(downloadFileDiskData.getChunksCompleteFlag().size());
 
-            df->Size=downloadFileDiskData.getSize();
-            df->Path=downloadFileDiskData.getPath().cStr();
+            df->Size = downloadFileDiskData.getSize();
+            df->Path = downloadFileDiskData.getPath().cStr();
             df->URL = downloadFileDiskData.getUrl().cStr();
-            for (int i = 0; i < downloadFileDiskData.getChunksCompleteFlag().size();i++) {
+            for (int i = 0; i < downloadFileDiskData.getChunksCompleteFlag().size(); i++) {
                 df->ChunksCompleteFlag[i] = downloadFileDiskData.getChunksCompleteFlag()[i];
                 df->ChunksDownloadFlag[i] = downloadFileDiskData.getChunksCompleteFlag()[i];
             }
@@ -762,7 +776,7 @@ std::shared_ptr<TaskStatus_t> FDownloader::GetTaskStatus(DownloadTaskHandle_t ha
     if (itr == Files.end()) {
         return nullptr;
     }
-  
+
     auto& pfile = itr->second;
     return GetTaskStatus(pfile);
 
@@ -783,7 +797,7 @@ void FDownloader::Tick(float delSec)
 {
     auto& HttpManager = *pHttpManager;
     TransferBuf();
-    for (auto itr = RequireRemoveFiles.begin(); itr != RequireRemoveFiles.end(); std::advance(itr,1)) {
+    for (auto itr = RequireRemoveFiles.begin(); itr != RequireRemoveFiles.end(); std::advance(itr, 1)) {
         Files.erase(*itr);
     }
     RequireRemoveFiles.clear();
@@ -842,7 +856,7 @@ void FDownloader::Tick(float delSec)
                     auto& pathBuf = *FPathBuf::GetThreadSingleton();
                     pathBuf.SetPathW(pfile->Path.wstring());
                     if (DirUtil::IsExist(pathBuf)) {
-                        pfile->Finish(EDownloadCode::OK, "file exist");
+                        pfile->Finish(EDownloadCode::FILE_EXIST, "file exist");
                         return;
                     }
                 }

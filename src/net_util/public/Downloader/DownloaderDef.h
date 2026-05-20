@@ -47,6 +47,7 @@ namespace std
 
 enum class EDownloadCode {
     OK,
+    FILE_EXIST,
     PARAMS_ERROR,
     INTERNAL_ERROR,
     FINISHED,
