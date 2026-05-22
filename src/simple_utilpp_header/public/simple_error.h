@@ -1,7 +1,9 @@
 #pragma once
+#include "simple_error_def.h"
+#include "constant_hash.h"
 #include <system_error>
 #include <std_ext.h>
-#include "simple_error_def.h"
+
 
 namespace utilpp {
     class common_used_error_category : public std::error_category {
@@ -33,3 +35,23 @@ namespace utilpp {
         return std::error_code(std::to_underlying(err), get_common_used_error_category());
     }
 }
+
+struct deserialize_error_helper {
+    bool operator() (std::string_view category_name, int value, std::error_code& out_ec){
+        auto hash = ctcrc32(category_name);
+
+        if (hash == ctcrc32(std::string_view(std::generic_category().name()))) {
+            out_ec={ value, std::generic_category() };
+        }
+        else if(hash == ctcrc32(std::string_view(std::system_category().name()))){
+            out_ec={ value, std::system_category() };
+        }
+        else if (hash = ctcrc32(std::string_view(utilpp::get_common_used_error_category().name()))) {
+            out_ec = { value, utilpp::get_common_used_error_category() };
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+};

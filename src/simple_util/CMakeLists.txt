@@ -22,6 +22,7 @@ function(add_simple_util TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE C)
 
+    target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_util_header)
     AddTargetInclude(${TARGET_NAME})
     add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
 

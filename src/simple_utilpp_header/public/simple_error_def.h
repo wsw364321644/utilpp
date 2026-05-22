@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 namespace utilpp {
     enum class ECommonUsedError :int32_t {
         CUE_OK = 0,

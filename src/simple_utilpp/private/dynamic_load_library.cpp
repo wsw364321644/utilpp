@@ -1,5 +1,5 @@
 #include "dynamic_load_library.h"
-#include "string_convert.h"
+#include <string_convert.h>
 
 void simple_dlsym_function_ptr(void* handle, const char* func_name, void** outptr)
 {

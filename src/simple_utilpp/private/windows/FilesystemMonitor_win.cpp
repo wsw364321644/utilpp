@@ -142,7 +142,7 @@ void FFilesystemMonitorWin::Tick(float delta)
         entries,
         MAX_ENTRIES,
         &numEntries,
-        0, // 可设置超时
+        0,
         FALSE
     );
     if (success == FALSE) {

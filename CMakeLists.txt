@@ -101,6 +101,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(ctre)
 
+add_subdirectory(src/simple_util_header)
 add_subdirectory(src/simple_util)
 add_subdirectory(src/simple_utilpp_header)
 add_subdirectory(src/simple_utilpp)

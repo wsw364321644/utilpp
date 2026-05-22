@@ -184,15 +184,12 @@ public:
 
     template <typename U, typename... Args>
     void construct(U* p, Args&&... args) {
-        ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
-        //if constexpr (std::is_aggregate_v<U>) {
-        //    // 对于聚合类型，使用花括号初始化
-        //    ::new (static_cast<void*>(p)) U{ std::forward<Args>(args)... };
-        //}
-        //else {
-        //    // 对于非聚合类型，使用圆括号初始化
-        //    ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
-        //}
+        if constexpr (std::is_aggregate_v<U>) {
+            ::new (static_cast<void*>(p)) U{ std::forward<Args>(args)... };
+        }
+        else {
+            ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
+        }
     }
 
     template <typename U>

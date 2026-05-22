@@ -8,6 +8,7 @@
 #ifdef WIN32
 #include <simple_os_defs.h>
 #include <Strsafe.h>
+#include <stringapiset.h>
 #else
 #include <fcntl.h>
 #include <errno.h>
@@ -42,7 +43,7 @@ inline size_t GetStringLengthW(const wchar_t* Str)
     size_t inStrLen{ 0 };
 #ifdef WIN32
     const size_t inStrMax = INT_MAX - 1;
-    LPWSTR inStr = (LPWSTR)Str;
+    STRSAFE_PCNZWCH inStr = (STRSAFE_PCNZWCH)Str;
     HRESULT hr = ::StringCchLengthW(inStr, inStrMax, &inStrLen);
     if (FAILED(hr))
         return -1;

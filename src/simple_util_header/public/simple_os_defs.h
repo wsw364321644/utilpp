@@ -4,13 +4,7 @@
 #else
 #include <stdint.h>
 #endif // __cplusplus
-#include "simple_export_defs.h"
 
-SIMPLE_UTIL_VALUE const uint32_t UTIL_CREATE_ALWAYS ;//CREATE_ALWAYS;
-SIMPLE_UTIL_VALUE const uint32_t UTIL_CREATE_NEW;// CREATE_NEW;
-SIMPLE_UTIL_VALUE const uint32_t UTIL_OPEN_ALWAYS;// OPEN_ALWAYS;
-SIMPLE_UTIL_VALUE const uint32_t UTIL_OPEN_EXISTING;// OPEN_EXISTING;
-SIMPLE_UTIL_VALUE const uint32_t UTIL_TRUNCATE_EXISTING;// TRUNCATE_EXISTING;
 
 #ifdef WIN32
 #ifndef NOMINMAX
@@ -54,3 +48,18 @@ typedef void(* fnfree)(void* const block);
 #define ERR_FILE			(-3)	// file operation related
 #define ERR_METAPARSE		(-4)	// faile to parse mf file
 
+
+
+#ifdef WIN32
+#define UTIL_CREATE_ALWAYS  CREATE_ALWAYS//CREATE_ALWAYS;
+#define UTIL_CREATE_NEW CREATE_NEW// CREATE_NEW;
+#define UTIL_OPEN_ALWAYS OPEN_ALWAYS// OPEN_ALWAYS;
+#define UTIL_OPEN_EXISTING OPEN_EXISTING// OPEN_EXISTING;
+#define UTIL_TRUNCATE_EXISTING  TRUNCATE_EXISTING// TRUNCATE_EXISTING;
+#else
+#define UTIL_CREATE_ALWAYS (O_RDWR | O_CREAT | O_TRUNC)
+#define UTIL_CREATE_NEW (O_RDWR | O_CREAT | O_EXCL | O_TRUNC)
+#define UTIL_OPEN_ALWAYS (O_RDWR | O_CREAT)
+#define UTIL_OPEN_EXISTING (O_RDWR)
+#define UTIL_TRUNCATE_EXISTING (O_RDWR | O_TRUNC)
+#endif
