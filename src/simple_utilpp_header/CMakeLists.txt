@@ -6,6 +6,7 @@ function(configure_library TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
     target_compile_features(${TARGET_NAME} INTERFACE cxx_std_20)
 
+    target_link_libraries(${TARGET_NAME} INTERFACE UTILPP::simple_util_header)
     AddTargetInclude(${TARGET_NAME})
     add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
 
