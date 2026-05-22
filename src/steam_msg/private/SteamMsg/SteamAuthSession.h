@@ -22,8 +22,8 @@ public:
     void ClearCurrentAuth();
     void Tick(float delta);
 
-    FCommonHandlePtr BeginAuthSessionViaCredentials(std::string_view, std::string_view, ISteamClient::FSteamRequestFinishedDelegate, std::error_code&);
-    FCommonHandlePtr SendSteamGuardCode(std::string_view, ISteamClient::FSteamRequestFinishedDelegate, std::error_code&);
+    FCommonHandlePtr BeginAuthSessionViaCredentials(std::string_view, std::string_view, IFakeSteamClient::FSteamRequestFinishedDelegate, std::error_code&);
+    FCommonHandlePtr SendSteamGuardCode(std::string_view, IFakeSteamClient::FSteamRequestFinishedDelegate, std::error_code&);
 
 
     FSteamClient* Owner;
@@ -54,9 +54,9 @@ public:
 
     std::string Password;
     std::shared_ptr<SteamRequestHandle_t> AuthRequestHandlePtr;
-    ISteamClient::FSteamRequestFinishedDelegate SteamRequestFailedDelegate;
+    IFakeSteamClient::FSteamRequestFinishedDelegate SteamRequestFailedDelegate;
     std::shared_ptr<SteamRequestHandle_t> SteamGuardCodeRequestHandlePtr;
-    ISteamClient::FSteamRequestFinishedDelegate SteamGuardCodeDelegate;
+    IFakeSteamClient::FSteamRequestFinishedDelegate SteamGuardCodeDelegate;
     std::string SteamGuardCode;
 private:
     bool ReadAccountCache();

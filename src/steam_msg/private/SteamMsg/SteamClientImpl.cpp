@@ -618,7 +618,7 @@ void FSteamClient::Reconnect(bool bNeedDelay)
     }
 }
 
-ISteamClient* GetSteamClientSingleton() {
+IFakeSteamClient* GetFakeSteamClientSingleton() {
     static std::atomic<std::shared_ptr<FSteamClient>> AtomicPtr;
     auto oldptr = AtomicPtr.load();
     if (!oldptr) {

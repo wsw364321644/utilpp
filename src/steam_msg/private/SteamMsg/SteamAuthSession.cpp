@@ -73,7 +73,7 @@ void FSteamAuthSession::Tick(float delta)
     }
     }
 }
-FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, ISteamClient::FSteamRequestFinishedDelegate FailedDelegate, std::error_code& ec)
+FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, IFakeSteamClient::FSteamRequestFinishedDelegate FailedDelegate, std::error_code& ec)
 {
     if (AccountName == account && Password == password) {
         if (AuthSessionStatus== ESteamClientAuthSessionStatus::Authenticated) {
@@ -103,7 +103,7 @@ FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_v
     return AuthRequestHandlePtr;
 }
 
-FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, ISteamClient::FSteamRequestFinishedDelegate FinishedDelegate, std::error_code& ec)
+FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, IFakeSteamClient::FSteamRequestFinishedDelegate FinishedDelegate, std::error_code& ec)
 {
     if (AuthSessionStatus != ESteamClientAuthSessionStatus::PollingAuthSessionStatus) {
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_ClientStatusError), SteamClientErrorCategory());

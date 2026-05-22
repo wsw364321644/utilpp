@@ -22,12 +22,12 @@ typedef struct SteamAccoutnInfo_t {
 */
 
 
-class STEAM_MSG_EXPORT ISteamClient {
+class STEAM_MSG_EXPORT IFakeSteamClient {
 public:
     typedef std::function<void(FCommonHandlePtr,std::error_code)> FSteamRequestFinishedDelegate;
     typedef std::function<void(std::error_code)> FSteamRequestFailedDelegate;
     typedef std::function<void()> FSteamSuccessDelegate;
-    virtual ~ISteamClient() = default;
+    virtual ~IFakeSteamClient() = default;
     virtual bool Init(IWebsocketConnectionManager*,HttpManagerPtr) = 0;
     virtual void Disconnect() = 0;
     virtual void CancelRequest(FCommonHandlePtr) = 0;
@@ -49,4 +49,4 @@ public:
     DEFINE_EVENT_ONE_PARAM(OnWaitConfirmation, const std::unordered_set<ESteamClientAuthSessionGuardType>&);
 };
 
-STEAM_MSG_EXPORT ISteamClient* GetSteamClientSingleton();
+STEAM_MSG_EXPORT IFakeSteamClient* GetFakeSteamClientSingleton();

@@ -11,7 +11,7 @@
 #include "SteamMsg/SteamAuthSession.h"
 #include "SteamMsg/STEAMUSER.h"
 
-class FSteamClient :public ISteamClient {
+class FSteamClient :public IFakeSteamClient {
 public:
     friend class FSteamAuthSession;
     FSteamClient();
