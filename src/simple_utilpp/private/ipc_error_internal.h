@@ -1,5 +1,6 @@
 #pragma once
 #include "ipc_error.h"
+#include <std_ext.h>
 #include <system_error>
 namespace utilpp{
     class ipc_error_category : public std::error_category {

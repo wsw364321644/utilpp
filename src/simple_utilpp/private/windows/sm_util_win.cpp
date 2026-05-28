@@ -1,6 +1,5 @@
 #include "sm_util.h"
-#include <uv.h>
-#include <LoggerHelper.h>
+#include <simple_os_defs.h>
 
 typedef struct WindowsSharedMemoryInfo_t 
 {
@@ -9,7 +8,7 @@ typedef struct WindowsSharedMemoryInfo_t
     std::string Name;
 } WindowsSharedMemoryInfo_t;
 
-const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
+const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len, std::error_code& ec)
 {
     //int flags = UV_FS_O_RDWR | UV_FS_O_CREAT | UV_FS_O_TRUNC | UV_FS_O_FILEMAP;
     //int mode = S_IREAD | S_IWRITE;
@@ -27,6 +26,7 @@ const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
     li.QuadPart = len;
     DWORD low = li.LowPart;
     DWORD high = li.HighPart;
+    ec.clear();
     HANDLE HMapFile = CreateFileMappingA(
         INVALID_HANDLE_VALUE,    // use paging file
         NULL,                    // default security
@@ -37,7 +37,7 @@ const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
 
     if (HMapFile == NULL)
     {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not create file mapping object({}).\n", GetLastError());
+        ec = std::error_code(GetLastError(), std::system_category());
         return NullHandle;
     }
 
@@ -51,7 +51,7 @@ const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len)
     return CommonHandlePtr_t((intptr_t)info);
 }
 
-const CommonHandlePtr_t OpenSharedMemory(const char* name) {
+const CommonHandlePtr_t OpenSharedMemory(const char* name, std::error_code& ec) {
     //int flags = UV_FS_O_RDWR | UV_FS_O_FILEMAP| UV_FS_O_CREAT;
     //int mode = S_IREAD | S_IWRITE;
     //CommonHandle32_t out{ 0 };
@@ -65,7 +65,7 @@ const CommonHandlePtr_t OpenSharedMemory(const char* name) {
     //out = req.result;
     //return  out;
     HANDLE hMapFile;
-    
+    ec.clear();
     hMapFile = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS,   // read/write access
         FALSE,                 // do not inherit the name
@@ -73,7 +73,7 @@ const CommonHandlePtr_t OpenSharedMemory(const char* name) {
 
     if (hMapFile == NULL)
     {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not open file mapping object({}).", GetLastError());
+        ec = std::error_code(GetLastError(), std::system_category());
         return NullHandle;
     }
     auto info = new WindowsSharedMemoryInfo_t(hMapFile);
@@ -116,11 +116,13 @@ void UnmapSharedMemory(const CommonHandlePtr_t,void* ptr)
     UnmapViewOfFile(ptr);
 }
 
-bool WriteSharedMemory(const CommonHandlePtr_t handle, void* content, size_t len)
+bool WriteSharedMemory(const CommonHandlePtr_t handle, void* content, size_t len, std::error_code& ec)
 {
     if (!handle) {
+        ec = std::make_error_code(std::errc::invalid_argument);
         return  false;
     }
+    ec.clear();
     WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
     //uv_buf_t buf = uv_buf_init((char*)content, *len);
     //uv_fs_t write_req;
@@ -131,6 +133,7 @@ bool WriteSharedMemory(const CommonHandlePtr_t handle, void* content, size_t len
     //}
     //*len = write_req.result;
     if (info.FileSize < len) {
+        ec = std::make_error_code(std::errc::invalid_argument);
         return false;
     }
 
@@ -139,24 +142,23 @@ bool WriteSharedMemory(const CommonHandlePtr_t handle, void* content, size_t len
         0,
         0,
         len);
-
     if (pBuf == NULL)
     {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not map view of file({}).\n", GetLastError());
+        ec = std::error_code(GetLastError(), std::system_category());
         return false;
     }
-
-
     CopyMemory((PVOID)pBuf, content, len);
     UnmapViewOfFile(pBuf);
     return true;
 }
 
-bool ReadSharedMemory(const CommonHandlePtr_t handle, void* content, size_t* len)
+bool ReadSharedMemory(const CommonHandlePtr_t handle, void* content, size_t* len, std::error_code& ec)
 {
     if (!handle) {
+        ec = std::make_error_code(std::errc::invalid_argument);
         return  false;
     }
+    ec.clear();
     WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
     //uv_buf_t buf = uv_buf_init((char*)content, *len);
     //*len = 0;
@@ -176,7 +178,7 @@ bool ReadSharedMemory(const CommonHandlePtr_t handle, void* content, size_t* len
 
     if (pBuf == NULL)
     {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "Could not map view of file({}).", GetLastError());
+        ec = std::error_code(GetLastError(), std::system_category());
         return false;
     }
     CopyMemory( content, (PVOID)pBuf, *len);
