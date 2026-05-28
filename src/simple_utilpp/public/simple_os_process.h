@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <functional>
+#include <system_error>
+#include <std_ext.h>
 #include "simple_os_defs.h"
 #include "simple_export_defs.h"
 #include "simple_export_ppdefs.h"
@@ -20,3 +22,5 @@ typedef std::function<void(ProcessInfo_t&)> FProcessInfoFunc;
 SIMPLE_UTIL_EXPORT void iterate_process(FProcessInfoFunc);
 
 SIMPLE_UTIL_EXPORT pid_t get_proc_parent_id(pid_t id = std::numeric_limits<uint64_t>::max());
+
+SIMPLE_UTIL_EXPORT std::vector<save_memory_operator_string, allocator_save_memory_operator<save_memory_operator_string>> get_command_line(std::error_code& ec);

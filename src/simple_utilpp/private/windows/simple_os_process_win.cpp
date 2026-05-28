@@ -1,6 +1,8 @@
 #include "simple_os_process.h"
+#include <FunctionExitHelper.h>
+#include <string_convert.h>
 #include <TlHelp32.h>
-
+#include <shellapi.h>
 pid_t get_pid() {
     return ::GetCurrentProcessId();
 }
@@ -78,4 +80,25 @@ pid_t get_proc_parent_id(pid_t id)
 
     CloseHandle(handle);
     return parent_pid;
+}
+
+std::vector<save_memory_operator_string, allocator_save_memory_operator<save_memory_operator_string>> get_command_line(std::error_code& ec)
+{
+    std::vector<save_memory_operator_string, allocator_save_memory_operator<save_memory_operator_string>> out;
+    int argc;
+    ec.clear();
+    LPWSTR* argvW = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argvW == nullptr) {
+        return out;
+    }
+    FunctionExitHelper_t argvWExitHelper(
+        [argvW]() {
+            LocalFree(argvW);
+        }
+    );
+
+    for (int i = 0; i < argc; ++i) {
+        out.push_back(U16ToU8<save_memory_operator_string>(argvW[i], GetStringLengthW(argvW[i])));
+    }
+    return out;
 }
