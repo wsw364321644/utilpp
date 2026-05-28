@@ -214,7 +214,7 @@ template <typename T, typename U>
 constexpr bool operator!=(const allocator_save_memory_operator<T>& l, const allocator_save_memory_operator<U>& r) noexcept {
     return l.new_ptr != r.new_ptr;
 }
-using string_save_memory_operator = std::basic_string<char, std::char_traits<char>, allocator_save_memory_operator<char>>;
+using save_memory_operator_string = std::basic_string<char, std::char_traits<char>, allocator_save_memory_operator<char>>;
 
 
 #if (defined(_MSVC_LANG) &&_MSVC_LANG <= 202400L )
