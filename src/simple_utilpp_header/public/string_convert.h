@@ -128,17 +128,19 @@ inline size_t U16ToU8Buf(const char16_t* u16Str, size_t inStrLen, char* outBuf, 
 inline size_t U16ToU8Buf(const wchar_t* u16Str, size_t inStrLen, char* outBuf, size_t bufLen) {
     return U16ToU8Buf((const char16_t*)u16Str, inStrLen, outBuf, bufLen);
 }
-inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
-#ifdef WIN32
+
+template<class T=std::string>
+T U16ToU8(const char16_t* u16Str, size_t inStrLen) {
+    T result;
     if ((u16Str == NULL) || (*u16Str == L'\0'))
-        return "";
+        return result;
+#ifdef WIN32
     LPWSTR inStr = (LPWSTR)u16Str;
 #if (WINVER >= 0x0600)
     DWORD flags = WC_ERR_INVALID_CHARS;
 #else
     DWORD flags = 0;
 #endif
-
     int outStrLen = ::WideCharToMultiByte(CP_UTF8,
         flags,
         inStr,
@@ -148,11 +150,11 @@ inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
         NULL,
         NULL);
     if (outStrLen == 0)
-        return "";
+        return result;
 
     std::vector<char> outBuf;
     outBuf.assign(outStrLen+1, '\0');
-    auto result = ::WideCharToMultiByte(CP_UTF8,
+    auto iRes = ::WideCharToMultiByte(CP_UTF8,
         flags,
         inStr,
         static_cast<int>(inStrLen),
@@ -160,9 +162,10 @@ inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
         outStrLen,
         NULL,
         NULL);
-    if (result == 0)
-        return "";
-    return std::string(&outBuf[0]);
+    if (iRes == 0)
+        return result;
+    result.assign(&outBuf[0]);
+    return result;
 #else
     // std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
     // return cvt.to_bytes(u16Str);
@@ -173,11 +176,11 @@ inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
     char* out = dest_str;
     char* in = (char*)u16Str;
     size_t outbytes = sizeof(dest_str);
-    std::string result;
+    
     iconv_t conv = iconv_open("UTF-8", "utf-16le");
     if (conv == (iconv_t)-1)
     {
-        return std::string();
+        return result;
     }
     while (iconv(conv, &in, &inStrLen, &out, &outbytes) == (size_t)-1)
     {
@@ -198,18 +201,20 @@ inline std::string U16ToU8(const char16_t* u16Str, size_t inStrLen) {
     return result;
 #endif
 }
-
-inline std::string U16ToU8(const wchar_t* u16Str, size_t inStrLen) {
-    return U16ToU8((const char16_t*)u16Str, inStrLen);
+template<class T = std::string>
+T U16ToU8(const wchar_t* u16Str, size_t inStrLen) {
+    return U16ToU8<T>((const char16_t*)u16Str, inStrLen);
 }
-inline std::string U16ToU8(std::u16string_view strview) {
-    return U16ToU8(strview.data(), strview.size());
+template<class T = std::string>
+T U16ToU8(std::u16string_view strview) {
+    return U16ToU8<T>(strview.data(), strview.size());
 }
-
-inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
-#ifdef WIN32
+template<class T = std::u16string>
+T U8ToU16(const char* u8Str, size_t inStrLen) {
+    T result;
     if ((u8Str == NULL) || (*u8Str == '\0'))
-        return std::u16string();
+        return result;
+#ifdef WIN32
     int outStrLen = ::MultiByteToWideChar(CP_UTF8,
         MB_ERR_INVALID_CHARS,
         u8Str,
@@ -217,20 +222,19 @@ inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
         NULL,
         0);
     if (outStrLen == 0)
-        return std::u16string();
-
+        return result;
     std::vector<char16_t> outBuf;
-    outBuf.assign(outStrLen+1, L'\0');
-    int result = ::MultiByteToWideChar(CP_UTF8,
+    outBuf[outStrLen] = L'\0';
+    int iRes = ::MultiByteToWideChar(CP_UTF8,
         MB_ERR_INVALID_CHARS,
         u8Str,
         (int)inStrLen,
         (LPWSTR)&outBuf[0],
         outStrLen);
-    if (result == 0)
-        return std::u16string();
-
-    return std::u16string(&outBuf[0]);
+    if (iRes == 0)
+        return result;
+    result.assign(&outBuf[0]);
+    return result;
 #else
     // std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
     // return cvt.from_bytes(u8Str);
@@ -238,7 +242,6 @@ inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
     char* out = dest_str;
     char* in = (char*)u8Str;
     size_t outbytes = sizeof(dest_str);
-    std::u16string result;
     iconv_t conv = iconv_open("UTF-16le", "UTF-8");
     if (conv == (iconv_t)-1)
     {
@@ -273,13 +276,13 @@ inline std::u16string U8ToU16(const char* u8Str, size_t inStrLen) {
     return result;
 #endif
 }
-
-inline std::u16string U8ToU16(const char8_t* u8Str, size_t inStrLen) {
-    return U8ToU16((const char*)u8Str, inStrLen);
+template<class T = std::u16string>
+T U8ToU16(const char8_t* u8Str, size_t inStrLen) {
+    return U8ToU16<T>((const char*)u8Str, inStrLen);
 }
-
-inline std::u16string U8ToU16(std::u8string_view strview) {
-    return U8ToU16(strview.data(), strview.size());
+template<class T = std::u16string>
+T U8ToU16(std::u8string_view strview) {
+    return U8ToU16<T>(strview.data(), strview.size());
 }
 
 inline std::u32string U8ToU32(const char* u8Str) {
