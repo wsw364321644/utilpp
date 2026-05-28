@@ -134,7 +134,9 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const
     FunctionExitHelper_t deleteArgvs(
         [&]() {
             if (spawnData.Argvs) {
-                delete[] spawnData.Argvs;
+                if (_args) {
+                    delete[] spawnData.Argvs;
+                }
                 spawnData.Argvs = nullptr;
             }
         }
