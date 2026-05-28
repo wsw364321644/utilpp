@@ -11,8 +11,9 @@ SIMPLE_UTIL_API bool util_dll_path(char* path, size_t* size);
 SIMPLE_UTIL_API bool util_exe_path(char* path, size_t* size);
 SIMPLE_UTIL_API bool util_exe_wpath(wchar_t* path, size_t* size);
 SIMPLE_UTIL_API bool util_dll_wpath(wchar_t* path, size_t* size);
-SIMPLE_UTIL_API bool add_module_path(const char* path, size_t size);
-SIMPLE_UTIL_API bool add_module_wpath(const wchar_t* path, size_t size);
+SIMPLE_UTIL_API void* add_module_dir(const char* path, size_t size);
+SIMPLE_UTIL_API void* add_module_wdir(const wchar_t* path, size_t size);
+SIMPLE_UTIL_API void remove_module_dir(void* handle);
 
 SIMPLE_UTIL_API typedef void (*util_thread_func)(void*);
 SIMPLE_UTIL_API typedef void* util_thread_t;

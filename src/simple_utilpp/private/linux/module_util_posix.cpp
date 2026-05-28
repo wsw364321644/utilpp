@@ -137,6 +137,7 @@ bool util_exe_path(char* path, size_t* size)
 #endif
     return false;
 }
+
 bool util_exe_wpath(wchar_t* path, size_t* size)
 {
     size_t len = *size;
@@ -159,10 +160,14 @@ bool util_exe_wpath(wchar_t* path, size_t* size)
     return true;
 }
 
-bool add_module_path(const char* path, size_t size)
+typedef struct DirInfoPosix_t {
+    std::string dir;
+}DirInfoPosix_t;
+
+void* add_module_dir(const char* path, size_t size)
 {
     if (!path) {
-        return false;
+        return nullptr;
     }
     const char* current_path = getenv("LD_LIBRARY_PATH");
     FCharBuffer buf;
@@ -172,14 +177,35 @@ bool add_module_path(const char* path, size_t size)
         buf.Append(":");
         buf.Append(current_path);
     }
-    return setenv("LD_LIBRARY_PATH", buf.CStr(), 1)==0;
+    auto bres=setenv("LD_LIBRARY_PATH", buf.CStr(), 1)==0;
+    if(!bres) {
+        return nullptr;
+    }
+    auto p=new DirInfoPosix_t();
+    p->dir = std::string(path, size);
+    return p;
 }
 
-bool add_module_wpath(const wchar_t* path, size_t size)
+void* add_module_wdir(const wchar_t* path, size_t size)
 {
     if (!path) {
-        return false;
+        return nullptr;
     }
     auto u8str=U16ToU8(std::u16string_view((const char16_t*)path, size));
     return add_module_path(u8str.c_str(), u8str.length());
+}
+
+
+void remove_module_dir(void* handle)
+{
+    
+void remove_module_dir(void* handle)
+{
+    if (!handle) {
+        return;
+    }
+    auto pInfo=static_cast<DirInfoWin_t*>(handle);
+
+    delete pInfo;
+    return;
 }

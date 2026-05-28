@@ -82,27 +82,47 @@ bool util_exe_wpath(wchar_t* path, size_t* size)
     return true;
 }
 
-bool add_module_path(const char* path, size_t size)
+typedef struct DirInfoWin_t {
+    DLL_DIRECTORY_COOKIE  dir_cookie;
+}DirInfoWin_t;
+
+void* add_module_dir(const char* path, size_t size)
 {
     if (!path) {
-        return false;
+        return nullptr;
     }
     PathCache.SetPath(std::string_view(path, size));
     PathCache.ToPathW();
     auto wpath = PathCache.GetPrependFileNamespacesW();
-    return SetDllDirectoryW(wpath);
+    auto cookie = AddDllDirectory(wpath);
+    return new DirInfoWin_t(cookie);
 
 
 }
 
-bool add_module_wpath(const wchar_t* path, size_t size)
+void* add_module_wdir(const wchar_t* path, size_t size)
 {
     if (!path) {
-        return false;
+        return nullptr;
     }
     FCharBuffer buf;
     path = GetWStringViewCStr(std::wstring_view(path, size), buf);
-    return SetDllDirectoryW(path);
+    auto cookie = AddDllDirectory(path);
+    return new DirInfoWin_t(cookie);
+}
+
+void remove_module_dir(void* handle)
+{
+    if (!handle) {
+        return;
+    }
+    auto pInfo=static_cast<DirInfoWin_t*>(handle);
+    if (pInfo->dir_cookie) {
+        RemoveDllDirectory(pInfo->dir_cookie);
+        pInfo->dir_cookie = NULL;
+    }
+    delete pInfo;
+    return;
 }
 
 
