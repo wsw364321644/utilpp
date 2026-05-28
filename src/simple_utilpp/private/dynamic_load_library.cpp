@@ -20,8 +20,14 @@ void simple_dlsym_function_ptr(void* handle, const char* func_name, void** outpt
 namespace utilpp {
     void* simple_dlopen(std::u8string_view lib_name)
     {
-        std::string t = ConvertU8ViewToString(lib_name);
-        return ::simple_dlopen(t.c_str());
+        std::filesystem::path libPath(lib_name);
+        return simple_dlopen(libPath);
+    }
+
+    void* simple_dlopen(std::u16string_view lib_name)
+    {
+        std::filesystem::path libPath(lib_name);
+        return simple_dlopen(libPath);
     }
 
     void* simple_dlsym(void* handle, std::string_view func_name)

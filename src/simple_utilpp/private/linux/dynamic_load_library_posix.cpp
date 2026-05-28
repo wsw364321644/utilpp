@@ -4,6 +4,12 @@ typedef struct LibraryInfoPosix_t {
     void* lib_handle;
 }LibraryInfoPosix_t;
 
+namespace utilpp {
+    void* simple_dlopen(std::filesystem::path& libPath) {
+        return simple_dlopen(libPath.c_str());
+    }
+}
+
 void* simple_dlopen(const char* lib_name)
 {
     auto lib_handle = ::dlopen(lib_name, RTLD_LAZY);
