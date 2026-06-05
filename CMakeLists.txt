@@ -75,31 +75,13 @@ ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
 ImportProject(spdlog ${STATIC_CRT} STATIC ${SSH} TAG v1.17.0)
 ImportProject(concurrentqueue ${SSH} TAG master)
 ImportProject(magic_enum ${SSH} TAG master)
-
+ImportProject(taskflow ${SSH} TAG v4.0.0)
+ImportProject(ctre ${SSH} TAG v3.10.0)
 # FetchContent_Declare(
 # gcem
 # GIT_REPOSITORY git@github.com:kthohr/gcem.git
 # GIT_TAG 012ae73c6d0a2cb09ffe86475f5c6fba3926e200 # 1.18.0
 # )
-set(TF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(TF_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(TF_BUILD_PROFILER OFF CACHE BOOL "" FORCE)
-set(TF_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-  taskflow
-  GIT_REPOSITORY https://github.com/taskflow/taskflow.git
-  GIT_TAG v4.0.0
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(taskflow)
-
-FetchContent_Declare(
-  ctre
-  GIT_REPOSITORY https://github.com/hanickadot/compile-time-regular-expressions.git
-  GIT_TAG v3.10.0
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(ctre)
 
 add_subdirectory(src/simple_util_header)
 add_subdirectory(src/simple_util)
