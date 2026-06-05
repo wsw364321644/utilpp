@@ -19,3 +19,11 @@ SIMPLE_UTIL_API typedef void (*util_thread_func)(void*);
 SIMPLE_UTIL_API typedef void* util_thread_t;
 SIMPLE_UTIL_API util_thread_t util_create_thread(void* arg, util_thread_func);
 SIMPLE_UTIL_API void util_thread_join(util_thread_t  thread);
+
+enum EBinaryType {
+    FBT_NONE,
+    FBT_MZ,
+    FBT_PE,
+    FBT_ELF
+};
+SIMPLE_UTIL_API EBinaryType get_binary_type(const char* path,int8_t* pointer_bytes);

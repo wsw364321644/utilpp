@@ -1,11 +1,7 @@
-/**
- *   util_win.c
- */
-
 #include "module_util.h"
 #include "string_convert.h"
 #include "char_buffer_extension.h"
-#include <PathBuf.h>
+#include "PathBuf.h"
 #include <stdlib.h>
 #include <simple_os_defs.h>
 
