@@ -1,14 +1,14 @@
-#include "crypto_lib_rsa.h"
+#include "crypto_lib_aes.h"
 #include <FunctionExitHelper.h>
 #include <char_buffer_extension.h>
 #include <string_convert.h>
 #ifdef HAS_MbedTLS
-#include <mbedtls/base64.h>
+#include <mbedtls/cipher.h>
+
 #elif defined HAS_OpenSSL
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/param_build.h>
-#include "crypto_lib_aes.h"
 #endif
 
 static const size_t AES_BLOCK_SIZE = 256;
@@ -154,10 +154,12 @@ bool CryptoLibAESEncryptUpdate(CommonHandlePtr_t handle, std::span<const uint8_t
     bool bRes{ true };
     auto& Data = *(AESWorkData_t*)handle.ID;
     buf.Reverse(buf.Size() + src.size());
-    int outLen = buf.Capacity() - buf.Size();
+
 #ifdef HAS_MbedTLS
+    size_t outLen = buf.Capacity() - buf.Size();
     bRes = mbedtls_cipher_update(&Data.ctx, src.data(), src.size(), reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen) == 0;
 #elif defined HAS_OpenSSL
+    int outLen = buf.Capacity() - buf.Size();
     bRes = EVP_EncryptUpdate(Data.ctx, reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen,
         src.data(), src.size()) == 1;
 #endif
@@ -168,10 +170,12 @@ bool CryptoLibAESEncryptFinal(CommonHandlePtr_t handle, FCharBuffer& buf)
 {
     bool bRes{ true };
     auto& Data = *(AESWorkData_t*)handle.ID;
-    int outLen = buf.Capacity() - buf.Size();
+   
 #ifdef HAS_MbedTLS
+    size_t outLen = buf.Capacity() - buf.Size();
     bRes = mbedtls_cipher_finish(&Data.ctx, reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen)==0;
 #elif defined HAS_OpenSSL
+    int outLen = buf.Capacity() - buf.Size();
     bRes = EVP_EncryptFinal_ex(Data.ctx, reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen) == 1;
 #endif
     return bRes;
@@ -182,10 +186,12 @@ bool CryptoLibAESDecryptUpdate(CommonHandlePtr_t handle, std::span<const uint8_t
     bool bRes{ true };
     auto& Data = *(AESWorkData_t*)handle.ID;
     buf.Reverse(buf.Size() + src.size());
-    int outLen = buf.Capacity() - buf.Size();
+
 #ifdef HAS_MbedTLS
+    size_t outLen = buf.Capacity() - buf.Size();
     bRes = mbedtls_cipher_update(&Data.ctx, src.data(), src.size(), reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen) == 0;
 #elif defined HAS_OpenSSL
+    int outLen = buf.Capacity() - buf.Size();
     bRes = EVP_DecryptUpdate(Data.ctx, reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen,
         src.data(), src.size()) == 1;
 #endif
@@ -196,10 +202,12 @@ bool CryptoLibAESDecryptFinal(CommonHandlePtr_t handle, FCharBuffer& buf)
 {
     bool bRes{ true };
     auto& Data = *(AESWorkData_t*)handle.ID;
-    int outLen = buf.Capacity() - buf.Size();
+
 #ifdef HAS_MbedTLS
+    size_t outLen = buf.Capacity() - buf.Size();
     bRes = mbedtls_cipher_finish(&Data.ctx, reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen) == 0;
 #elif defined HAS_OpenSSL
+    int outLen = buf.Capacity() - buf.Size();
     bRes = EVP_DecryptFinal_ex(Data.ctx, reinterpret_cast<unsigned char*> (buf.Data() + buf.Size()), &outLen) == 1;
 #endif
     return bRes;

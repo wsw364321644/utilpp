@@ -123,7 +123,7 @@ if(UTILPP_ENABLE_WEBSOCKET)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  ImportProject(ValveFileVDF TAG v1.1.1)
+  ImportProject(ValveFileVDF ${SSH} TAG 9138f83d310fc3f656297f79a9b43d0a5d45cd4e)
   ImportProject(absl ${STATIC_CRT} ${SSH} TAG 20260107.1)
   ImportProject(Protobuf ${STATIC_CRT} ${SSH} TAG v34.0)
   ImportProject(re2 ${STATIC_CRT} ${SSH} TAG 2025-11-05)
