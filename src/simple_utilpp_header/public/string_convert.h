@@ -224,7 +224,7 @@ T U8ToU16(const char* u8Str, size_t inStrLen) {
     if (outStrLen == 0)
         return result;
     std::vector<char16_t> outBuf;
-    outBuf[outStrLen] = L'\0';
+    outBuf.assign(outStrLen + 1, '\0');
     int iRes = ::MultiByteToWideChar(CP_UTF8,
         MB_ERR_INVALID_CHARS,
         u8Str,
