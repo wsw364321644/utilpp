@@ -109,11 +109,15 @@ public:
     }
     void UpdatePathLen(size_t newSize = std::numeric_limits<size_t>::max()) {
         if (newSize == std::numeric_limits<size_t>::max()) {
-            PathLen = GetStringLength(GetBuf());
+            newSize = GetStringLength(GetBuf());
         }
-        else {
-            PathLen = newSize;
+        if (newSize> std::char_traits<char8_t>::length(FILE_NAMESPACES)) {
+            if (std::char_traits<char8_t>::compare(FILE_NAMESPACES, (const char8_t*)GetBufInternal(), std::char_traits<char8_t>::length(FILE_NAMESPACES)) == 0) {
+                newSize -= std::char_traits<char8_t>::length(FILE_NAMESPACES);
+                std::char_traits<char8_t>::move((char8_t*)GetBufInternal(), (char8_t*)GetBufInternal() + std::char_traits<char8_t>::length(FILE_NAMESPACES), newSize);
+            }
         }
+        PathLen = newSize;
         OnPathChanged(false);
     }
     wchar_t* GetBufInternalW() {
@@ -121,11 +125,15 @@ public:
     }
     void UpdatePathLenW(size_t newSize = std::numeric_limits<size_t>::max()) {
         if (newSize == std::numeric_limits<size_t>::max()) {
-            PathLenW = GetStringLengthW(GetBufW());
+            newSize = GetStringLengthW(GetBufW());
         }
-        else {
-            PathLenW = newSize;
+        if (newSize > std::char_traits<wchar_t>::length(FILE_NAMESPACESW)) {
+            if (std::char_traits<wchar_t>::compare(FILE_NAMESPACESW, GetBufInternalW(), std::char_traits<wchar_t>::length(FILE_NAMESPACESW)) == 0) {
+                newSize -= std::char_traits<wchar_t>::length(FILE_NAMESPACESW);
+                std::char_traits<wchar_t>::move(GetBufInternalW(), GetBufInternalW() + std::char_traits<wchar_t>::length(FILE_NAMESPACESW), newSize);
+            }
         }
+        PathLenW = newSize;
         OnPathChanged(true);
     }
     void AppendPath(std::string_view view) {
