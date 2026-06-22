@@ -13,7 +13,7 @@ bool util_dll_path(char* path, size_t* size)
     if (!size) {
         return false;
     }
-    PathCache.UpdatePathLenW(GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX) - 1);
+    PathCache.UpdatePathLenW(GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX));
     if (path) {
         *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.PathLenW, path, *size);
     }
@@ -33,12 +33,12 @@ bool util_dll_wpath(wchar_t* path, size_t* size)
         *size = GetModuleFileNameW((HINSTANCE)&__ImageBase, path, *size);
         auto err = GetLastError();
         if (err == ERROR_INSUFFICIENT_BUFFER) {
-            *size = GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX) - 1;
+            *size = GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX);
             return false;
         }
     }
     else {
-        *size = GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX) - 1;
+        *size = GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX);
     }
     return true;
 }
@@ -48,7 +48,7 @@ bool util_exe_path(char* path, size_t* size)
     if (!size) {
         return false;
     }
-    PathCache.UpdatePathLenW(GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX) - 1);
+    PathCache.UpdatePathLenW(GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX));
     if (path) {
         *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.PathLenW, path, *size);
     }
@@ -68,12 +68,12 @@ bool util_exe_wpath(wchar_t* path, size_t* size)
         *size = GetModuleFileNameW(NULL, path, *size);
         auto err = GetLastError();
         if (err == ERROR_INSUFFICIENT_BUFFER) {
-            *size = GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX) - 1;
+            *size = GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX);
             return false;
         }
     }
     else {
-        *size = GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX) - 1;
+        *size = GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX);
     }
     return true;
 }

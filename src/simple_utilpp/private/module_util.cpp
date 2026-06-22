@@ -26,7 +26,7 @@ EBinaryType get_binary_type(const char* path, int8_t* pointer_bytes) {
     }
 
     else if (header[0] == 'M' && header[1] == 'Z') {
-        while (false) {
+        while (true) {
             unsigned int pe_offset = header[0x3C] | (header[0x3D] << 8) | (header[0x3E] << 16) | (header[0x3F] << 24);
             if (pe_offset > 0 && pe_offset < 1024) {
                 file.Seek(pe_offset);
@@ -46,6 +46,7 @@ EBinaryType get_binary_type(const char* path, int8_t* pointer_bytes) {
                     }
                 }
             }
+            break;
         }
         if (out == EBinaryType::FBT_NONE) {
             out = EBinaryType::FBT_MZ;
