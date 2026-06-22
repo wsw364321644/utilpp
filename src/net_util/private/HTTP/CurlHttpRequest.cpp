@@ -351,6 +351,10 @@ void FCurlHttpRequest::Clear()
     LastServerRespondTime = {};
     bEnableRespContent = true;
     bCompleted = false;
+
+    HttpRequestCompleteDelegate = nullptr;
+    HttpRequestProgressDelegate = nullptr;
+    HttpThreadRespContentReceiveDelegate = nullptr;
 }
 
 HttpRequestCompleteDelegateType& FCurlHttpRequest::OnProcessRequestComplete()
