@@ -1,17 +1,18 @@
 #include "crypto_lib_sha.h"
 #include "FunctionExitHelper.h"
+
 #ifdef HAS_MbedTLS
 #include <mbedtls/psa_util.h>
 #include "mbedtls/ssl.h"
 #elif defined HAS_OpenSSL
 #include <openssl/evp.h>
 #endif
-
+#include <assert.h>
 typedef struct SHA256WorkData_t {
 #ifdef HAS_MbedTLS
     psa_status_t status;
     psa_algorithm_t alg{ PSA_ALG_SHA_256 };
-    psa_hash_operation_t operation{ PSA_HASH_OPERATION_INIT };
+    psa_hash_operation_t operation =PSA_HASH_OPERATION_INIT;
 #elif defined HAS_OpenSSL
     EVP_MD_CTX* ctx{};
 #endif
@@ -36,7 +37,7 @@ CommonHandlePtr_t CryptoLibSHA256Begin()
         return NullHandle;
     }
     Data.status = psa_hash_setup(&Data.operation, Data.alg);
-    if (status != PSA_SUCCESS) {
+    if (Data.status != PSA_SUCCESS) {
         return NullHandle;
     }
 #elif defined HAS_OpenSSL
@@ -70,7 +71,7 @@ void CryptoLibSHA256Reset(CommonHandlePtr_t handle)
     auto& Data = *(SHA256WorkData_t*)handle.ID;
 #ifdef HAS_MbedTLS
     Data.status = psa_hash_setup(&Data.operation, Data.alg);
-    if (status != PSA_SUCCESS) {
+    if (Data.status != PSA_SUCCESS) {
         assert(false);
     }
 #elif defined HAS_OpenSSL
@@ -102,7 +103,7 @@ bool CryptoLibSHA256Digest(CommonHandlePtr_t handle, std::span<uint8_t> buf, uin
     if (outlen) {
         *outlen = lengthOfHash;
     }
-    if (status != PSA_SUCCESS) {
+    if (Data.status != PSA_SUCCESS) {
         return false;
     }
     psa_hash_abort(&Data.operation);

@@ -71,7 +71,9 @@ typedef struct UVProcess_t {
     uv_process_t process{ 0 };
     uv_process_options_t options{ 0 };
     uv_stdio_container_t child_stdio[4]{};
-    uv_pipe_t pipe{};
+    uv_pipe_t in_pipe{};
+    uv_pipe_t out_pipe{};
+    uv_pipe_t err_pipe{};
     uv_async_t async{};
     FChildProcessManager* ChildProcessManager{ NULL };
     FChildProcessManager::FOnReadDelegate  OnReadDelegate;
@@ -255,7 +257,9 @@ void FChildProcessManager::ClearProcessData(CommonHandle32_t handle)
     }
     auto pp = pair->second.get();
     uv_close((uv_handle_t*)&pp->process, nullptr);
-    uv_close((uv_handle_t*)&pp->pipe, nullptr);
+    uv_close((uv_handle_t*)&pp->in_pipe, nullptr);
+    uv_close((uv_handle_t*)&pp->out_pipe, nullptr);
+    uv_close((uv_handle_t*)&pp->err_pipe, nullptr);
     //uv_close((uv_handle_t*)&pp->async, nullptr);
     uv_run(ploop, uv_run_mode::UV_RUN_DEFAULT);
     processes.erase(handle);
@@ -291,14 +295,20 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     if (p.bDetach) {
         flags |= UV_PROCESS_DETACHED;
     }
-    uv_pipe_init(ploop, &p.pipe, 0);
-    p.pipe.data = pp;
+    uv_pipe_init(ploop, &p.in_pipe, 0);
+    p.in_pipe.data = pp;
+    uv_pipe_init(ploop, &p.out_pipe, 0);
+    p.out_pipe.data = pp;
+    uv_pipe_init(ploop, &p.err_pipe, 0);
+    p.err_pipe.data = pp;
     p.process.data = pp;
     p.options.stdio_count = 3;
-    p.child_stdio[0].flags = UV_IGNORE;
-    p.child_stdio[2].flags = UV_IGNORE;
+    p.child_stdio[0].flags = (uv_stdio_flags)(UV_CREATE_PIPE | UV_READABLE_PIPE);
+    p.child_stdio[0].data.stream = (uv_stream_t*)&p.in_pipe;
     p.child_stdio[1].flags = (uv_stdio_flags)(UV_CREATE_PIPE | UV_WRITABLE_PIPE);
-    p.child_stdio[1].data.stream = (uv_stream_t*)&p.pipe;
+    p.child_stdio[1].data.stream = (uv_stream_t*)&p.out_pipe;
+    p.child_stdio[2].flags = (uv_stdio_flags)(UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+    p.child_stdio[2].data.stream = (uv_stream_t*)&p.err_pipe;
     p.options.stdio = p.child_stdio;
     p.options.file = pp->args[0];
     p.options.args = pp->args;
@@ -317,9 +327,14 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
         return false;
     }
 
-    if ((r = uv_read_start((uv_stream_t*)&p.pipe, alloc_buffer, on_read))) {
+    if ((r = uv_read_start((uv_stream_t*)&p.out_pipe, alloc_buffer, on_read))) {
         uv_close((uv_handle_t*)&pp->process, nullptr);
         SIMPLELOG_LOGGER_ERROR(nullptr,"{}", uv_strerror(r));
+        return false;
+    }
+    if ((r = uv_read_start((uv_stream_t*)&p.err_pipe, alloc_buffer, on_read))) {
+        uv_close((uv_handle_t*)&pp->process, nullptr);
+        SIMPLELOG_LOGGER_ERROR(nullptr, "{}", uv_strerror(r));
         return false;
     }
     return true;
