@@ -75,7 +75,7 @@ ImportProject(simdjson ${STATIC_CRT} ${SSH} TAG v4.2.4)
 ImportProject(spdlog ${STATIC_CRT} STATIC ${SSH} TAG v1.17.0)
 ImportProject(concurrentqueue ${SSH} TAG master)
 ImportProject(magic_enum ${SSH} TAG master)
-ImportProject(taskflow ${SSH} TAG v4.0.0)
+ImportProject(Taskflow ${SSH} TAG v4.0.0)
 ImportProject(ctre ${SSH} TAG v3.10.0)
 # FetchContent_Declare(
 # gcem
