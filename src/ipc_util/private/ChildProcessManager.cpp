@@ -20,15 +20,16 @@ public:
     FChildProcessManager();
     ~FChildProcessManager() {}
     static FChildProcessManager* GetInstance();
-    CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr);
-    CommonHandle32_t SpawnProcess(SpawnData_t);
+    CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr) override;
+    CommonHandle32_t SpawnProcess(SpawnData_t) override;
+    pid_t SpawnDetachProcess(SpawnData_t)override;
     typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
-    void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate);
+    void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate)override;
     typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;
-    void RegisterOnExit(CommonHandle32_t handle, FOnExitDelegate delegate);
+    void RegisterOnExit(CommonHandle32_t handle, FOnExitDelegate delegate)override;
     bool CheckIsFinished(CommonHandle32_t handle);
-    void Tick(float delSec);
-    void Run();
+    void Tick(float delSec)override;
+    void Run()override;
 
 private:
     void ClearProcessData(CommonHandle32_t handle);
@@ -49,7 +50,7 @@ typedef struct UVProcess_t {
             free(args);
             args = nullptr;
         }
-        if(cwd){
+        if (cwd) {
             free(cwd);
             cwd = nullptr;
         }
@@ -166,7 +167,7 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t spawnData)
     UVProcess_t* pp = pair.first->second.get();
     pp->ChildProcessManager = this;
     pp->handle = pair.first->first;
-    int argc = 1+ spawnData.Argc;
+    int argc = 1 + spawnData.Argc;
 
     if (!pp->AllocArgs(argc)) {
         return NullHandle;
@@ -191,6 +192,54 @@ CommonHandle32_t FChildProcessManager::SpawnProcess(SpawnData_t spawnData)
     }
     bres = true;
     return pair.first->first;
+}
+
+pid_t FChildProcessManager::SpawnDetachProcess(SpawnData_t spawnData)
+{
+    int r;
+    UVProcess_t p;
+    if (!p.AllocArgs(spawnData.Argc + 1)) {
+        return NULL;
+    }
+    if (!p.AllocArgsIndex(0, spawnData.Filepath.size() + 1)) {
+        return NULL;
+    }
+    memcpy(p.args[0], spawnData.Filepath.data(), spawnData.Filepath.size());
+    p.args[0][spawnData.Filepath.size()] = '\0';
+    for (int i = 0; i < spawnData.Argc; i++) {
+        auto& argv = spawnData.Argvs[i];
+        p.AllocArgsIndex(i + 1, argv.size() + 1);
+        memcpy(p.args[i + 1], argv.data(), argv.size());
+        p.args[i + 1][argv.size()] = '\0';
+    }
+
+    int flags = 0;
+    if (spawnData.bHideWindow) {
+        flags |= UV_PROCESS_WINDOWS_HIDE;
+    }
+    flags |= UV_PROCESS_DETACHED;
+
+    p.options.stdio_count = 3;
+    p.child_stdio[0].flags = UV_IGNORE;
+    p.child_stdio[1].flags = UV_IGNORE;
+    p.child_stdio[2].flags = UV_IGNORE;
+
+    p.options.stdio = p.child_stdio;
+    p.options.file = p.args[0];
+    p.options.args = p.args;
+    p.options.flags = flags;
+    if (!spawnData.CWD.empty()) {
+        p.options.cwd = spawnData.CWD.data();
+    }
+    if (r = uv_spawn(ploop, &p.process, &p.options)) {
+        if (r != uv_errno_t::UV_ENOENT) {
+            SIMPLELOG_LOGGER_ERROR(nullptr, "{}", uv_strerror(r));
+        }
+        return NULL;
+    }
+    auto pid = uv_process_get_pid(&p.process);
+    uv_unref((uv_handle_t*)&p.process);
+    return pid;
 }
 
 void FChildProcessManager::RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate)
@@ -288,13 +337,11 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     int r;
     UVProcess_t& UVProcess = *pp;
     auto& p = *pp;
-    int flags =0;
+    int flags = 0;
     if (p.bHideWindow) {
         flags |= UV_PROCESS_WINDOWS_HIDE;
     }
-    if (p.bDetach) {
-        flags |= UV_PROCESS_DETACHED;
-    }
+
     uv_pipe_init(ploop, &p.in_pipe, 0);
     p.in_pipe.data = pp;
     uv_pipe_init(ploop, &p.out_pipe, 0);
@@ -303,12 +350,14 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     p.err_pipe.data = pp;
     p.process.data = pp;
     p.options.stdio_count = 3;
+
     p.child_stdio[0].flags = (uv_stdio_flags)(UV_CREATE_PIPE | UV_READABLE_PIPE);
     p.child_stdio[0].data.stream = (uv_stream_t*)&p.in_pipe;
     p.child_stdio[1].flags = (uv_stdio_flags)(UV_CREATE_PIPE | UV_WRITABLE_PIPE);
     p.child_stdio[1].data.stream = (uv_stream_t*)&p.out_pipe;
     p.child_stdio[2].flags = (uv_stdio_flags)(UV_CREATE_PIPE | UV_WRITABLE_PIPE);
     p.child_stdio[2].data.stream = (uv_stream_t*)&p.err_pipe;
+
     p.options.stdio = p.child_stdio;
     p.options.file = pp->args[0];
     p.options.args = pp->args;
@@ -316,12 +365,12 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     p.options.exit_cb = [](uv_process_t* process, int64_t exit_status, int term_signal) {
         UVProcess_t& p = *(UVProcess_t*)process->data;
         p.ChildProcessManager->OnUvProcessClosed((UVProcess_t*)process->data, exit_status, term_signal);
-    };
+        };
     if (pp->cwd) {
         p.options.cwd = pp->cwd;
     }
     if (r = uv_spawn(ploop, &p.process, &p.options)) {
-        if (r!= uv_errno_t::UV_ENOENT) {
+        if (r != uv_errno_t::UV_ENOENT) {
             SIMPLELOG_LOGGER_ERROR(nullptr, "{}", uv_strerror(r));
         }
         return false;
@@ -329,7 +378,7 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
 
     if ((r = uv_read_start((uv_stream_t*)&p.out_pipe, alloc_buffer, on_read))) {
         uv_close((uv_handle_t*)&pp->process, nullptr);
-        SIMPLELOG_LOGGER_ERROR(nullptr,"{}", uv_strerror(r));
+        SIMPLELOG_LOGGER_ERROR(nullptr, "{}", uv_strerror(r));
         return false;
     }
     if ((r = uv_read_start((uv_stream_t*)&p.err_pipe, alloc_buffer, on_read))) {
@@ -339,7 +388,6 @@ bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
     }
     return true;
 }
-
 
 std::shared_ptr<IChildProcessManager> IChildProcessManager::GetSingleton()
 {

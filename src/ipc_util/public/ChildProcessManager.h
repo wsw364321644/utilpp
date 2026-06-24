@@ -2,6 +2,7 @@
 #include <handle.h>
 #include <string>
 #include <vector>
+#include <simple_os_defs.h>
 #include "ipc_util_export.h"
 
 typedef struct SpawnData_t {
@@ -10,13 +11,13 @@ typedef struct SpawnData_t {
     std::string_view* Argvs{ nullptr };
     int Argc{ 0 };
     bool bHideWindow{ false };
-    bool bDetach{ false };
 }SpawnData_t;
 ///use ChildProcessManager in one thread
 class IChildProcessManager {
 public:
     virtual CommonHandle32_t SpawnProcess(const char* filepath, const char** args = nullptr) = 0;
     virtual CommonHandle32_t SpawnProcess(SpawnData_t) = 0;
+    virtual pid_t SpawnDetachProcess(SpawnData_t) = 0;
     typedef std::function< void(CommonHandle32_t, const char*, int64_t) > FOnReadDelegate;
     virtual void RegisterOnRead(CommonHandle32_t handle, FOnReadDelegate delegate) = 0;
     typedef std::function< void(CommonHandle32_t, int64_t, int) > FOnExitDelegate;
