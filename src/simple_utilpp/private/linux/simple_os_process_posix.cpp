@@ -140,3 +140,77 @@ std::vector<save_memory_operator_string, allocator_save_memory_operator<save_mem
     }
     return out;
 }
+
+
+typedef struct ProcessInfoWin_t {
+    HANDLE HProcess;
+}ProcessInfoWin_t;
+CommonHandlePtr_t open_process(pid_t pid)
+{
+    // POSIX 标准没有 OpenProcess，通常通过 kill(pid, 0) 来探测进程是否存在
+    // 注意：如果进程存在但属于其他用户且非 root，kill 可能会返回 EPERM
+    if (kill(pid, 0) != 0) {
+        return NullHandle; 
+    }
+
+    auto ptr = new ProcessInfoPosix_t;
+    ptr->pid = pid;
+    ptr->is_reaped = false;
+    
+    return CommonHandlePtr_t(intptr_t(ptr));
+}
+
+void close_process_handle(CommonHandlePtr_t handle)
+{
+    if (!handle) {
+        return;
+    }
+    auto ptr = (ProcessInfoWin_t*)handle.ID;
+    CloseHandle(ptr->HProcess);
+    delete ptr;
+    handle.Reset();
+}
+
+bool is_process_exist(CommonHandlePtr_t handle)
+{
+   if (!handle) {
+        return false;
+    }
+    auto ptr = (ProcessInfoPosix_t*)handle.ID;
+
+    // 如果之前已经确认进程退出并被回收，直接返回 false
+    if (ptr->is_reaped) {
+        return false;
+    }
+
+    // 使用 WNOHANG 进行非阻塞探测，等效于 Windows 的 WaitForSingleObject(h, 0)
+    int status = 0;
+    pid_t result = waitpid(ptr->pid, &status, WNOHANG);
+
+    if (result == 0) {
+        // 进程仍在运行（等效于 WAIT_TIMEOUT）
+        return true;
+    } 
+    else if (result > 0) {
+        // 进程已退出并被系统回收（等效于 WAIT_OBJECT_0）
+        ptr->is_reaped = true;
+        return false;
+    } 
+    else {
+        // waitpid 返回 -1，发生错误
+        if (errno == ECHILD) {
+            // 该进程不是当前进程的子进程，或者已经被回收
+            // 此时无法通过 waitpid 判断，退化为使用 kill(pid, 0) 探测
+            if (kill(ptr->pid, 0) == 0) {
+                return true; // 进程还在，只是不归我们管
+            } else {
+                ptr->is_reaped = true;
+                return false; // 进程已退出
+            }
+        } else {
+            // 其他错误（如 EINTR），保守返回 true 或打印日志
+            // assert("is_process_exist waitpid error: %s\n", strerror(errno));
+            return true; 
+        }
+    }
+}

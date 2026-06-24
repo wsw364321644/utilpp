@@ -3,6 +3,7 @@
 #include <string_convert.h>
 #include <TlHelp32.h>
 #include <shellapi.h>
+#include <assert.h>
 pid_t get_pid() {
     return ::GetCurrentProcessId();
 }
@@ -101,4 +102,49 @@ std::vector<save_memory_operator_string, allocator_save_memory_operator<save_mem
         out.push_back(U16ToU8<save_memory_operator_string>(argvW[i], GetStringLengthW(argvW[i])));
     }
     return out;
+}
+
+typedef struct ProcessInfoWin_t {
+    HANDLE hProcess;
+}ProcessInfoWin_t;
+CommonHandlePtr_t open_process(pid_t pid)
+{
+    auto handle = OpenProcess(SYNCHRONIZE, false, pid);
+    if (handle == NULL) {
+        return NullHandle;
+    }
+    auto ptr = new ProcessInfoWin_t;
+    ptr->hProcess = handle;
+    return CommonHandlePtr_t(intptr_t(ptr));
+}
+
+void close_process_handle(CommonHandlePtr_t handle)
+{
+    if (!handle) {
+        return;
+    }
+    auto ptr = (ProcessInfoWin_t*)handle.ID;
+    CloseHandle(ptr->hProcess);
+    delete ptr;
+    handle.Reset();
+}
+
+bool is_process_exist(CommonHandlePtr_t handle)
+{
+    if (!handle) {
+        return false;
+    }
+    auto ptr = (ProcessInfoWin_t*)handle.ID;
+    DWORD result = WaitForSingleObject(ptr->hProcess, 0);
+    if (result == WAIT_OBJECT_0) {
+        return false;
+    }
+    else if (result == WAIT_TIMEOUT) {
+        return true;
+    }
+    else {
+        GetLastError();
+        assert("is_process_exist WaitForSingleObject error");
+        return false;
+    }
 }
