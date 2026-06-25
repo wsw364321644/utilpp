@@ -312,7 +312,7 @@ void FChildProcessManager::ClearProcessData(CommonHandle32_t handle)
     //uv_close((uv_handle_t*)&pp->async, nullptr);
     uv_run(ploop, uv_run_mode::UV_RUN_DEFAULT);
     processes.erase(handle);
-    currentHandle = 0;
+    currentHandle = NullHandle;
 }
 
 void FChildProcessManager::OnUvProcessClosed(UVProcess_t* process, int64_t exit_status, int term_signal)
