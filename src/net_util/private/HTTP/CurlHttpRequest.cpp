@@ -335,6 +335,7 @@ void FCurlHttpRequest::Clear()
     Content.Clear();
     Headers.clear();
     Queries.clear();
+    MimeParts.clear();
     Verb.clear();
     URL.clear();
     Host.clear();
