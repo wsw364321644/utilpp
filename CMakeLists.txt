@@ -16,31 +16,33 @@ option(UTILPP_ENABLE_STEAM "enable steam_util" OFF)
 option(UTILPP_ENABLE_WEBSOCKET "enable websocket_util" OFF)
 option(UTILPP_ENABLE_ZLIB "enable module depend on zlib" OFF)
 option(UTILPP_ENABLE_CPUID "enable system info cpuid feature" OFF)
+option(UTILPP_ENABLE_ARCHIVE "enable archive" OFF)
+option(UTILPP_WITH_STATIC_LIBARCHIVE "use static libarchive" ON)
 option(UTILPP_DISABLE_INSTALL "disable installation" OFF)
 
 if(UTILPP_STATIC_CRT)
-  set(STATIC_CRT STATIC_CRT)
+	set(STATIC_CRT STATIC_CRT)
 else()
-  unset(STATIC_CRT)
+	unset(STATIC_CRT)
 endif()
 
 if(UTILPP_GIT_SSH)
-  set(SSH SSH)
+	set(SSH SSH)
 else()
-  unset(SSH)
+	unset(SSH)
 endif()
 
 # option(UTILPP_ENABLE_LOG "ENABLE UTIL LOG." OFF)
 if(PROJECT_IS_TOP_LEVEL)
-  if(UTILPP_STATIC_CRT)
-    if(MSVC)
-      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-      add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    endif()
+	if(UTILPP_STATIC_CRT)
+		if(MSVC)
+			set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+			add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+		endif()
 
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
-  endif()
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
+		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
+	endif()
 endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
@@ -48,9 +50,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 
 FetchContent_Declare(
-  OCmakeUtil
-  GIT_REPOSITORY https://github.com/wsw364321644/OCmakeUtil.git
-  GIT_TAG main
+	OCmakeUtil
+	GIT_REPOSITORY
+	https://github.com/wsw364321644/OCmakeUtil.git
+	GIT_TAG
+	main
 )
 FetchContent_MakeAvailable(OCmakeUtil)
 include(ResourceDownload)
@@ -58,16 +62,8 @@ include(ProjectImport)
 include(ProgramImport)
 include(TargetImport)
 
-if(UTILPP_ENABLE_ZLIB)
-  ImportProject(ZLIB STATIC ${STATIC_CRT} ${SSH} FIND TAG v1.3.2)
-endif()
-
 if(UTILPP_ENABLE_CPUID)
-  ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
-endif()
-
-if(UTILPP_ENABLE_NET)
-  ImportProject(CapnProto ${STATIC_CRT} STATIC ${SSH} TAG v1.3.0)
+	ImportProject(cpuid ${STATIC_CRT} STATIC ${SSH} TAG v0.8.0)
 endif()
 
 ImportProject(RapidJSON ${SSH} TAG origin/master)
@@ -77,6 +73,7 @@ ImportProject(concurrentqueue ${SSH} TAG master)
 ImportProject(magic_enum ${SSH} TAG master)
 ImportProject(Taskflow ${SSH} TAG v4.0.0)
 ImportProject(ctre ${SSH} TAG v3.10.0)
+ImportProject(wildmatch ${SSH} TAG main)
 # FetchContent_Declare(
 # gcem
 # GIT_REPOSITORY git@github.com:kthohr/gcem.git
@@ -94,61 +91,79 @@ add_subdirectory(src/crypto_lib_helper)
 add_subdirectory(src/system_info_util)
 
 if(UTILPP_ENABLE_ZLIB)
-  add_subdirectory(src/simple_hash)
+	ImportProject(ZLIB STATIC ${STATIC_CRT} ${SSH} FIND TAG v1.3.2)
+	add_subdirectory(src/simple_hash)
 endif()
 
 if(WIN32)
-  add_subdirectory(src/windows_util)
+	add_subdirectory(src/windows_util)
+endif()
+
+if(UTILPP_ENABLE_ARCHIVE)
+	ImportProject(LibArchive ${STATIC_CRT} ${SSH} TAG v3.8.8)
+	add_subdirectory(src/simple_archive)
 endif()
 
 if(UTILPP_ENABLE_IPC)
-  ImportProject(libuv ${STATIC_CRT} ${SSH} TAG v1.51.0)
-  add_subdirectory(src/ipc_util)
+	ImportProject(libuv ${STATIC_CRT} ${SSH} TAG v1.51.0)
+	add_subdirectory(src/ipc_util)
 endif()
 
 if(UTILPP_ENABLE_NET)
-  if(UTILPP_WITH_STATIC_LIBCURL)
-    set(STATIC STATIC)
-  else()
-    unset(STATIC)
-  endif()
-
-  ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} TAG curl-8_18_0)
-  add_subdirectory(src/net_util)
+	if(UTILPP_WITH_STATIC_LIBCURL)
+		set(STATIC STATIC)
+	else()
+		unset(STATIC)
+	endif()
+	ImportProject(CapnProto ${STATIC_CRT} STATIC ${SSH} TAG v1.3.0)
+	ImportProject(CURL ${STATIC_CRT} ${STATIC} ${SSH} TAG curl-8_18_0)
+	add_subdirectory(src/net_util)
 endif()
 
 if(UTILPP_ENABLE_WEBSOCKET)
-  ImportProject(libwebsockets ${STATIC_CRT} SSH TAG v4.5.2)
-  add_subdirectory(src/websocket_util)
+	ImportProject(libwebsockets ${STATIC_CRT} SSH TAG v4.5.2)
+	add_subdirectory(src/websocket_util)
 endif()
 
 if(UTILPP_ENABLE_STEAM)
-  ImportProject(ValveFileVDF ${SSH} TAG 9138f83d310fc3f656297f79a9b43d0a5d45cd4e)
-  ImportProject(absl ${STATIC_CRT} ${SSH} TAG 20260107.1)
-  ImportProject(Protobuf ${STATIC_CRT} ${SSH} TAG v34.0)
-  ImportProject(re2 ${STATIC_CRT} ${SSH} TAG 2025-11-05)
-  ImportProgram(SteamLanguageParser ${SSH} TAG origin/master) # path too long
-  ImportProject(steamdatapp ${STATIC_CRT} ${SSH} TAG main)
+	ImportProject(ValveFileVDF ${SSH} TAG 9138f83d310fc3f656297f79a9b43d0a5d45cd4e)
+	ImportProject(absl ${STATIC_CRT} ${SSH} TAG 20260107.1)
+	ImportProject(Protobuf ${STATIC_CRT} ${SSH} TAG v34.0)
+	ImportProject(re2 ${STATIC_CRT} ${SSH} TAG 2025-11-05)
+	ImportProgram(SteamLanguageParser ${SSH} TAG origin/master) # path too long
+	ImportProject(steamdatapp ${STATIC_CRT} ${SSH} TAG main)
 
-  add_subdirectory(src/steam_util)
+	add_subdirectory(src/steam_util)
 endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
-  set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  FetchContent_Declare(
-    jwt-cpp
-    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
-    GIT_TAG v0.7.1
-    GIT_SHALLOW TRUE
-  )
-  FetchContent_MakeAvailable(jwt-cpp)
-  ImportProject(SQLite3 ${STATIC_CRT} URL https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip)
-  ImportProject(sqlpp23 ${SSH} TAG 0.66)
-  ImportProgram(Python3 URL https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip)
+	set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+	FetchContent_Declare(
+		jwt-cpp
+		GIT_REPOSITORY
+		https://github.com/Thalhammer/jwt-cpp.git
+		GIT_TAG
+		v0.7.1
+		GIT_SHALLOW
+		TRUE
+	)
+	FetchContent_MakeAvailable(jwt-cpp)
+	ImportProject(
+		SQLite3
+		${STATIC_CRT}
+		URL
+		https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip
+	)
+	ImportProject(sqlpp23 ${SSH} TAG 0.66)
+	ImportProgram(
+		Python3
+		URL
+		https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip
+	)
 
-  add_subdirectory(src/steam_msg)
+	add_subdirectory(src/steam_msg)
 endif()
 
 if(NOT UTILPP_DISABLE_INSTALL)
-  ExportFromInstall(${PROJECT_NAME})
+	ExportFromInstall(${PROJECT_NAME})
 endif()
