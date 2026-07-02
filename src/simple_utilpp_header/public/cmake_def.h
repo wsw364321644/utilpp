@@ -1,0 +1,2 @@
+#pragma once
+constexpr char IMPORT_PROJECT_EXTERNAL_DIR_STR[] = "IMPORT_PROJECT_EXTERNAL_DIR";

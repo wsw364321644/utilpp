@@ -15,10 +15,10 @@ bool util_dll_path(char* path, size_t* size)
     }
     PathCache.UpdatePathLenW(GetModuleFileNameW((HINSTANCE)&__ImageBase, PathCache.GetBufInternalW(), PATH_MAX));
     if (path) {
-        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.PathLenW, path, *size);
+        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.GetPathLenW(), path, *size);
     }
     else {
-        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.PathLenW, nullptr, 0);
+        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.GetPathLenW(), nullptr, 0);
         return false;
     }
     return true;
@@ -50,10 +50,10 @@ bool util_exe_path(char* path, size_t* size)
     }
     PathCache.UpdatePathLenW(GetModuleFileNameW(NULL, PathCache.GetBufInternalW(), PATH_MAX));
     if (path) {
-        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.PathLenW, path, *size);
+        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.GetPathLenW(), path, *size);
     }
     else {
-        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.PathLenW, nullptr, 0);
+        *size = U16ToU8Buf((const char16_t*)PathCache.GetBufW(), PathCache.GetPathLenW(), nullptr, 0);
         return false;
     }
     return true;
@@ -88,7 +88,6 @@ void* add_module_dir(const char* path, size_t size)
         return nullptr;
     }
     PathCache.SetPath(std::string_view(path, size));
-    PathCache.ToPathW();
     auto wpath = PathCache.GetPrependFileNamespacesW();
     auto cookie = AddDllDirectory(wpath);
     return new DirInfoWin_t(cookie);

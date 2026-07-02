@@ -47,6 +47,7 @@ typedef void(* fnfree)(void* const block);
 #define ERR_ARGUMENT		(-2)	// argument error 
 #define ERR_FILE			(-3)	// file operation related
 #define ERR_METAPARSE		(-4)	// faile to parse mf file
+#define ERR_PENDING		(-5)	// wait data
 
 
 

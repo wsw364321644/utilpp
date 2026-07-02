@@ -15,7 +15,7 @@
 
 typedef struct DirEntry_t
 {
-    const char8_t* Name{ nullptr };
+    //const char8_t* Name{ nullptr };
     uint64_t Size{ 0 };
     bool bDir;
     uint32_t Depth{ 0 };
@@ -52,9 +52,6 @@ public:
     static bool SetWritable(std::u8string_view  path);
     static bool SetWritable(FPathBuf& pathBuf);
 
-    /// create directory util last separator 
-    /// pass a/b/c will create folder a/b
-    /// pass a/b/c/ will create folder a/b/c/
     static bool CreateDir(std::u8string_view  path);
     static bool CreateDir(FPathBuf& pathBuf);
     static bool Delete(std::u8string_view  path);
@@ -62,6 +59,14 @@ public:
     static bool Rename(std::u8string_view  oldpath, std::u8string_view  path);
     static bool Rename(FPathBuf& pathBuf, FPathBuf& newfilePathBuf);
     typedef std::function<bool(DirEntry_t&, uint64_t)> CopyProgressCallback;
+    /// <summary>
+    /// copy file to new file path
+    /// copy files under old folder into new folder
+    /// </summary>
+    /// <param name="oldpath"></param>
+    /// <param name="path"></param>
+    /// <param name="cb"></param>
+    /// <returns></returns>
     static bool Copy(std::u8string_view  oldpath, std::u8string_view  path, CopyProgressCallback cb= nullptr);
     static bool Copy(FPathBuf& pathBuf, FPathBuf& newfilePathBuf, CopyProgressCallback cb= nullptr);
     static F_HANDLE RecursiveCreateFile(std::u8string_view  path, uint32_t flag);
@@ -71,6 +76,9 @@ public:
     typedef std::function<bool(DirEntry_t&)> IterateDirCallback;
     static bool IterateDir(std::u8string_view  path, IterateDirCallback cb, uint32_t depth = std::numeric_limits<uint32_t>::max(), EIterateDirOrder IterateDirOrder= EIterateDirOrder::IDO_NLR);
     static bool IterateDir(FPathBuf& pathBuf, IterateDirCallback cb, uint32_t depth = std::numeric_limits<uint32_t>::max(), EIterateDirOrder IterateDirOrder = EIterateDirOrder::IDO_NLR);
+    typedef std::function<void(DirEntry_t&,bool& bExit,bool& bEnter)> IterateDirRecursivelyCallback;
+    static bool IterateDirRecursively(std::u8string_view path, IterateDirRecursivelyCallback cb);
+    static bool IterateDirRecursively(FPathBuf& pathBuf, IterateDirRecursivelyCallback cb);
 
     static bool IsValidFilename(const char* filenameStr, int32_t length);
     static bool IsValidPath(const char* pathStr, int32_t length);

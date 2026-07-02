@@ -501,7 +501,6 @@ namespace utilpp {
             PACL                 pacl{ 0 };
             PSECURITY_DESCRIPTOR psd;
             ec.clear();
-            pathBuf.ToPathW();
             auto pathw = pathBuf.GetPrependFileNamespacesW();
             dw = GetNamedSecurityInfoW(pathw, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION |
                 OWNER_SECURITY_INFORMATION |
@@ -564,7 +563,6 @@ namespace utilpp {
 
         bool GrantAccessControlForUser(FPathBuf& pathBuf, EUserType type, uint64_t mask, std::error_code& ec)
         {
-            pathBuf.ToPathW();
             auto pathw = pathBuf.GetPrependFileNamespacesW();
             // Type of object, file or directory.  Here we test on directory
             SE_OBJECT_TYPE ObjectType = SE_FILE_OBJECT;
@@ -600,18 +598,18 @@ namespace utilpp {
             username = (char*)malloc(S_INFO_BUFFER_SIZE);
             uint64_t count = S_INFO_BUFFER_SIZE;
             wchar_t* interpath{ NULL };
-            if (pathBuf.PathLenW == 0)
+            if (pathBuf.GetPathLenW() == 0)
             {
                 ec = std::make_error_code(std::errc::invalid_argument);
                 return false;
             }
             else {
-                interpath = (wchar_t*)malloc((pathBuf.PathLenW + 1) * sizeof(wchar_t));
+                interpath = (wchar_t*)malloc((pathBuf.GetPathLenW() + 1) * sizeof(wchar_t));
                 if (!interpath) {
                     return false;
                 }
-                memcpy(interpath, pathw, pathBuf.PathLenW * sizeof(wchar_t));
-                interpath[pathBuf.PathLenW] = L'\0';
+                memcpy(interpath, pathw, pathBuf.GetPathLenW() * sizeof(wchar_t));
+                interpath[pathBuf.GetPathLenW()] = L'\0';
             }
             FunctionExitHelper_t exithelper(
                 [&]() {
@@ -693,7 +691,6 @@ namespace utilpp {
         }
         bool GetVersionInfo(FPathBuf& pathBuf, FileVersionInfo_t& info, std::error_code& ec)
         {
-            pathBuf.ToPathW();
             auto pathw = pathBuf.GetPrependFileNamespacesW();
             VS_FIXEDFILEINFO* pFileInfoLocal = NULL;
             UINT puLenFileInfoLocal = 0;

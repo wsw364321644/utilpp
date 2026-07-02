@@ -71,7 +71,6 @@ CommonHandle32_t FFilesystemMonitorWin::Monitor(std::u8string_view pathstr, uint
     }
     
     PathBuf.SetPath((char*)pathstr.data(), pathstr.length());
-    PathBuf.ToPathW();
     auto pathw = PathBuf.GetPrependFileNamespacesW();
     auto DirHandle = CreateFileW(
         pathw,

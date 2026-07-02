@@ -61,8 +61,7 @@ int32_t FRawFile::InternalOpen(FPathBuf& filePath, uint32_t uOpenFlag, uint64_t 
 
 int32_t FRawFile::Open(FPathBuf& pathBuf, uint32_t uOpenFlag, uint64_t uExpectSize)
 {
-    pathBuf.ToPathW();
-    if (pathBuf.PathLenW == 0)
+    if (pathBuf.GetPathLenW() == 0)
     {
         return ERR_ARGUMENT;
     }
@@ -79,14 +78,12 @@ int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64
         return ERR_ARGUMENT;
     }
     filePath.SetPath(ConvertU8ViewToView(lpFileName).data(), lpFileName.size());
-    filePath.ToPathW();
     return InternalOpen(filePath,uOpenFlag, uExpectSize);
 }
 
 const char* FRawFile::GetFilePath()
 {
     GetFilePath(PathBuf);
-    PathBuf.ToPath();
     return PathBuf.GetBuf();
 }
 
@@ -150,6 +147,13 @@ int32_t FRawFile::Read(void* pBuf, uint32_t size, uint32_t& outreaded)
     BOOL res = ReadFile(handle_, pBuf, size, &readed, NULL);
     if (FALSE == res)
     {
+        auto dwError = GetLastError();
+        if (dwError == ERROR_IO_PENDING) {
+            return ERR_PENDING;
+        }
+        if (dwError == ERROR_HANDLE_EOF) {
+            return ERR_SUCCESS;
+        }
         SIMPLELOG_LOGGER_WARN(nullptr, "Read file: {} error ...", GetFilePath());
         return ERR_FILE;
     }
