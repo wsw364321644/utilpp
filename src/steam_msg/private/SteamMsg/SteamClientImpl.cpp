@@ -10,8 +10,9 @@
 #include <string_convert.h>
 #include <os_sock_helper.h>
 #include <LoggerHelper.h>
+#include <simple_error.h>
 
-
+#include <sqlite3.h>
 #include <steam/steammessages_clientserver_login.pb.h>
 #include <steam/steammessages_clientserver.pb.h>
 #include <steam/steammessages_store.steamclient.pb.h>
@@ -30,16 +31,9 @@ FSteamClient::FSteamClient() :SteamAuthSession(this)
 
 FSteamClient::~FSteamClient()
 {
-    //if (pSelectAccountPSO) {
-    //    sqlite3_finalize(pSelectAccountPSO);
-    //}
-
-    //if (pSQLite) {
-    //    sqlite3_close(pSQLite);
-    //}
 }
 
-bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManager, HttpManagerPtr _pHttpManager)
+bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManager, HttpManagerPtr _pHttpManager, std::error_code& ec)
 {
     if (!_pWebsocketConnectionManager || !_pHttpManager) {
         return false;
@@ -69,24 +63,59 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
         }
     );
 
-    sqlite3* pSQLite{ nullptr };
-    auto ires= sqlite3_open_v2(SQL_FILE_NAME, &pSQLite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
-    if (ires != SQLITE_OK) {
+
+    Sqlite.open(soci::sqlite3, SQL_FILE_NAME);
+    if (!Sqlite.is_connected()) {
+        ec = std::make_error_code(std::errc::device_or_resource_busy);
         return false;
     }
-    FunctionExitHelper_t sqliteExit(
-        [&]() {
-            sqlite3_close(pSQLite);
+    try {
+        if (ResetUnmatchedDB()) {
+            Sqlite << SQL_CREATE_STEAM_CLIENT_TABLE;
+            Sqlite << R"(
+INSERT INTO metadata (version) VALUES (:v);
+)", soci::use(DB_VERSION, "v");
         }
-    );
-    char* zErrMsg = 0;
-    ires = sqlite3_exec(pSQLite, SQL_CREATE_STEAM_CLIENT_TABLE, SqliteCB, 0, &zErrMsg);
-    if (ires != SQLITE_OK) {
-        SIMPLELOG_LOGGER_ERROR(nullptr, "Create db failed {}", zErrMsg);
-        LogStatus = ESteamClientLogStatus::Error;
+    }
+    catch (soci::sqlite3_soci_error const& e) {
+        if (e.result() == SQLITE_CONSTRAINT) {
+            if (e.extended_result() == SQLITE_CONSTRAINT_DATATYPE) {
+                //std::cout << "Value is inconsistent with the column type.\n";
+            }
+            else {
+                //std::cout << "Constraint violation detected.\n";
+            }
+        }
+        else {
+            //std::cout << "Another SQLite3 error " << e.what() << ", error code: " << e.result() << std::endl;
+        }
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
         return false;
     }
-    ;
+    catch (soci::soci_error const& e) {
+        //std::cout << "SOCI error: " << e.what() << std::endl;
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+        return false;
+    }
+
+    SteamAuthSession.Init(ec);
+    //sqlite3* pSQLite{ nullptr };
+    //auto ires= sqlite3_open_v2(SQL_FILE_NAME, &pSQLite, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
+    //if (ires != SQLITE_OK) {
+    //    return false;
+    //}
+    //FunctionExitHelper_t sqliteExit(
+    //    [&]() {
+    //        sqlite3_close(pSQLite);
+    //    }
+    //);
+    //char* zErrMsg = 0;
+    //ires = sqlite3_exec(pSQLite, SQL_CREATE_STEAM_CLIENT_TABLE, SqliteCB, 0, &zErrMsg);
+    //if (ires != SQLITE_OK) {
+    //    SIMPLELOG_LOGGER_ERROR(nullptr, "Create db failed {}", zErrMsg);
+    //    LogStatus = ESteamClientLogStatus::Error;
+    //    return false;
+    //}
 
     //auto selectSql=std::format(SQL_SELECT_FROM_STEAM_USER_BY_ACCOUNTNAME, "RefreshToken");
     //ires = sqlite3_prepare_v2(pSQLite, selectSql.c_str(), -1, &pSelectAccountPSO, 0);
@@ -97,10 +126,7 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
     //if (ires != SQLITE_OK) {
     //    return false;
     //}
-    auto config = std::make_shared<sqlpp::sqlite3::connection_config>();
-    config->path_to_database = SQL_FILE_NAME;
-    config->flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
-    DBConnectionPool.initialize(config, 10);
+
     return true;
 }
 
@@ -334,14 +360,6 @@ void FSteamClient::HeartBeat(std::error_code& ec)
         return;
     }
     pWSClient->SendData(bufview.data(), bufview.size());
-}
-
-sqlpp::sqlite3::pooled_connection& FSteamClient::GetDBConnection()
-{
-    if (!DBConnection.has_value()) {
-        DBConnection = DBConnectionPool.get();
-    }
-    return DBConnection.value();
 }
 
 bool FSteamClient::Connect()
@@ -590,6 +608,56 @@ void FSteamClient::OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWS
     }
     }
 
+}
+
+bool FSteamClient::ResetUnmatchedDB()
+{
+    bool tableExists = false;
+    bool bReset = false;
+    FunctionExitHelper_t resetDBHelper(
+        [&]() {
+            if (bReset) {
+                DBDropTable();
+            }
+        }
+    );
+    // Check if metadata table exists (SQLite specific query)
+    try {
+        int count = 0;
+        Sqlite << "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='metadata';",
+            soci::into(count);
+        tableExists = (count > 0);
+    }
+    catch (...) {
+        tableExists = false;
+    }
+
+    if (tableExists) {
+        int dbVersion = 0;
+        try {
+            Sqlite << "SELECT version FROM metadata LIMIT 1;", soci::into(dbVersion);
+        }
+        catch (...) {
+            bReset = true;
+            return bReset; // Table exists but structure is wrong or empty
+        }
+        if (dbVersion != DB_VERSION) {
+            bReset = true;
+            return bReset; // Version mismatch
+        }
+    }
+    else {
+        bReset = true;
+        return bReset;
+    }
+    return bReset;
+}
+
+void FSteamClient::DBDropTable()
+{
+    Sqlite << "DROP TABLE IF EXISTS steam_users;";
+    Sqlite << "DROP TABLE IF EXISTS steam_servers;";
+    Sqlite << "DROP TABLE IF EXISTS metadata;";
 }
 
 void FSteamClient::Reconnect(bool bNeedDelay)

@@ -1,18 +1,22 @@
 #pragma once
-#include <atomic>
-#include <vector>
 
-#include <Websocket/IWebsocketClient.h>
-#include <SteamID.h>
-#include <steam/steammessages_auth.steamclient.pb.h>
 #include "SteamMsg/SteamClient.h"
 #include "SteamMsg/SteamPacketMessage.h"
 #include "SteamMsg/SteamClientInternal.h"
 
+
+#include <Websocket/IWebsocketClient.h>
+#include <SteamID.h>
+#include <steam/steammessages_auth.steamclient.pb.h>
+#include <soci/soci.h>
+
+#include <atomic>
+#include <vector>
 class FSteamClient;
 class FSteamAuthSession {
 public:
     FSteamAuthSession(FSteamClient* inOwner) :Owner(inOwner) {}
+    bool Init(std::error_code& ec);
     bool IsAuthenticated() {
         return AuthSessionStatus == ESteamClientAuthSessionStatus::Authenticated;
     }
@@ -27,6 +31,7 @@ public:
 
 
     FSteamClient* Owner;
+    std::unique_ptr<soci::statement> pSelectSteamUserByAccountName;
     std::atomic< ESteamClientAuthSessionStatus> AuthSessionStatus{ ESteamClientAuthSessionStatus ::Unauthorized };
 
     uint64_t PollJobID{ 0 };
@@ -59,7 +64,7 @@ public:
     IFakeSteamClient::FSteamRequestFinishedDelegate SteamGuardCodeDelegate;
     std::string SteamGuardCode;
 private:
-    bool ReadAccountCache();
+    bool ReadAccountCache(std::error_code& ec);
     void InvalidateAccountCache(std::string_view);
     bool UpdateAccountCache();
     void PollAuthSessionStatus();

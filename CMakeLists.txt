@@ -154,12 +154,13 @@ if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
 		URL
 		https://www.sqlite.org/2025/sqlite-amalgamation-3500200.zip
 	)
-	ImportProject(sqlpp23 ${SSH} TAG 0.66)
-	ImportProgram(
-		Python3
-		URL
-		https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip
-	)
+	ImportProject(SOCI STATIC ${STATIC_CRT} ${SSH} TAG v4.1.4)
+	# ImportProject(sqlpp23 ${SSH} TAG 0.66)
+	# ImportProgram(
+	# 	Python3
+	# 	URL
+	# 	https://mirrors.aliyun.com/python-release/windows/python-3.13.5-embed-amd64.zip
+	# )
 
 	add_subdirectory(src/steam_msg)
 endif()

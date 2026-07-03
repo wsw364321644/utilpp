@@ -14,6 +14,28 @@
 
 #include <jwt-cpp/jwt.h>
 
+bool FSteamAuthSession::Init(std::error_code& ec)
+{
+    try {
+        pSelectSteamUserByAccountName = std::make_unique<soci::statement>(Owner->Sqlite);
+        auto& select = *pSelectSteamUserByAccountName;
+        select.alloc();
+        select.prepare(R"(
+SELECT * FROM steam_users WHERE account_name=:account_name LIMIT 1;
+)"
+);
+        select.exchange(soci::use(AccountName, "account_name"));
+        select.define_and_bind();
+        select.exchange_for_rowset(soci::into(Owner->RowCache));
+    }
+    catch (const std::exception& e) {
+        ec = std::make_error_code(std::errc::io_error);
+        return false;
+    }
+    ec.clear();
+    return true;
+}
+
 bool FSteamAuthSession::OnSteamPackageReceived(FSteamPacketMsg& msg, std::string_view bodyView)
 {
     return false;
@@ -76,11 +98,11 @@ void FSteamAuthSession::Tick(float delta)
 FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_view account, std::string_view password, IFakeSteamClient::FSteamRequestFinishedDelegate FailedDelegate, std::error_code& ec)
 {
     if (AccountName == account && Password == password) {
-        if (AuthSessionStatus== ESteamClientAuthSessionStatus::Authenticated) {
+        if (AuthSessionStatus == ESteamClientAuthSessionStatus::Authenticated) {
             ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyLoggedin), SteamClientErrorCategory());
             return nullptr;
         }
-        else if(AuthSessionStatus!= ESteamClientAuthSessionStatus::Unauthorized){
+        else if (AuthSessionStatus != ESteamClientAuthSessionStatus::Unauthorized) {
             ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
             return AuthRequestHandlePtr;
         }
@@ -93,7 +115,7 @@ FCommonHandlePtr FSteamAuthSession::BeginAuthSessionViaCredentials(std::string_v
     SteamRequestFailedDelegate = FailedDelegate;
     AuthRequestHandlePtr = std::make_shared<SteamRequestHandle_t>();
 
-    if (ReadAccountCache()) {
+    if (ReadAccountCache(ec)) {
         AuthSessionStatus = ESteamClientAuthSessionStatus::Authenticated;
         return AuthRequestHandlePtr;
     }
@@ -109,7 +131,7 @@ FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, IF
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_ClientStatusError), SteamClientErrorCategory());
         return nullptr;
     }
-    if (SteamGuardCodeRequestHandlePtr&& SteamGuardCodeRequestHandlePtr->IsValid()) {
+    if (SteamGuardCodeRequestHandlePtr && SteamGuardCodeRequestHandlePtr->IsValid()) {
         ec = std::error_code(std::to_underlying(ESteamClientError::SCE_AlreadyRequested), SteamClientErrorCategory());
         return SteamGuardCodeRequestHandlePtr;
     }
@@ -156,7 +178,7 @@ FCommonHandlePtr FSteamAuthSession::SendSteamGuardCode(std::string_view code, IF
     return SteamGuardCodeRequestHandlePtr;
 }
 
-bool FSteamAuthSession::ReadAccountCache()
+bool FSteamAuthSession::ReadAccountCache(std::error_code& ec)
 {
     //int ires;
     //ires = sqlite3_clear_bindings(Owner->pSelectAccountPSO);
@@ -190,16 +212,18 @@ bool FSteamAuthSession::ReadAccountCache()
     //        }
     //    }
     //}
+    auto& RowCache = Owner->RowCache;
     try {
-        for (const auto& row : Owner->GetDBConnection()(sqlpp::select(Owner->SteamUserTable.RefreshToken)
-            .from(Owner->SteamUserTable)
-            .where(Owner->SteamUserTable.AccountName == AccountName))
-            ) {
-            RefreshToken = row.RefreshToken.value();
-            break;
+        auto& select = *pSelectSteamUserByAccountName;
+        select.execute(false);
+        soci::indicator ind;
+        while (select.fetch()) {
+            RefreshToken = RowCache.get<std::string>("refresh_token");
         }
     }
-    catch (sqlpp::exception e) {
+    catch (const std::exception& e) {
+        ec = std::make_error_code(std::errc::io_error);
+        return false;
     }
 
     if (!RefreshToken.empty()) {
@@ -212,21 +236,23 @@ bool FSteamAuthSession::ReadAccountCache()
     if (!RefreshToken.empty()) {
         return true;
     }
+    ec.clear();
     return false;
 }
 
 void FSteamAuthSession::InvalidateAccountCache(std::string_view accountName)
 {
-    //Owner->GetDBConnection()(sqlpp::update(Owner->SteamUserTable)
-    //    .set(Owner->SteamUserTable.RefreshToken = std::nullopt)
-    //    .where(Owner->SteamUserTable.AccountName == accountName)
-    //    );
+    auto accountNameStr = std::string(accountName);
     try {
-        Owner->GetDBConnection()(sqlpp::delete_from(Owner->SteamUserTable)
-            .where(Owner->SteamUserTable.AccountName == accountName)
-            );
+        Owner->Sqlite << R"(
+DELETE FROM steam_users WHERE account_name = :account_name;
+)"
+, soci::use(accountNameStr, "account_name")
+;
     }
-    catch (sqlpp::exception e) {
+    catch (const std::exception& e) {
+        //ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+        return;
     }
 
 }
@@ -262,14 +288,18 @@ bool FSteamAuthSession::UpdateAccountCache()
     //while (sqlite3_step(Owner->pInsertAccountPSO) != SQLITE_DONE) {
     //}
     try {
-        Owner->GetDBConnection()(sqlpp::sqlite3::insert_or_replace().into(Owner->SteamUserTable)
-            .set(Owner->SteamUserTable.SteamID = Owner->SteamAccoutnInfo.SteamID,
-                Owner->SteamUserTable.AccountName = AccountName,
-                Owner->SteamUserTable.AccessToken = AccessToken,
-                Owner->SteamUserTable.RefreshToken = RefreshToken)
-            );
+        Owner->Sqlite << R"(
+INSERT OR REPLACE INTO STEAMUSER (steam_id,account_name,acces_token,refresh_token)  
+VALUES (:steam_id, :account_name, :acces_token, :refresh_token); 
+)"
+, soci::use(Owner->SteamAccoutnInfo.SteamID, "steam_id")
+, soci::use(AccountName, "account_name")
+, soci::use(AccessToken, "acces_token")
+, soci::use(RefreshToken, "refresh_token")
+;
     }
-    catch (sqlpp::exception e) {
+    catch (const std::exception& e) {
+        //ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
         return false;
     }
     return true;
@@ -511,7 +541,7 @@ void FSteamAuthSession::OnUpdateAuthSessionWithSteamGuardCodeResponse(FSteamPack
             else {
                 PollAuthSessionStatus();
             }
-            SteamGuardCodeDelegate(SteamGuardCodeRequestHandlePtr,SteamGuardCodeRequestHandlePtr->FinishCode);
+            SteamGuardCodeDelegate(SteamGuardCodeRequestHandlePtr, SteamGuardCodeRequestHandlePtr->FinishCode);
         }
     );
     auto& header = std::get<utilpp::steam::CMsgProtoBufHeader>(msg.Header);

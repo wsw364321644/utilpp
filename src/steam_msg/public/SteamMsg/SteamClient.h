@@ -28,7 +28,7 @@ public:
     typedef std::function<void(std::error_code)> FSteamRequestFailedDelegate;
     typedef std::function<void()> FSteamSuccessDelegate;
     virtual ~IFakeSteamClient() = default;
-    virtual bool Init(IWebsocketConnectionManager*,HttpManagerPtr) = 0;
+    virtual bool Init(IWebsocketConnectionManager*,HttpManagerPtr, std::error_code&) = 0;
     virtual void Disconnect() = 0;
     virtual void CancelRequest(FCommonHandlePtr) = 0;
     virtual ESteamClientLogStatus GetLoginStatus() const = 0;

@@ -1,22 +1,25 @@
 #pragma once
-#include <string>
-#include <zlib.h>
-#include <zconf.h>
-#include <moodycamel/concurrentqueue.h>
 
-#include <TimeRecorder.h>
 #include "SteamMsg/SteamPacketMessage.h"
 #include "SteamMsg/SteamClientInternal.h"
 #include "SteamMsg/SteamJobManager.h"
 #include "SteamMsg/SteamAuthSession.h"
-#include "SteamMsg/STEAMUSER.h"
+
+#include <TimeRecorder.h>
+
+#include <string>
+#include <zlib.h>
+#include <zconf.h>
+#include <moodycamel/concurrentqueue.h>
+#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/soci.h>
 
 class FSteamClient :public IFakeSteamClient {
 public:
     friend class FSteamAuthSession;
     FSteamClient();
     ~FSteamClient();
-    bool Init(IWebsocketConnectionManager*, HttpManagerPtr) override;
+    bool Init(IWebsocketConnectionManager*, HttpManagerPtr,std::error_code&) override;
     void Disconnect() override;
     void CancelRequest(FCommonHandlePtr) override;
     ESteamClientLogStatus GetLoginStatus() const override;
@@ -32,13 +35,18 @@ public:
     void ClientHello(std::error_code&);
     void HeartBeat(std::error_code&);
 
-    sqlpp::sqlite3::pooled_connection& GetDBConnection();
+    soci::session Sqlite;
+    soci::row RowCache;
 private:
     void Reconnect(bool bNeedDelay =false);
     bool Connect();
     bool Logon();
     void OnRequestFinished(std::shared_ptr<SteamRequestHandle_t>, FSteamRequestFinishedDelegate, ESteamClientError);
     void OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWSClient, const char* content, size_t len);
+
+    bool ResetUnmatchedDB();
+    void DBDropTable();
+
 
     FSteamGlobalID& GetNextJobID() {
         JobID.SetSequentialCount(++SequentialCount);
@@ -48,9 +56,11 @@ private:
     HttpManagerPtr pHttpManager;
     IWebsocketConnectionManager* pWSManager{nullptr};
     std::shared_ptr<IWebsocketClient> pWSClient;
-    sqlpp::sqlite3::connection_pool DBConnectionPool;
-    inline static thread_local std::optional<sqlpp::sqlite3::pooled_connection> DBConnection;
-    utilpp::steam::STEAMUSER SteamUserTable;
+
+
+
+
+
     bool bShouldReconnect{ false };
     FDelayRecorder ReconnectDelayRecorder;
     //count

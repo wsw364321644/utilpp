@@ -1,29 +1,41 @@
+# if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
+# 	find_package(Python3 REQUIRED)
+# 	execute_process(
+# 		COMMAND ${Python3_EXECUTABLE} -m pip install pyparsing
+# 	)
+# 	find_package(sqlpp23 CONFIG REQUIRED)
+# 	file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg)
+# 	execute_process(
+# 		COMMAND ${Python3_EXECUTABLE} ${sqlpp23_DIR}/../../../bin/sqlpp23-ddl2cpp
+# 			-split-tables ${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql
+# 			${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg utilpp::steam
+# 		RESULT_VARIABLE result
+# 	)
 
-if(NOT DEFINED GEN_SQLPP_STRUCT OR GEN_SQLPP_STRUCT)
-    find_package(Python3 REQUIRED)
-    execute_process(COMMAND ${Python3_EXECUTABLE} -m pip install pyparsing
-    )
-    find_package(sqlpp23 CONFIG REQUIRED)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg)
-    execute_process(COMMAND ${Python3_EXECUTABLE} ${sqlpp23_DIR}/../../../bin/sqlpp23-ddl2cpp -split-tables
-        ${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql ${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg
-        utilpp::steam
-        RESULT_VARIABLE result
-    )
+# 	if(NOT ${result} EQUAL 0)
+# 		message(FATAL_ERROR "Failed to gen steamlanguage")
+# 	endif()
 
-    if(NOT ${result} EQUAL 0)
-        message(FATAL_ERROR "Failed to gen steamlanguage")
-    endif()
+# 	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql"
+# 		SQL_CREATE_STEAM_CLIENT_TABLE
+# 	)
+# 	configure_file(
+# 		"${CMAKE_CURRENT_SOURCE_DIR}/SteamDDl.h.in"
+# 		"${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg/SteamDDl.h"
+# 		@ONLY
+# 	)
 
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql" SQL_CREATE_STEAM_CLIENT_TABLE)
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/SteamDDl.h.in"
-        "${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg/SteamDDl.h"
-        @ONLY
-    )
+# 	set(GEN_SQLPP_STRUCT FALSE CACHE BOOL "Generate SQLPP orm C++ files" FORCE)
+# endif()
 
-    set(GEN_SQLPP_STRUCT FALSE CACHE BOOL "Generate SQLPP orm C++ files" FORCE)
-endif()
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql"
+	SQL_CREATE_STEAM_CLIENT_TABLE
+)
+configure_file(
+	"${CMAKE_CURRENT_SOURCE_DIR}/SteamDDl.h.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/generated/SteamMsg/SteamDDl.h"
+	@ONLY
+)
 
 NewTargetSource()
 AddSourceFolder(RECURSE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
@@ -33,25 +45,26 @@ AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
 function(add_lib TARGET_NAME)
-    set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
-    target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
-    set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
+	set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
+	target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
+	set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
 
-    target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
+	target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_utilpp_header)
 
-    target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_language)
-    target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_protobufs)
-    target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
-    target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
-    target_link_libraries(${TARGET_NAME} PRIVATE jwt-cpp::jwt-cpp)
-    target_link_libraries(${TARGET_NAME} PRIVATE sqlpp23::sqlpp23)
+	target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_language)
+	target_link_libraries(${TARGET_NAME} PRIVATE steamdatapp::steam_protobufs)
+	target_link_libraries(${TARGET_NAME} PRIVATE ZLIB::ZLIB)
+	target_link_libraries(${TARGET_NAME} PRIVATE concurrentqueue::concurrentqueue)
+	target_link_libraries(${TARGET_NAME} PRIVATE jwt-cpp::jwt-cpp)
+	# target_link_libraries(${TARGET_NAME} PRIVATE sqlpp23::sqlpp23)
+	target_link_libraries(${TARGET_NAME} PRIVATE SOCI::SOCI)
 
-    AddTargetInclude(${TARGET_NAME})
-    add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+	AddTargetInclude(${TARGET_NAME})
+	add_library(${PROJECT_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
 
-    if(NOT UTILPP_DISABLE_INSTALL)
-        AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
-    endif()
+	if(NOT UTILPP_DISABLE_INSTALL)
+		AddTargetInstall(${TARGET_NAME} ${PROJECT_NAME})
+	endif()
 endfunction()
 
 set(TARGET_NAME steam_msg)
