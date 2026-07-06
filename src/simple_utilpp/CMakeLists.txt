@@ -30,10 +30,9 @@ function(add_simple_utilpp TARGET_NAME)
 endfunction()
 
 set(TARGET_NAME simple_utilpp)
-add_library(${TARGET_NAME} SHARED ${SourceFiles})
+add_library(${TARGET_NAME} SHARED ${SourceFiles} $<TARGET_OBJECTS:simple_util_obj>)
 target_compile_definitions(${TARGET_NAME} PRIVATE -DSIMPLE_UTIL_API_EXPORTS)
 target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_util_include)
-target_link_libraries(${TARGET_NAME} PUBLIC UTILPP::simple_util_obj)
 add_simple_utilpp(${TARGET_NAME})
 
 set(TARGET_NAME simple_utilpp_a)
