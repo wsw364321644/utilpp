@@ -138,16 +138,7 @@ endif()
 
 if(UTILPP_ENABLE_STEAM AND UTILPP_ENABLE_WEBSOCKET AND UTILPP_ENABLE_NET)
 	set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-	FetchContent_Declare(
-		jwt-cpp
-		GIT_REPOSITORY
-		https://github.com/Thalhammer/jwt-cpp.git
-		GIT_TAG
-		v0.7.1
-		GIT_SHALLOW
-		TRUE
-	)
-	FetchContent_MakeAvailable(jwt-cpp)
+	ImportProject(jwt-cpp ${SSH} TAG v0.7.2)
 	ImportProject(
 		SQLite3
 		${STATIC_CRT}

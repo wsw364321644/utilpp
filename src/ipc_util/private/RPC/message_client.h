@@ -21,7 +21,7 @@ public:
 
 public:
 
-    bool Connect(EMessageConnectionType, const std::string& url) override;
+    bool Connect(EMessageConnectionType, const std::string& url,TCompleteConnectDelegate delegate) override;
     CommonHandle32_t Write(const char* data, int len) override;
     void Disconnect()override;
     void Tick(float delSec) override;
@@ -34,6 +34,11 @@ public:
 
 private:
     //void UVWorker();
+    void TriggerCompleteConnectDelegate(std::error_code& ec) {
+        if (CompleteConnectDelegate) {
+            CompleteConnectDelegate(ec);
+        }
+    }
     void UVOnConnect(uv_connect_t* req, int status);
     void UVOnClose(uv_handle_t* handle);
     void UVOnShutdown(uv_shutdown_t* req, int status);
@@ -55,6 +60,6 @@ private:
     std::thread uvworkThread;
     std::atomic<EMessageConnectionState> state;
     std::atomic_bool running;
-
+    TCompleteConnectDelegate CompleteConnectDelegate;
 };
 #pragma warning(pop)

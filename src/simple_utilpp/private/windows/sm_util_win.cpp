@@ -47,6 +47,7 @@ const CommonHandlePtr_t CreateSharedMemory(const char* name, size_t len, std::er
     info->HMapFile = HMapFile;
     auto dwres = GetLastError();
     if (dwres == ERROR_ALREADY_EXISTS) {
+        ec = std::error_code(GetLastError(), std::system_category());
     }
     return CommonHandlePtr_t((intptr_t)info);
 }

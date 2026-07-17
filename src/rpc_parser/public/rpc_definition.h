@@ -17,12 +17,15 @@ enum class ERPCParseError {
     InvalidRequest,
     InternalError
 };
+class IRPCSerializable {
+public:
+    virtual void ToBytes(FCharBuffer&) = 0;
+};
 
-
-class RPC_PARSER_EXPORT RPCRequest {
+class RPC_PARSER_EXPORT RPCRequest:public IRPCSerializable {
 public:
     virtual ~RPCRequest() = default;
-    virtual void ToBytes(FCharBuffer&) = 0;
+    
     void SetParams(const char* cstr) {
         Params.Assign(cstr, strlen(cstr));
     }
@@ -60,10 +63,9 @@ protected:
     std::string Method;
     FCharBuffer Params;
 };
-class RPC_PARSER_EXPORT RPCResponse {
+class RPC_PARSER_EXPORT RPCResponse :public IRPCSerializable {
 public:
     virtual ~RPCResponse() = default;
-    virtual void ToBytes(FCharBuffer&) = 0;
     virtual bool IsError()const=0;
     void SetResult(const char* cstr) {
         Result.Assign(cstr, strlen(cstr));

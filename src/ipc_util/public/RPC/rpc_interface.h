@@ -1,13 +1,15 @@
 #pragma once
+#include "message_processer.h"
+#include <rpc_definition.h>
+#include <delegate_macros.h>
 #include <memory>
 #include <string_view>
 #include <set>
 #include <unordered_map>
 #include <optional>
 #include <cassert>
-#include <rpc_definition.h>
-#include "message_processer.h"
-#include "delegate_macros.h"
+
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 
@@ -37,8 +39,8 @@ public:
     virtual bool OnRequestRecv(std::shared_ptr<RPCRequest>) = 0;
     virtual bool OnResponseRecv(std::shared_ptr<RPCResponse>, std::shared_ptr<RPCRequest>) = 0;
     virtual RPCHandle_t SendRPCRequest(std::shared_ptr< RPCRequest> req);
-    virtual bool SendRPCEvent(std::shared_ptr< RPCRequest> req);
     virtual std::shared_ptr<RPCRequest> CancelRPCRequest(RPCHandle_t handle);
+    virtual bool SendRPCEvent(std::shared_ptr< RPCRequest> req);
     virtual bool SendRPCResponse(RPCHandle_t handle, std::shared_ptr<RPCResponse> response);
 protected:
     IRPCProcesser* processer;

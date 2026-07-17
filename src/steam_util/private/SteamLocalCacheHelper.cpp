@@ -523,8 +523,9 @@ void FSteamLocalCacheHelper::Tick(float delta)
     std::shared_ptr<SteamLibraryFolderInfo_t> pSteamLibraryFolderInfo;
     while (NewSteamLibraryFolderInfoQueue.try_dequeue(pSteamLibraryFolderInfo)) {
         SteamLibraryCacheInfo.try_emplace(ConvertStringToU8View(pSteamLibraryFolderInfo->Path), pSteamLibraryFolderInfo);
+        TriggerSteamLibraryFolderChangedDelegates(EDataOp::DO_Create, pSteamLibraryFolderInfo);
         for (auto& [appID, pSteamLibraryAppInfo] : pSteamLibraryFolderInfo->Apps) {
-            TriggerSteamLibraryFolderChangedDelegates(EDataOp::DO_Create,pSteamLibraryFolderInfo);
+            TriggerSteamAppManifestChangedDelegates(EDataOp::DO_Create, pSteamLibraryFolderInfo, pSteamLibraryAppInfo);
         }
 
     }
@@ -535,6 +536,9 @@ void FSteamLocalCacheHelper::Tick(float delta)
             auto& [pathView, pSteamLibraryFolderInfo] = *libraryItr;
             SteamLibraryCacheInfo.erase(libraryItr);
             TriggerSteamLibraryFolderChangedDelegates(EDataOp::DO_Delete, pSteamLibraryFolderInfo);
+            for (auto& [appID, pSteamLibraryAppInfo] : pSteamLibraryFolderInfo->Apps) {
+                TriggerSteamAppManifestChangedDelegates(EDataOp::DO_Delete, pSteamLibraryFolderInfo, pSteamLibraryAppInfo);
+            }
         }
     }
     do {

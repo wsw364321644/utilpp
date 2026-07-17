@@ -17,7 +17,7 @@
 #include <steam/steammessages_clientserver.pb.h>
 #include <steam/steammessages_store.steamclient.pb.h>
 
-
+#include <regex>
 
 
 FSteamClient::FSteamClient() :SteamAuthSession(this)
@@ -71,7 +71,14 @@ bool FSteamClient::Init(IWebsocketConnectionManager* _pWebsocketConnectionManage
     }
     try {
         if (ResetUnmatchedDB()) {
-            Sqlite << SQL_CREATE_STEAM_CLIENT_TABLE;
+            std::regex re("([^;]+);");
+            auto words_begin = std::cregex_iterator(SQL_CREATE_STEAM_CLIENT_TABLE, SQL_CREATE_STEAM_CLIENT_TABLE+sizeof(SQL_CREATE_STEAM_CLIENT_TABLE), re);
+            auto words_end = std::cregex_iterator();
+            for (; words_begin != words_end; ++words_begin) {
+                std::cmatch match = *words_begin;
+                Sqlite << match[1].first;
+            }
+
             Sqlite << R"(
 INSERT INTO metadata (version) VALUES (:v);
 )", soci::use(DB_VERSION, "v");
@@ -89,6 +96,7 @@ INSERT INTO metadata (version) VALUES (:v);
         else {
             //std::cout << "Another SQLite3 error " << e.what() << ", error code: " << e.result() << std::endl;
         }
+        auto str = e.get_error_message();
         ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
         return false;
     }

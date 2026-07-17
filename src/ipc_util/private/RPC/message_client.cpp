@@ -1,6 +1,7 @@
 #include "RPC/message_client.h"
 #include "message_internal.h"
 #include <LoggerHelper.h>
+#include <simple_error.h>
 #include <uv.h>
 #include <uri.h>
 
@@ -21,7 +22,7 @@ MessageClientUV::~MessageClientUV()
     }
     delete loop;
 }
-bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& url)
+bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& url,TCompleteConnectDelegate delegate)
 {
     EMessageConnectionState expected = EMessageConnectionState::Idle;
     if (!state.compare_exchange_strong(expected, EMessageConnectionState::InitConnect)) {
@@ -30,6 +31,8 @@ bool MessageClientUV::Connect(EMessageConnectionType type, const std::string& ur
     uv_loop_init(loop);
 
     messageConnectionType = type;
+
+    CompleteConnectDelegate = delegate;
 
     ParsedURL_t parsedURL;
     ParseUrl(url, parsedURL);
@@ -165,9 +168,12 @@ void MessageClientUV::Tick(float delSec)
 
 void MessageClientUV::UVOnConnect(uv_connect_t* req, int status)
 {
+    std::error_code ec;
     if (status < 0) {
         SIMPLELOG_LOGGER_INFO(nullptr,"MessageClientUV failed to connect status:{}", status);
-        TriggerOnDisconnectDelegates(this);
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+        TriggerCompleteConnectDelegate(ec);
+
         EMessageConnectionState expected = EMessageConnectionState::Connecting;
         if (!state.compare_exchange_strong(expected, EMessageConnectionState::Idle)) {
             SIMPLELOG_LOGGER_ERROR(nullptr,"OnConnection state error {}", (uint8_t)expected);
@@ -183,8 +189,7 @@ void MessageClientUV::UVOnConnect(uv_connect_t* req, int status)
     uv_stream_t* stream = req->handle;
     stream->data = this;
     uv_read_start(stream, UVCallBack::UVOnAlloc, UVCallBack::template UVOnRead<MessageClientUV>);
-
-    TriggerOnConnectDelegates(this);
+    TriggerCompleteConnectDelegate(ec);
 }
 void MessageClientUV::UVOnClose(uv_handle_t* handle)
 {
@@ -254,6 +259,7 @@ void MessageClientUV::OnWrite(MessageSendRequestUV* msreq, uv_write_t* req, int 
 }
 void MessageClientUV::UVOnDNSResolved(uv_getaddrinfo_t* resolver, int status, addrinfo* res)
 {
+    std::error_code ec;
     switch (messageConnectionType) {
     case EMessageConnectionType::EMCT_TCP: {
         uv_tcp_t* handle = &clientHandle.TCPHandle;
@@ -261,7 +267,10 @@ void MessageClientUV::UVOnDNSResolved(uv_getaddrinfo_t* resolver, int status, ad
         handle->data = this;
         uv_tcp_keepalive(handle, 1, 60);
 
-        uv_tcp_connect(&connectHandle, handle, res->ai_addr, UVCallBack::template UVOnConnect<MessageClientUV>);
+        if (uv_tcp_connect(&connectHandle, handle, res->ai_addr, UVCallBack::template UVOnConnect<MessageClientUV>) < 0) {
+            ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+            TriggerCompleteConnectDelegate(ec);
+        }
         break;
     }
     case EMessageConnectionType::EMCT_UDP: {
@@ -274,6 +283,8 @@ void MessageClientUV::UVOnDNSResolved(uv_getaddrinfo_t* resolver, int status, ad
         uv_udp_set_broadcast(udpHandle, 0);
         //uv_udp_bind(udpHandle, uv_ip4_addr("0.0.0.0", 0), 0);
         if (uv_udp_connect(udpHandle, res->ai_addr) < 0) {
+            ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+            TriggerCompleteConnectDelegate(ec);
             Disconnect();
             return;
         }
@@ -283,7 +294,7 @@ void MessageClientUV::UVOnDNSResolved(uv_getaddrinfo_t* resolver, int status, ad
         if (!state.compare_exchange_strong(expected, EMessageConnectionState::Connected)) {
             SIMPLELOG_LOGGER_ERROR(nullptr,"udp connnect state error {}", (uint8_t)expected);
         }
-        TriggerOnConnectDelegates(this);
+        TriggerCompleteConnectDelegate(ec);
         break;
     }
     }
