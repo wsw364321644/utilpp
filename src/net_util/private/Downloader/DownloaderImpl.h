@@ -25,7 +25,7 @@ public:
     FDownloadTaskIterator Begin() override;
     FDownloadTaskIterator End() override;
     DownloadTaskHandle_t AddTask(std::u8string_view url, FCharBuffer& contentBuf) override;
-    DownloadTaskHandle_t AddTask(std::u8string_view url, const std::filesystem::path& folder) override;
+    DownloadTaskHandle_t AddTask(std::u8string_view url, std::u8string_view path) override;
     void LoadDiskTask(std::u8string_view) override;
     void RemoveTask(DownloadTaskHandle_t) override;
     bool RegisterDownloadProgressDelegate(DownloadTaskHandle_t, FDownloadProgressDelegate) override;
@@ -43,9 +43,13 @@ public:
 protected:
 private:
     FDownloader();
+    DownloadTaskHandle_t InsertFilePath(std::u8string_view path, DownloadTaskHandle_t handle);
+    DownloadTaskHandle_t LoadDiskDataFile(FPathBuf& path,std::error_code& ec);
+
+
     std::shared_ptr<TaskStatus_t> GetTaskStatus(std::shared_ptr<FDownloadFile> pfile);
     std::shared_ptr<DownloadFileInfo> GetTaskInfo(std::shared_ptr<FDownloadFile> pfile);
-    DownloadTaskHandle_t AddTask(FDownloadFile* file);
+    DownloadTaskHandle_t AddTask(FDownloadFile* file,std::error_code& ec);
     void TransferBuf();
     std::shared_ptr<FDownloadBuf> InsertInBuf(std::shared_ptr<file_chunk_t>);
     void StartDownloadWithoutContentLength(std::shared_ptr<FDownloadFile> pfile);
@@ -61,6 +65,7 @@ private:
 
     typedef std::unordered_map<DownloadTaskHandle, std::shared_ptr<FDownloadFile>> TaskContainer;
     TaskContainer Files;
+    std::unordered_map<std::u8string_view, DownloadTaskHandle,string_hash,std::equal_to<>>FilePathView;
     std::set<DownloadTaskHandle> RequireRemoveFiles;
     HttpManagerPtr pHttpManager;
     BufList BufPool;

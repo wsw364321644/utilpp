@@ -153,7 +153,7 @@ bool CryptoLibAESEncryptUpdate(CommonHandlePtr_t handle, std::span<const uint8_t
 {
     bool bRes{ true };
     auto& Data = *(AESWorkData_t*)handle.ID;
-    buf.Reverse(buf.Size() + src.size());
+    buf.Reserve(buf.Size() + src.size());
 
 #ifdef HAS_MbedTLS
     size_t outLen = buf.Capacity() - buf.Size();
@@ -185,7 +185,7 @@ bool CryptoLibAESDecryptUpdate(CommonHandlePtr_t handle, std::span<const uint8_t
 {
     bool bRes{ true };
     auto& Data = *(AESWorkData_t*)handle.ID;
-    buf.Reverse(buf.Size() + src.size());
+    buf.Reserve(buf.Size() + src.size());
 
 #ifdef HAS_MbedTLS
     size_t outLen = buf.Capacity() - buf.Size();

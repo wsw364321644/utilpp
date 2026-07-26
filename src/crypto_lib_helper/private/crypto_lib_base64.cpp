@@ -184,7 +184,7 @@ bool CryptoLibBase64Encode(std::span<uint8_t> srcspan, FCharBuffer& buf)
      BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
      BIO* source = BIO_new_mem_buf(src, insize);
      BIO_push(b64, source);
-     buf.Reverse(insize);
+     buf.Reserve(insize);
      do {
          auto readlen = BIO_read(b64, buf.Data(), buf.Capacity());
          if (readlen <= 0) {

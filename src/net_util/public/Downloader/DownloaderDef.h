@@ -8,6 +8,7 @@ typedef struct DownloadTaskHandle : CommonHandle32_t
 {
     DownloadTaskHandle() :CommonHandle32_t() {}
     DownloadTaskHandle(const CommonHandle32_t h) :CommonHandle32_t(h) {}
+    DownloadTaskHandle(NullCommonHandle_t h) :CommonHandle32_t(h) {}
     inline static std::atomic_uint32_t task_count;
 }DownloadTaskHandle_t ;
 

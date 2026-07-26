@@ -3,6 +3,7 @@
 #include "string_convert.h"
 #include "dir_util_internal.h"
 #include "dir_util.h"
+#include <simple_error.h>
 #include <filesystem>
 #include <format>
 #include <system_error>
@@ -79,6 +80,53 @@ int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64
     }
     filePath.SetPath(ConvertU8ViewToView(lpFileName).data(), lpFileName.size());
     return InternalOpen(filePath,uOpenFlag, uExpectSize);
+}
+
+bool FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t uExpectSize, std::error_code& ec)
+{
+    Close();
+
+    auto& filePath = *FPathBuf::GetThreadSingleton();
+    filePath.SetPath(ConvertU8ViewToView(lpFileName));
+
+    DWORD err = 0;
+
+    handle_ = DirUtil::RecursiveCreateFile(filePath, uOpenFlag, ec);
+    if (handle_ == INVALID_HANDLE_VALUE)
+    {
+        return false;
+    }
+
+    if (!DirUtil::SetWritable(filePath))
+    {
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+        err = GetLastError();
+        SIMPLELOG_LOGGER_WARN(nullptr, "Failed to set writable, file: {}, error: {}", file_name, err);
+        return false;
+    }
+
+    if ((uOpenFlag == UTIL_CREATE_ALWAYS || uOpenFlag == UTIL_OPEN_ALWAYS) && (file_size_ != uExpectSize))
+    {
+        // set the physic size
+        if (uExpectSize != 0 && ERR_SUCCESS == Seek(uExpectSize - 1))
+        {
+            uint8_t uDummy = 0;
+            if (ERR_SUCCESS != Write(&uDummy, 1))
+            {
+                ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+                err = GetLastError();
+                SIMPLELOG_LOGGER_WARN(nullptr, "Can't create the file: {} with size:{}, ErrorCode is {}", file_name, expect_size, err);
+                CloseHandle(handle_);
+                handle_ = INVALID_HANDLE_VALUE;
+                return false;
+            }
+            file_size_ = uExpectSize;
+            SetEndOfFile(handle_);
+        }
+        Seek(0);
+    }
+
+    return ERR_SUCCESS;
 }
 
 const char* FRawFile::GetFilePath()
@@ -159,6 +207,31 @@ int32_t FRawFile::Read(void* pBuf, uint32_t size, uint32_t& outreaded)
     }
     outreaded = readed;
     return ERR_SUCCESS;
+}
+
+int32_t FRawFile::Read(void* pBuf, uint32_t size, std::error_code& ec)
+{
+
+    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
+    {
+        ec=std::make_error_code(std::errc::invalid_argument);
+    }
+    ec.clear();
+    DWORD readed = 0;
+    BOOL res = ReadFile(handle_, pBuf, size, &readed, NULL);
+    if (FALSE == res)
+    {
+        auto dwError = GetLastError();
+        if (dwError == ERROR_IO_PENDING) {
+            ec = std::make_error_code(std::errc::operation_in_progress);
+        }else if (dwError == ERROR_HANDLE_EOF) {
+        }
+        else {
+            ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+            SIMPLELOG_LOGGER_WARN(nullptr, "Read file: {} error ...", GetFilePath());
+        }
+    }
+    return readed;
 }
 
 int32_t FRawFile::Write(const void* buf, uint32_t size)

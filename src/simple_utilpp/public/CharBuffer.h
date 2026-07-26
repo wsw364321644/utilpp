@@ -18,7 +18,9 @@ public:
     FCharBuffer& operator()(const char *cstr);
     FCharBuffer& operator=(FCharBuffer&& r) noexcept;
     FCharBuffer& operator=(const FCharBuffer& r)noexcept;
+    FCharBuffer& operator=(std::string_view)noexcept;
     char& operator[](const size_t pos)noexcept;
+
     friend void Swap(FCharBuffer& l, FCharBuffer& r);
 
     // template <typename T,
@@ -32,13 +34,13 @@ public:
     bool Format(const char* format, ...);
     bool FormatAppend(const char* format, ...);
     bool VFormatAppend(const char* format, va_list vlist);
-    void Reverse(uint32_t size);
+    void Reserve(uint32_t size);
     void Resize(uint32_t size);
-    void ReverseAssign(const char* cstr, size_t size);
-    void ReverseAssign(std::string_view view);
+    void ReserveAssign(const char* cstr, size_t size);
+    void ReserveAssign(std::string_view view);
     template <typename T>
-    void ReverseAssign(const T first, const T last) {
-        ReverseAssign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
+    void ReserveAssign(const T first, const T last) {
+        ReserveAssign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
     }
     void Assign(const char *cstr, size_t size);
     void Assign(std::string_view view);
@@ -55,6 +57,7 @@ public:
     size_t Length() const;
     size_t Size() const;
     size_t Capacity() const;
+    bool Empty() const;
     FCharBuffer& Seekg(size_t);
     FCharBuffer& Seekp(size_t);
 

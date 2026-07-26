@@ -710,7 +710,7 @@ namespace utilpp {
 
             }
             FCharBuffer buf;
-            buf.Reverse(dwSize);
+            buf.Reserve(dwSize);
             if (!GetFileVersionInfoW(pathw, 0, dwSize, buf.Data()))
             {
                 ec = std::error_code(GetLastError(), std::system_category());

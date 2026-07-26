@@ -41,7 +41,7 @@ namespace utilpp {
 
     bool GetCMListForConnectResp_t::Parse(FCharBuffer& buf)
     {
-        buf.Reverse(buf.Length() + simdjson::SIMDJSON_PADDING);
+        buf.Reserve(buf.Length() + simdjson::SIMDJSON_PADDING);
         simdjson::ondemand::parser parser;
         simdjson::ondemand::document doc = parser.iterate(buf.Data(), buf.Length(), buf.Capacity());
         auto ores = doc["response"].get_object();

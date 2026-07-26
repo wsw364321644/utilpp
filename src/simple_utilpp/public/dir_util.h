@@ -71,6 +71,7 @@ public:
     static bool Copy(FPathBuf& pathBuf, FPathBuf& newfilePathBuf, CopyProgressCallback cb= nullptr);
     static F_HANDLE RecursiveCreateFile(std::u8string_view  path, uint32_t flag);
     static F_HANDLE RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag);
+    static F_HANDLE RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::error_code& ec);
 
     /// return false will stop iteration
     typedef std::function<bool(DirEntry_t&)> IterateDirCallback;

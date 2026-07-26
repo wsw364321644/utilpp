@@ -117,7 +117,7 @@ bool CryptoLibRSAEncrypt(ICommonHandle* handle, std::span<uint8_t> src, FCharBuf
         return false;
     if (EVP_PKEY_encrypt(ctx, NULL, &cipherlen, src.data(), src.size()) <= 0)
         return false;
-    buf.Reverse(cipherlen);
+    buf.Reserve(cipherlen);
     if (EVP_PKEY_encrypt(ctx, (unsigned char*)buf.Data(), &cipherlen, src.data(), src.size()) <= 0)
         return false;
     buf.SetLength(cipherlen);

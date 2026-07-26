@@ -128,7 +128,7 @@ public:
     virtual CommonTaskHandle_t AddTaskNoReturn(WorkflowHandle_t handle, TCommonTask&& task) = 0;
 
     // pass a task to excuse
-    template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>>
+    template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>, std::enable_if_t<!std::is_invocable_v<std::decay_t<F>, std::shared_ptr<std::promise<R>>>, int> = 0>
     std::tuple<CommonTaskHandle_t, std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle, F&& task) {
         const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
         auto handle = AddTaskNoReturn(WorkflowHandle,
@@ -159,6 +159,26 @@ public:
         );
         return { handle, task_promise->get_future() };
     }
+
+
+    template <typename R, typename F, std::enable_if_t<std::is_invocable_v<std::decay_t<F>, std::shared_ptr<std::promise<R>>>, int> = 0>
+    std::tuple<CommonTaskHandle_t, std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle,F&& task) {
+        const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
+        auto handle = AddTaskNoReturn(WorkflowHandle,
+            [task = std::forward<F>(task), task_promise]() mutable {
+                try {
+                    task(task_promise);
+                }
+                catch (...) {
+                    try { task_promise->set_exception(std::current_exception()); }
+                    catch (...) {}
+                }
+            }
+        );
+
+        return { handle, task_promise->get_future() };
+    }
+
     virtual void RemoveTask(CommonTaskHandle_t) = 0;
 };
 

@@ -1,10 +1,14 @@
 #pragma once
+#include "HTTP/IHttpRequest.h"
+
+#include <CharBuffer.h>
+#include <std_ext.h>
+
+#include <curl/curl.h>
+#include <unordered_set>
 #include <unordered_map>
 #include <chrono>
 #include <list>
-#include <CharBuffer.h>
-#include <curl/curl.h>
-#include "HTTP/IHttpRequest.h"
 class FCurlHttpManager;
 class FCurlHttpResponse;
 
@@ -87,8 +91,8 @@ private:
     std::string Host;
     std::string Path;
     std::string Scheme;
-    std::unordered_map<std::string, std::string> Queries;
-    std::unordered_map<std::string, std::string> Headers;
+    std::unordered_map<std::string, std::unordered_set<std::string, string_hash>,string_hash> Queries;
+    std::unordered_map<std::string, std::string, string_hash> Headers;
     std::vector<MimePart_t> MimeParts;
     uint32_t ProxyPort{ std::numeric_limits<uint32_t>::max() };
     std::string ProxyHost;

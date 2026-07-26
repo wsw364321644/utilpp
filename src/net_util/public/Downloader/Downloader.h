@@ -65,7 +65,7 @@ public:
     virtual FDownloadTaskIterator Begin() = 0;
     virtual FDownloadTaskIterator End() = 0;
     virtual DownloadTaskHandle_t AddTask(std::u8string_view url, FCharBuffer& contentBuf) = 0;
-    virtual DownloadTaskHandle_t AddTask(std::u8string_view url, const std::filesystem::path& folder) = 0;
+    virtual DownloadTaskHandle_t AddTask(std::u8string_view url, std::u8string_view path) = 0;
     virtual void LoadDiskTask(std::u8string_view) = 0;
 
     virtual void RemoveTask(DownloadTaskHandle_t) = 0;

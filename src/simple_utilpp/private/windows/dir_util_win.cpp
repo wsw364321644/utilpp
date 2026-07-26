@@ -31,16 +31,11 @@ bool InternalCreateDir(wchar_t* pathw, size_t prependlen, size_t len) {
             }
         );
         DWORD attr = GetFileAttributesW((LPCWSTR)pathw);
-        if (attr != INVALID_FILE_ATTRIBUTES) {
-            if (!(attr & FILE_ATTRIBUTE_DIRECTORY)) {
-                return false;
-            }
-        }
-        else {
-            if (CreateDirectoryW((LPCWSTR)pathw, NULL) == FALSE) {
-                return false;
-            }
-        }
+        bool ok = (attr != INVALID_FILE_ATTRIBUTES)
+            ? (attr & FILE_ATTRIBUTE_DIRECTORY)
+            : CreateDirectoryW(pathw, nullptr);
+
+        if (!ok) return false;
     }
     return true;
 }
@@ -324,6 +319,62 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag)
         SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file after create directory: {}. ErrorCode is {}", pathw, err);
     }
 
+    return handle;
+}
+
+F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::error_code& ec)
+{
+    auto pathw = (wchar_t*)pathBuf.GetPrependFileNamespacesW();
+
+    DWORD attr = GetFileAttributesW((LPCWSTR)pathw);
+    if (attr != INVALID_FILE_ATTRIBUTES) {
+        if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+            ec = std::make_error_code(std::errc::permission_denied);
+            return INVALID_HANDLE_VALUE;
+        }
+        else {
+            ec = std::make_error_code(std::errc::file_exists);
+        }
+    }
+
+    F_HANDLE handle = CreateFileW((LPCWSTR)pathw,
+        GENERIC_WRITE | GENERIC_READ,
+        FILE_SHARE_WRITE | FILE_SHARE_READ,
+        NULL,
+        flag,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (handle != INVALID_HANDLE_VALUE) {
+        return handle;
+    }
+
+    auto err = GetLastError();
+    if (!((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && err == ERROR_PATH_NOT_FOUND)) {
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+        SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file : {}. ErrorCode is {}", pathw, err);
+        return handle;
+    }
+
+    // Path not found? Create the directory
+    if (!InternalCreateDir(pathw, pathBuf.PathPrependLen, pathBuf.GetPathLenW()+ pathBuf.PathPrependLen)) {
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+        return handle;
+    }
+
+    handle = CreateFileW((LPCWSTR)pathw,
+        GENERIC_WRITE | GENERIC_READ,
+        FILE_SHARE_WRITE | FILE_SHARE_READ,
+        NULL,
+        flag,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (handle == INVALID_HANDLE_VALUE) {
+        err = GetLastError();
+        SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file after create directory: {}. ErrorCode is {}", pathw, err);
+        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+    }
+    ec.clear();
     return handle;
 }
 

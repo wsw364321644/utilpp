@@ -159,11 +159,14 @@ bool FCurlHttpRequest::GenerateURL()
             return false;
         }
     }
-    for (auto& pair : Queries) {
-        rc = curl_url_set(urlp, CURLUPART_QUERY, (pair.first + "=" + pair.second).c_str(), CURLU_APPENDQUERY | CURLU_URLENCODE);
-        if (rc != CURLUcode::CURLUE_OK) {
-            return false;
+    for (auto& [key,valueList] : Queries) {
+        for (auto& value : valueList) {
+            rc = curl_url_set(urlp, CURLUPART_QUERY, (key + "=" + value).c_str(), CURLU_APPENDQUERY | CURLU_URLENCODE);
+            if (rc != CURLUcode::CURLUE_OK) {
+                return false;
+            }
         }
+
     }
 
     rc = curl_url_get(urlp, CURLUPART_URL, &url, 0);
@@ -206,17 +209,18 @@ void FCurlHttpRequest::SetPortNum(uint32_t _Port)
 
 void FCurlHttpRequest::SetQuery(std::string_view QueryName, std::string_view QueryValue)
 {
-    Queries[std::string(QueryName)] = QueryValue;
+    auto eRes = Queries.try_emplace(std::string(QueryName));
+    eRes.first->second.emplace(QueryValue);
 }
 
 void FCurlHttpRequest::SetContent(std::string_view ContentPayload)
 {
-    Content.ReverseAssign(ContentPayload.data(), ContentPayload.size());
+    Content.ReserveAssign(ContentPayload.data(), ContentPayload.size());
 }
 
 void FCurlHttpRequest::SetContentAsString(std::string_view ContentString)
 {
-    Content.ReverseAssign(ContentString.data(), ContentString.size());
+    Content.ReserveAssign(ContentString.data(), ContentString.size());
 }
 
 std::string_view FCurlHttpRequest::GetProxyURL()

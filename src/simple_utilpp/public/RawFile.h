@@ -1,10 +1,12 @@
 #pragma once
 
+#include "PathBuf.h"
+#include "simple_export_ppdefs.h"
+
 #include <simple_os_defs.h>
 #include <memory>
 #include <string>
-#include "PathBuf.h"
-#include "simple_export_ppdefs.h"
+
 
 class SIMPLE_UTIL_EXPORT FRawFile :public TProvideThreadSingletonClass<FRawFile>
 {
@@ -14,8 +16,10 @@ public:
 
     int32_t Open(FPathBuf& pathBuf, uint32_t uOpenFlag ,uint64_t uExpectSize=0);
     int32_t Open(std::u8string_view lpFileName, uint32_t uOpenFlag ,uint64_t uExpectSize=0);
+    bool Open(std::u8string_view lpFileName, uint32_t uOpenFlag ,uint64_t uExpectSize,std::error_code& ec);
     int32_t Read(void *pBuf, uint32_t size);
     int32_t Read(void* pBuf, uint32_t size, uint32_t& readed);
+    int32_t Read(void* pBuf, uint32_t size,std::error_code& ec);
     int32_t Write(const void *pBuf, uint32_t size);
     int32_t Write(const void* pBuf, uint32_t size,uint64_t);
     int32_t Seek(uint64_t uPos);

@@ -88,7 +88,7 @@ void alloc_buffer(uv_handle_t* handle,
     size_t suggested_size,
     uv_buf_t* buf) {
     UVProcess_t& p = *(UVProcess_t*)handle->data;
-    p.Buf.Reverse(suggested_size);
+    p.Buf.Reserve(suggested_size);
     *buf = uv_buf_init((char*)p.Buf.Data(), p.Buf.Capacity());
 };
 void on_read(uv_stream_t* stream,

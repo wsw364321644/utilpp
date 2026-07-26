@@ -7,7 +7,7 @@ bool LoadFileToCharBuffer(FRawFile& file, FCharBuffer& buf, size_t extraSpace)
         return false;
     }
     auto size=file.GetSize();
-    buf.Reverse(size + extraSpace);
+    buf.Reserve(size + extraSpace);
     if (file.Read(buf.Data(), size) != ERR_SUCCESS) {
         return false;
     }

@@ -51,6 +51,10 @@ FCharBuffer& FCharBuffer::operator=(const FCharBuffer& r)noexcept {
     readCursor = r.readCursor;
     return *this;
 }
+FCharBuffer& FCharBuffer::operator=(std::string_view view)noexcept {
+    Assign(view.data(), view.size());
+    return *this;
+}
 char& FCharBuffer::operator[](const size_t pos) noexcept
 {
     return Data()[pos];
@@ -71,7 +75,7 @@ void FCharBuffer::Append(const char *str, size_t size)
     }
     if (bufSize == 0 || size + cursor > bufSize - 1)
     {
-        Reverse(std::max(GetIncreasedSize(), size + cursor + 2));
+        Reserve(std::max(GetIncreasedSize(), size + cursor + 2));
     }
     memcpy(pBuf + cursor, str, size);
     cursor += size;
@@ -234,7 +238,7 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
         cursor += num;
         return true;
     }
-    Reverse(std::max(GetIncreasedSize(), num + cursor + 2));
+    Reserve(std::max(GetIncreasedSize(), num + cursor + 2));
     available = bufSize - cursor;
     num = vsnprintf(pBuf + cursor, available, format, args);
     if (num < 0) {
@@ -244,9 +248,9 @@ bool FCharBuffer::VFormatAppend(const char* format, va_list vlist)
     return true;
 }
 
-void FCharBuffer::ReverseAssign(const char* cstr, size_t size)
+void FCharBuffer::ReserveAssign(const char* cstr, size_t size)
 {
-    Reverse(size + 2);
+    Reserve(size + 2);
     if (size > 0)
     {
         memcpy(pBuf, cstr, size);
@@ -254,9 +258,9 @@ void FCharBuffer::ReverseAssign(const char* cstr, size_t size)
     cursor = size;
 }
 
-void FCharBuffer::ReverseAssign(std::string_view view)
+void FCharBuffer::ReserveAssign(std::string_view view)
 {
-    ReverseAssign(view.data(), view.size());
+    ReserveAssign(view.data(), view.size());
 }
 
 void FCharBuffer::Assign(const char *cstr, size_t size)
@@ -287,7 +291,7 @@ void FCharBuffer::Clear()
 const char* FCharBuffer::CStr()
 {
     if (cursor >= bufSize) {
-        Reverse(cursor + 1);
+        Reserve(cursor + 1);
     }
     pBuf[cursor] = 0;
     return pBuf;
@@ -321,6 +325,11 @@ size_t FCharBuffer::Capacity() const
     return bufSize;
 }
 
+bool FCharBuffer::Empty() const
+{
+    return !cursor;
+}
+
 FCharBuffer& FCharBuffer::Seekg(size_t pos)
 {
     readCursor = pos < cursor ? pos : cursor;
@@ -352,11 +361,11 @@ void FCharBuffer::Put(FCharBuffer::Ch c)
 {
     if (bufSize == 0 || cursor >= bufSize - 1)
     {
-        Reverse(GetIncreasedSize());
+        Reserve(GetIncreasedSize());
     }
     pBuf[cursor++] = c;
 }
-void FCharBuffer::Reverse(uint32_t size)
+void FCharBuffer::Reserve(uint32_t size)
 {
     auto desiredSize = size;
     if (desiredSize <= bufSize)
@@ -382,12 +391,13 @@ void FCharBuffer::Resize(uint32_t size)
         return;
     }
     char *newbuf = (char *)mallocptr(desiredSize);
-    
-    if (bufSize > 0)
+    auto copySize = std::min(uint32_t(cursor), desiredSize);
+    if (copySize > 0)
     {
-        memcpy(newbuf, pBuf, std::min(uint32_t(cursor),desiredSize));
+        memcpy(newbuf, pBuf, copySize);
         freeptr(pBuf);
     }
+    memset(newbuf + copySize, 0, desiredSize - copySize);
     cursor = desiredSize;
     bufSize = desiredSize;
     pBuf = newbuf;
