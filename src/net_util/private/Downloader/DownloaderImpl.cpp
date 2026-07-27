@@ -78,7 +78,6 @@ public:
 
     FDownloadFile(std::string url, std::string folder);
     FDownloadFile(std::string url, FCharBuffer& content);
-    FDownloadFile(std::string url, std::filesystem::path folder);
     FDownloadFile(std::string url, std::u8string_view path);
 
     ~FDownloadFile();
@@ -150,7 +149,7 @@ private:
 
 FDownloadFile::FDownloadFile(std::string url, std::u8string_view path):Path(ConvertU8ViewToView(path)), URL(url) {}
 
-FDownloadFile::FDownloadFile(std::string url, std::string path) : FDownloadFile(url, std::filesystem::path(path)) {}
+FDownloadFile::FDownloadFile(std::string url, std::string path) : FDownloadFile(url, ConvertViewToU8View(path)) {}
 FDownloadFile::FDownloadFile(std::string url, FCharBuffer& content) : Content(&content), URL(url), bRecoveryInfo(false) {
 
 }
