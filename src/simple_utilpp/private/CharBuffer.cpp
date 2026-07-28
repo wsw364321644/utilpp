@@ -386,20 +386,23 @@ void FCharBuffer::Reserve(uint32_t size)
 void FCharBuffer::Resize(uint32_t size)
 {
     auto desiredSize = size;
-    if (desiredSize == bufSize)
+    uint32_t copySize = 0;
+
+    if (bufSize < desiredSize)
     {
-        return;
+        char* newbuf = (char*)mallocptr(desiredSize);
+        if (pBuf) {
+            copySize = std::min(uint32_t(cursor), desiredSize);
+            if (copySize > 0)
+            {
+                memcpy(newbuf, pBuf, copySize);
+                freeptr(pBuf);
+            }
+        }
+        pBuf = newbuf;
+        bufSize = desiredSize;
     }
-    char *newbuf = (char *)mallocptr(desiredSize);
-    auto copySize = std::min(uint32_t(cursor), desiredSize);
-    if (copySize > 0)
-    {
-        memcpy(newbuf, pBuf, copySize);
-        freeptr(pBuf);
-    }
-    memset(newbuf + copySize, 0, desiredSize - copySize);
+    memset(pBuf + copySize, 0, desiredSize - copySize);
     cursor = desiredSize;
-    bufSize = desiredSize;
-    pBuf = newbuf;
     readCursor = 0;;
 }

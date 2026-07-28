@@ -44,7 +44,7 @@ public:
 
 class IPC_EXPORT IMessageClient:public IMessageSession {
 public:
-    typedef std::function<void(std::error_code&)> TCompleteConnectDelegate;
+    typedef std::function<void(const std::error_code)> TCompleteConnectDelegate;
     virtual bool Connect(EMessageConnectionType, const std::string& url, TCompleteConnectDelegate delegate)=0;
     virtual void Tick(float delSec) = 0;
 };
