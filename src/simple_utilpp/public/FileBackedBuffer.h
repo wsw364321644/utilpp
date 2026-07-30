@@ -58,4 +58,4 @@ public:
 
 };
 
-IFileBackedBuffer* NewFileBackedBuffer();
+SIMPLE_UTIL_EXPORT IFileBackedBuffer* NewFileBackedBuffer();
