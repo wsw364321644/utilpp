@@ -360,7 +360,6 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
         SIMPLELOG_LOGGER_INFO(nullptr, "{}: Cannot process HTTP request: URL is empty", (void*)creq.get());
         return false;
     }
-
     curl_easy_setopt(creq->EasyHandle, CURLOPT_URL, creq->URL.c_str());
     curl_easy_setopt(creq->EasyHandle, CURLOPT_CUSTOMREQUEST, creq->Verb.c_str());
     // set up verb (note that Verb is expected to be uppercase only)

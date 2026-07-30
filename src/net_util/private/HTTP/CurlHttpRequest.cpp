@@ -1,5 +1,6 @@
 #include "HTTP/CurlHttpRequest.h"
 #include "HTTP/CurlHttpManager.h"
+
 #include <FunctionExitHelper.h>
 #include <constant_hash.h>
 #include <LoggerHelper.h>
@@ -148,7 +149,7 @@ bool FCurlHttpRequest::GenerateURL()
         }
     }
     if (!Path.empty()) {
-        rc = curl_url_set(urlp, CURLUPART_PATH, Path.c_str(), 0);
+        rc = curl_url_set(urlp, CURLUPART_PATH, Path.c_str(), CURLU_URLENCODE);
         if (rc != CURLUcode::CURLUE_OK) {
             return false;
         }
@@ -403,6 +404,20 @@ float FCurlHttpRequest::GetElapsedTime()
 void FCurlHttpRequest::EnableRespContent(bool bEnable)
 {
     bEnableRespContent = bEnable;
+}
+
+void FCurlHttpRequest::EncodeURL()
+{
+    ParsedURL_t parseRes;
+    ParseUrl(URL, parseRes);
+    Scheme = parseRes.outScheme;
+    Host = parseRes.outAuthority;
+    Path = parseRes.outPath;
+    if (!parseRes.outPort.empty()) {
+        Port = std::stoi(std::string(parseRes.outPort));
+    }
+    GenerateURL();
+    URL += parseRes.outQuery;
 }
 
 

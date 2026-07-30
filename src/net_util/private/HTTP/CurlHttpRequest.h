@@ -59,6 +59,8 @@ public:
     void Tick(float DeltaSeconds) override;
     float GetElapsedTime() override;
     void EnableRespContent(bool bEnable) override;
+    void EncodeURL()override;
+
     friend class FCurlHttpManager;
 private:
 
