@@ -5,7 +5,9 @@
 typedef struct FunctionExitHelper_t {
     FunctionExitHelper_t(std::function<void()> infunc) :func(infunc) {}
     ~FunctionExitHelper_t() {
-        func();
+        if (func) {
+            func();
+        }
     }
     std::function<void()> func;
 }FunctionExitHelper_t;

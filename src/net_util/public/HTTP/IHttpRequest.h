@@ -253,6 +253,9 @@ public:
     /// </summary>
     /// <param name="bDisable"></param>
     virtual void EnableRespContent(bool bEnable) = 0;
+
+    ///encode entire URL .path part will auto encode
+    virtual void EncodeURL() = 0;
     /**
      * Destructor for overrides
      */

@@ -60,7 +60,8 @@ enum class EDownloadCode {
 
 typedef struct DownloadFileInfo
 {
-    std::filesystem::path FilePath;
+    std::u8string_view FilePath;
+    std::u8string_view URL;
     int64_t FileSize{ 0 };
     uint32_t ChunkNum{ 0 };
 }DownloadFileInfo_t;

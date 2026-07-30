@@ -126,7 +126,7 @@ bool FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t 
         Seek(0);
     }
 
-    return ERR_SUCCESS;
+    return true;
 }
 
 const char* FRawFile::GetFilePath()

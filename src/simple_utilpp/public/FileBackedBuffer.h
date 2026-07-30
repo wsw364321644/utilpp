@@ -2,9 +2,12 @@
 #include "simple_export_ppdefs.h"
 #include <stdint.h>
 #include <string>
+#include <system_error>
 class SIMPLE_UTIL_EXPORT IFileBackedBuffer {
 public:
-    virtual bool Init(uint32_t size, std::u8string_view fileName) = 0;
+    virtual bool Init(uint32_t size, std::u8string_view fileName, std::error_code& ec) = 0;
+    /// @brief write data to disk
+    virtual void IOTick(float delSec) = 0;
     virtual void* GetPtr(uint32_t offset)const = 0;
     virtual void WriteData(void* target, uint8_t& val) = 0;
     virtual void WriteData(void* target, uint16_t& val) = 0;

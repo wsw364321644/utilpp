@@ -11,21 +11,22 @@ typedef struct DirtyRange_t{
 
 class FFileBackedBuffer :public IFileBackedBuffer {
 public:
-    bool Init(uint32_t size, std::u8string_view fileName) override {
-        std::error_code ec;
+    bool Init(uint32_t size, std::u8string_view fileName ,std::error_code& ec) override {
         Buf.Resize(size);
-        auto bres=BackupFileile.Open(fileName, UTIL_OPEN_ALWAYS,0,ec);
+        auto bres=BackupFile.Open(fileName, UTIL_OPEN_ALWAYS,0,ec);
         if (!bres) {
             return false;
         }
 
         if (ec == std::make_error_code(std::errc::file_exists)) {
-            auto readed = BackupFileile.Read(Buf.Data(), size, ec);
+            auto readed = BackupFile.Read(Buf.Data(), size, ec);
             if (ec) {
                 return false;
             }
             if (readed != size) {
                 memset(Buf.Data(), 0, Buf.Size());
+                ec = std::make_error_code(std::errc::bad_message);
+                return true;
             }
         }
         return true;
@@ -64,12 +65,12 @@ public:
         DirtyRanges.enqueue(DirtyRange_t{ begin,end });
     }
 
-    void IOTick() {
-        DirtyRange_t tmp[10];
+    void IOTick(float delSec) override{
+        std::array<DirtyRange_t, 10> tmp;
         while (true) {
-            auto outSize = DirtyRanges.try_dequeue_bulk(tmp, sizeof(tmp) / sizeof(DirtyRange_t));
-            DirtyRangeCache.insert(DirtyRangeCache.end(), tmp, tmp + outSize);
-            if (outSize < sizeof(tmp)/sizeof(DirtyRange_t)) {
+            auto outSize = DirtyRanges.try_dequeue_bulk(tmp.data(), tmp.size());
+            DirtyRangeCache.insert(DirtyRangeCache.end(), tmp.begin(), tmp.end());
+            if (outSize < tmp.size()) {
                 break;
             }
         }
@@ -95,13 +96,13 @@ public:
         }
         DirtyRangeCache.resize(w + 1);
         for (auto& range : DirtyRangeCache) {
-            BackupFileile.Seek((char*)range.BeginPos - Buf.Data());
-            BackupFileile.Write(range.BeginPos, (char*)range.EndPos - (char*)range.BeginPos);
+            BackupFile.Seek((char*)range.BeginPos - Buf.Data());
+            BackupFile.Write(range.BeginPos, (char*)range.EndPos - (char*)range.BeginPos);
         }
         DirtyRangeCache.clear();
     }
     FCharBuffer Buf;
-    FRawFile BackupFileile;
+    FRawFile BackupFile;
     moodycamel::ConcurrentQueue<DirtyRange_t> DirtyRanges;
     std::vector<DirtyRange_t> DirtyRangeCache;
 };

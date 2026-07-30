@@ -587,8 +587,8 @@ std::shared_ptr<TaskStatus_t> FDownloader::GetTaskStatus(std::shared_ptr<FDownlo
 
 std::shared_ptr<DownloadFileInfo> FDownloader::GetTaskInfo(std::shared_ptr<FDownloadFile> pfile) {
     auto& info = *OutFileInfo;
-    info.FilePath = pfile->Path;
-    info.FileSize = pfile->Size;
+    info.FilePath = ConvertViewToU8View(pfile->Path);
+    info.URL = ConvertViewToU8View(pfile->URL);
     info.ChunkNum = pfile->ChunkNum;
     return OutFileInfo;
 }
@@ -843,6 +843,7 @@ void FDownloader::Tick(float delSec)
         case EFileTaskStatus::Idle: {
             auto preq = HttpManager.NewRequest();
             preq->SetURL(pfile->URL);
+            preq->EncodeURL();
             preq->SetVerb(VERB_HEAD);
             preq->SetHeader("User-Agent", "Downloader");
             auto pweakFile = pfile->weak_from_this();
