@@ -413,11 +413,15 @@ void FCurlHttpRequest::EncodeURL()
     Scheme = parseRes.outScheme;
     Host = parseRes.outAuthority;
     Path = parseRes.outPath;
+    std::string tempQuery (parseRes.outQuery);
     if (!parseRes.outPort.empty()) {
         Port = std::stoi(std::string(parseRes.outPort));
     }
     GenerateURL();
-    URL += parseRes.outQuery;
+    if (!tempQuery.empty()) {
+        URL += "?";
+        URL += tempQuery;
+    }
 }
 
 
