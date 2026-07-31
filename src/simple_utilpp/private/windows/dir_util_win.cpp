@@ -324,9 +324,8 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag)
 
 F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::error_code& ec)
 {
-    auto pathw = (wchar_t*)pathBuf.GetPrependFileNamespacesW();
 
-    DWORD attr = GetFileAttributesW((LPCWSTR)pathw);
+    DWORD attr = GetFileAttributesW((LPCWSTR)pathBuf.GetPrependFileNamespacesW());
     if (attr != INVALID_FILE_ATTRIBUTES) {
         if (attr & FILE_ATTRIBUTE_DIRECTORY) {
             ec = std::make_error_code(std::errc::permission_denied);
@@ -337,7 +336,7 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::err
         }
     }
 
-    F_HANDLE handle = CreateFileW((LPCWSTR)pathw,
+    F_HANDLE handle = CreateFileW((LPCWSTR)pathBuf.GetPrependFileNamespacesW(),
         GENERIC_WRITE | GENERIC_READ,
         FILE_SHARE_WRITE | FILE_SHARE_READ,
         NULL,
@@ -354,14 +353,14 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::err
         SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file : {}. ErrorCode is {}", pathw, err);
         return handle;
     }
-
+    auto fileName=pathBuf.PopPathW();
     // Path not found? Create the directory
-    if (!InternalCreateDir(pathw, pathBuf.PathPrependLen, pathBuf.GetPathLenW()+ pathBuf.PathPrependLen)) {
+    if (!InternalCreateDir((wchar_t*)pathBuf.GetPrependFileNamespacesW(), pathBuf.PathPrependLen, pathBuf.GetPathLenW()+ pathBuf.PathPrependLen)) {
         ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
         return handle;
     }
-
-    handle = CreateFileW((LPCWSTR)pathw,
+    pathBuf.AppendPathW(ConvertU16ViewToWView(fileName));
+    handle = CreateFileW((LPCWSTR)pathBuf.GetPrependFileNamespacesW(),
         GENERIC_WRITE | GENERIC_READ,
         FILE_SHARE_WRITE | FILE_SHARE_READ,
         NULL,
