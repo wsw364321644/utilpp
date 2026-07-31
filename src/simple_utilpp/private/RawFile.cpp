@@ -135,6 +135,22 @@ const char* FRawFile::GetFilePath()
     return PathBuf.GetBuf();
 }
 
+int32_t FRawFile::Read(void* pBuf, uint32_t size)
+{
+    uint32_t readed;
+    auto ires = Read(pBuf, size, readed);
+    if (ires == ERR_SUCCESS) {
+        if (readed != size) {
+            return ERR_FILE;
+        }
+    }
+    return ires;
+}
+
+int32_t FRawFile::Read(void* pBuf, uint32_t size, std::error_code& ec)
+{
+    return Read(pBuf, size, std::numeric_limits<uint64_t>::max(), ec);
+}
 #ifdef WIN32
 
 FRawFile::FRawFile()
@@ -166,23 +182,7 @@ bool FRawFile::IsOpen()
     return (handle_ != INVALID_HANDLE_VALUE)|| fd!= -1;
 }
 
-int32_t FRawFile::Read(void* pBuf, uint32_t size)
-{
-    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
-    {
-        return ERR_ARGUMENT;
-    }
 
-    DWORD readed = 0;
-    BOOL res = ReadFile(handle_, pBuf, size, &readed, NULL);
-    if (FALSE == res || readed != size)
-    {
-        SIMPLELOG_LOGGER_WARN(nullptr, "Read file: {} error ...", GetFilePath());
-        return ERR_FILE;
-    }
-
-    return ERR_SUCCESS;
-}
 
 int32_t FRawFile::Read(void* pBuf, uint32_t size, uint32_t& outreaded)
 {
@@ -209,22 +209,33 @@ int32_t FRawFile::Read(void* pBuf, uint32_t size, uint32_t& outreaded)
     return ERR_SUCCESS;
 }
 
-int32_t FRawFile::Read(void* pBuf, uint32_t size, std::error_code& ec)
-{
 
+
+int32_t FRawFile::Read(void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec)
+{
     if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
     {
-        ec=std::make_error_code(std::errc::invalid_argument);
+        ec = std::make_error_code(std::errc::invalid_argument);
     }
     ec.clear();
     DWORD readed = 0;
-    BOOL res = ReadFile(handle_, pBuf, size, &readed, NULL);
+    BOOL res;
+    if (offset==std::numeric_limits<decltype(offset)>::max()) {
+        res = ReadFile(handle_, pBuf, size, &readed, NULL);
+    }
+    else {
+        OVERLAPPED ov = {};
+        ov.Offset = (DWORD)(offset & 0xFFFFFFFF);
+        ov.OffsetHigh = (DWORD)(offset >> 32);
+        res = ReadFile(handle_, pBuf, size, &readed, &ov);
+    }
     if (FALSE == res)
     {
         auto dwError = GetLastError();
         if (dwError == ERROR_IO_PENDING) {
             ec = std::make_error_code(std::errc::operation_in_progress);
-        }else if (dwError == ERROR_HANDLE_EOF) {
+        }
+        else if (dwError == ERROR_HANDLE_EOF) {
         }
         else {
             ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
@@ -520,6 +531,24 @@ int32_t FRawFile::Read(void* pBuf, uint32_t size)
     }
 
     return ERR_SUCCESS;
+}
+
+int32_t FRawFile::Read(void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec) {
+    ssize_t readed = 0;
+    if (pBuf == NULL || !IsOpen())
+    {
+        ec=std::make_error_code(std::errc::invalid_argument);
+        return readed;
+    }
+
+    readed = pread(handle_, pBuf, size,offset);
+
+    if(readed <0){
+        ec=std::make_error_code(std::errc::io_error);
+        return 0;
+    }
+    return readed;
+
 }
 
 int32_t FRawFile::Write(const void* pBuf, uint32_t size)
