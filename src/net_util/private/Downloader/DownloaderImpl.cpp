@@ -427,7 +427,9 @@ void FDownloadFile::CloseFileStream()
     }
     if (Code == EDownloadCode::OK) {
         if (DownloadSize == Size) {
-            DirUtil::Rename(ConvertViewToU8View(FilePath), ConvertStringToU8View( Path));
+            if (!Content) {
+                DirUtil::Rename(ConvertViewToU8View(FilePath), ConvertStringToU8View(Path));
+            }
         }
         if (bRecoveryInfo) {
             DirUtil::Delete(ConvertViewToU8View(RecoveryFilePath));

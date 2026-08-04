@@ -27,7 +27,7 @@ namespace utilpp {
     };
 
     [[nodiscard]] inline const std::error_category& get_common_used_error_category() noexcept {
-        thread_local common_used_error_category error_category_static;
+        static constexpr common_used_error_category error_category_static;
         return error_category_static;
     }
 

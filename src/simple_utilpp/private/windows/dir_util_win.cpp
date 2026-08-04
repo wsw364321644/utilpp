@@ -426,7 +426,17 @@ bool DirUtil::Rename(FPathBuf& pathBuf, FPathBuf& newfilePathBuf)
     if (!bres) {
         auto winerr = GetLastError();
         if (winerr == ERROR_PATH_NOT_FOUND) {
-            CreateDir(PathBuf2);
+            auto bDir = IsDirectory(PathBuf);
+            if (bDir) {
+                CreateDir(PathBuf2);
+            }
+            else {
+                auto fileName = PathBuf2.PopPathW();
+                CreateDir(PathBuf2);
+                if (fileName.size()) {
+                    PathBuf2.AppendPathW(ConvertU16ViewToWView(fileName));
+                }
+            }
             bres = MoveFileExW(path_oldw, pathw, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
         }
     }

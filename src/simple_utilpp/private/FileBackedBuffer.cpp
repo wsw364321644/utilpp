@@ -29,6 +29,10 @@ public:
                 return true;
             }
         }
+        else {
+            memset(Buf.Data(), 0, Buf.Size());
+            BackupFile.Write(Buf.Data(), Buf.Size());
+        }
         return true;
     }
 
