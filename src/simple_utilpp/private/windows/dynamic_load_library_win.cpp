@@ -1,9 +1,12 @@
 #include "dynamic_load_library.h"
-#include "simple_os_defs.h"
 #include "module_util.h"
+#include "simple_os_defs.h"
+#include <psapi.h>
 #include <filesystem>
+#include <string_convert.h>
 typedef struct LibraryInfoWin_t {
     HMODULE lib_handle;
+    bool bAddCount{ true };
 }LibraryInfoWin_t;
 namespace utilpp {
     void* simple_dlopen(std::filesystem::path& libPath) {
@@ -33,7 +36,17 @@ void* simple_dlopen(const char* lib_name)
     std::filesystem::path libPath(lib_name);
     return utilpp::simple_dlopen(libPath);
 }
-
+void* simple_dlopen_exist(const char* lib_name) {
+    auto u16Str=U8ToU16(ConvertViewToU8View( lib_name));
+    auto hM= GetModuleHandleW(ConvertU16ViewToWView( u16Str).data());
+    if (!hM) {
+        return nullptr;
+    }
+    auto out = new LibraryInfoWin_t();
+    out->lib_handle = hM;
+    out->bAddCount = false;
+    return out;
+}
 void* simple_dlsym(void* handle, const char* func_name)
 {
     if (!handle) {
@@ -54,11 +67,30 @@ bool simple_dlclose(void* handle)
         return NULL;
     }
     auto pLibraryInfo = reinterpret_cast<LibraryInfoWin_t*>(handle);
-    const BOOL rc = ::FreeLibrary(pLibraryInfo->lib_handle);
-    if (rc == 0)
-    {
-        return false;
+    if (pLibraryInfo->bAddCount) {
+        const BOOL rc = ::FreeLibrary(pLibraryInfo->lib_handle);
+        if (rc == 0)
+        {
+            return false;
+        }
     }
     delete pLibraryInfo;
     return true;
+}
+
+void* simple_get_offset_addr(void* handle, uint64_t offset)
+{
+    auto pLibraryInfo = reinterpret_cast<LibraryInfoWin_t*>(handle);
+    return (void*)((uintptr_t)pLibraryInfo->lib_handle + (uintptr_t)offset);
+}
+
+uint32_t simple_get_module_size(void* handle)
+{
+    auto pLibraryInfo = reinterpret_cast<LibraryInfoWin_t*>(handle);
+    MODULEINFO info;
+    bool success = !!GetModuleInformation(GetCurrentProcess(), pLibraryInfo->lib_handle, &info, sizeof(info));
+    if (!success) {
+        return NULL;
+    }
+    return info.SizeOfImage;
 }

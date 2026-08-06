@@ -8,10 +8,13 @@
 
 SIMPLE_UTIL_API void* simple_dlopen(const char* lib_name);
 SIMPLE_UTIL_API void* simple_dlopenw(const wchar_t* lib_name);
+SIMPLE_UTIL_API void* simple_dlopen_exist(const char* lib_name);
 SIMPLE_UTIL_API void* simple_dlsym(void* handle, const char* func_name);
 SIMPLE_UTIL_API void simple_dlsym_function_ptr(void* handle, const char* func_name, void** outptr);
 SIMPLE_UTIL_API bool simple_dlclose(void* handle);
 
+SIMPLE_UTIL_API void* simple_get_offset_addr(void* handle, uint64_t offset);
+SIMPLE_UTIL_API uint32_t simple_get_module_size(void* handle);
 namespace utilpp {
     SIMPLE_UTIL_EXPORT void* simple_dlopen(std::filesystem::path& libPath);
     SIMPLE_UTIL_EXPORT void* simple_dlopen(std::u8string_view lib_name);
