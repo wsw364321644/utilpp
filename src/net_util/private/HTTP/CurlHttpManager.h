@@ -1,14 +1,15 @@
 #pragma once
-
+#include "HTTP/HttpManager.h"
+#include "HTTP/CurlHttpRequest.h"
+#include "net_export_defs.h"
 #include <set>
 #include <list>
 #include <unordered_map>
 #include <mutex>
 #include <std_ext.h>
 #include <moodycamel/concurrentqueue.h>
-#include "HTTP/HttpManager.h"
-#include "HTTP/CurlHttpRequest.h"
-#include "net_export_defs.h"
+#include <curl/curl.h>
+
 typedef std::shared_ptr<class FCurlHttpRequest> CurlHttpRequestPtr;
 
 typedef struct {
@@ -74,6 +75,10 @@ private:
     static size_t StaticUploadCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, void* UserData);
     static size_t StaticReceiveResponseHeaderCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, void* UserData);
     static size_t StaticReceiveResponseBodyCallback(void* Ptr, size_t SizeInBlocks, size_t BlockSizeInBytes, void* UserData);
+    static size_t StaticMimeReadCallback(char* buffer, size_t size, size_t nitems, void* arg);
+    static int StaticMimeSeekCallback(void* arg, curl_off_t offset, int origin);
+    static void StaticMimeFreeCallback(void* arg);
+
     void HttpThreadAddTask();
     bool SetupLocalRequest(CurlHttpRequestPtr);
     bool InitRequest(CurlHttpRequestPtr);

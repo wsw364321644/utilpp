@@ -102,7 +102,7 @@ FCharBuffer& FCurlHttpRequest::GetContent()
     return Content;
 }
 
-std::vector<MimePart_t> FCurlHttpRequest::GetAllMime()
+const std::vector<MimePart_t>& FCurlHttpRequest::GetAllMime()
 {
     return MimeParts;
 }
@@ -341,6 +341,7 @@ void FCurlHttpRequest::Clear()
     Headers.clear();
     Queries.clear();
     MimeParts.clear();
+    MimeCallbackDateList.clear();
     Verb.clear();
     URL.clear();
     Host.clear();
@@ -518,9 +519,9 @@ std::vector<std::string> FCurlHttpResponse::GetAllHeaders() const
     return out;
 }
 
-std::vector<MimePart_t> FCurlHttpResponse::GetAllMime()
+const std::vector<MimePart_t>& FCurlHttpResponse::GetAllMime()
 {
-    return std::vector<MimePart_t>();
+    return OutMimePart;
 }
 
 std::string_view FCurlHttpResponse::GetContentType() const

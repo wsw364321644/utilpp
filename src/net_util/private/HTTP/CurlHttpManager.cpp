@@ -2,7 +2,7 @@
 #include "HTTP/CurlHttpManager.h"
 #include "HTTP/CurlHttpRequest.h"
 #include <CharBuffer.h>
-#include <curl/curl.h>
+
 #include <LoggerHelper.h>
 #include <string>
 #include <regex>
@@ -50,7 +50,7 @@ HttpRequestPtr FCurlHttpManager::NewRequest()
 
 void FCurlHttpManager::FreeRequest(HttpRequestPtr req)
 {
-    auto ptr=std::dynamic_pointer_cast<FCurlHttpRequest>(req);
+    auto ptr = std::dynamic_pointer_cast<FCurlHttpRequest>(req);
     ptr->Clear();
     FreeToUseRequests.enqueue(ptr);
 }
@@ -72,7 +72,7 @@ bool FCurlHttpManager::ProcessRequest(HttpRequestPtr req)
         FinishRequest(creq);
         return false;
     }
-    
+
     SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: threaded {}", (void*)creq.get(), (void*)ThreadedRequest.get());
     RunningRequests.enqueue(ThreadedRequest);
     SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: request(easy handle : {}) has been added to threaded queue for processing", (void*)ThreadedRequest.get(), (void*)ThreadedRequest->EasyHandle);
@@ -84,14 +84,14 @@ void FCurlHttpManager::Tick(float delSec)
     CurlDownloadProgress_t outProgress;
     while (RunningProgressList.try_dequeue(outProgress)) {
         auto creq = std::dynamic_pointer_cast<FCurlHttpRequest>(outProgress.HttpReq);
-        if (creq->RequestID!= outProgress.RequestID) {
+        if (creq->RequestID != outProgress.RequestID) {
             continue;
         }
         if (outProgress.HttpReq->OnRequestProgress()) {
             outProgress.HttpReq->OnRequestProgress()(outProgress.HttpReq, outProgress.OldSize, outProgress.NewSize, outProgress.HttpReq->GetResponse()->GetContentLength());
         }
     }
-    do{
+    do {
         CurlHttpRequestPtr out;
         if (!FinishedRequests.try_dequeue(out)) {
             break;
@@ -106,7 +106,7 @@ void FCurlHttpManager::Tick(float delSec)
                 (*it)->Clear();
             }
             FreeToUseRequests.enqueue(*it);
-            it=WaitToFree.erase(it);
+            it = WaitToFree.erase(it);
         }
         else {
             it++;
@@ -306,6 +306,31 @@ size_t FCurlHttpManager::StaticReceiveResponseBodyCallback(void* Ptr, size_t Siz
     return creq->Manager->ReceiveResponseBodyCallback(Ptr, SizeInBlocks, BlockSizeInBytes, creq);
 }
 
+size_t FCurlHttpManager::StaticMimeReadCallback(char* buffer, size_t size, size_t nitems, void* arg)
+{
+    FCurlHttpRequest::MimeCallbackData_t* data = (FCurlHttpRequest::MimeCallbackData_t*)arg;
+    auto totalSize = size * nitems;
+    return data->MimePart->ReadFunc(buffer, totalSize);
+}
+
+int FCurlHttpManager::StaticMimeSeekCallback(void* arg, curl_off_t offset, int origin)
+{
+    FCurlHttpRequest::MimeCallbackData_t* data = (FCurlHttpRequest::MimeCallbackData_t*)arg;
+    if (!data->MimePart->SeekFunc) {
+        return CURL_SEEKFUNC_CANTSEEK;
+    }
+    return data->MimePart->SeekFunc(offset, origin);
+}
+
+void FCurlHttpManager::StaticMimeFreeCallback(void* arg)
+{
+    FCurlHttpRequest::MimeCallbackData_t* data = (FCurlHttpRequest::MimeCallbackData_t*)arg;
+    if (!data->MimePart->FreeFunc) {
+        return;
+    }
+    data->MimePart->FreeFunc();
+}
+
 void FCurlHttpManager::HttpThreadAddTask()
 {
     CurlHttpRequestPtr out;
@@ -365,28 +390,42 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     // set up verb (note that Verb is expected to be uppercase only)
     if (creq->Verb == VERB_POST)
     {
-        std::vector<MimePart_t> AllMime = creq->GetAllMime();
+        auto& AllMime = creq->GetAllMime();
         const int32_t NumAllMime = AllMime.size();
         if (NumAllMime) {
             for (int32_t Idx = 0; Idx < NumAllMime; ++Idx)
             {
+                auto& mime = AllMime[Idx];
                 curl_mimepart* part;
-                SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: MineName='{}'", (void*)creq.get(), AllMime[Idx].Name);
+                SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: MineName='{}'", (void*)creq.get(), mime.Name);
 
                 part = curl_mime_addpart(creq->Mime);
-                curl_mime_name(part, AllMime[Idx].Name.c_str());
-                if (AllMime[Idx].FileName.empty()) {
-                    curl_mime_data(part, AllMime[Idx].Data.c_str(), AllMime[Idx].Data.size());
+                curl_mime_name(part, mime.Name.c_str());
+                if (!mime.Data.empty()) {
+                    if (!mime.FileName.empty()) {
+                        curl_mime_filename(part, mime.FileName.c_str());
+                    }
+                    curl_mime_data(part, mime.Data.c_str(), mime.Data.size());
+                }
+                else if (mime.ReadFunc) {
+                    if (!mime.FileName.empty()) {
+                        curl_mime_filename(part, mime.FileName.c_str());
+                    }
+                    auto& MimeCallbackDate = creq->MimeCallbackDateList.emplace_back();
+                    MimeCallbackDate.MimePart = &mime;
+                    MimeCallbackDate.Req = creq.get();
+                    curl_mime_data_cb(part, mime.ReadSize,
+                        &FCurlHttpManager::StaticMimeReadCallback,
+                        &FCurlHttpManager::StaticMimeSeekCallback,
+                        &FCurlHttpManager::StaticMimeFreeCallback,
+                        &MimeCallbackDate
+                    );
+                    
                 }
                 else {
-                    if (AllMime[Idx].Data.empty()) {
-                        curl_mime_filedata(part, AllMime[Idx].FileName.c_str());
-                    }
-                    else {
-                        curl_mime_filename(part, AllMime[Idx].FileName.c_str());
-                        curl_mime_data(part, AllMime[Idx].Data.c_str(), AllMime[Idx].Data.size());
-                    }
+                    curl_mime_filedata(part, mime.FileName.c_str());
                 }
+
             }
             curl_easy_setopt(creq->EasyHandle, CURLOPT_MIMEPOST, creq->Mime);
         }
@@ -585,7 +624,7 @@ void FCurlHttpManager::FinishRequest(CurlHttpRequestPtr creq)
             }
 
             char* url = NULL;
-            if (curl_easy_getinfo(creq->EasyHandle, CURLINFO_EFFECTIVE_URL, &url)== CURLE_OK)
+            if (curl_easy_getinfo(creq->EasyHandle, CURLINFO_EFFECTIVE_URL, &url) == CURLE_OK)
             {
                 Response->EffectiveUrl = url;
             }

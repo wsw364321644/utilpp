@@ -27,13 +27,20 @@ typedef struct MimePart {
     std::string Name;
     std::string Data;
     std::string FileName;
-
+    uint64_t ReadSize;
+    std::function<size_t(char*, uint64_t)> ReadFunc;
+    std::function<int(uint64_t,int)> SeekFunc;
+    std::function<void()> FreeFunc;
 }MimePart_t;
 
 typedef struct InMimePart {
     std::string_view Name;
     std::string_view Data;
     std::string_view FileName;
+    uint64_t ReadSize;
+    std::function<size_t(char*, uint64_t)> ReadFunc;
+    std::function<int(uint64_t, int)> SeekFunc;
+    std::function<void()> FreeFunc;
 }InMimePart_t;
 
 
@@ -94,7 +101,7 @@ public:
      */
     virtual FCharBuffer& GetContent() = 0;
 
-    virtual std::vector<MimePart_t> GetAllMime() = 0;
+    virtual const std::vector<MimePart_t>& GetAllMime() = 0;
     /**
      * Destructor for overrides
      */

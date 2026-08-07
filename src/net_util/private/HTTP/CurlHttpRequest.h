@@ -23,7 +23,7 @@ public:
     std::string_view GetContentType()const override;
     int64_t GetContentLength()const override;
     FCharBuffer& GetContent() override;
-    std::vector<MimePart_t> GetAllMime() override;
+    const std::vector<MimePart_t>& GetAllMime() override;
 
     std::string_view GetVerb()const override;
     void SetVerb(std::string_view Verb) override;
@@ -96,6 +96,11 @@ private:
     std::unordered_map<std::string, std::unordered_set<std::string, string_hash>,string_hash> Queries;
     std::unordered_map<std::string, std::string, string_hash> Headers;
     std::vector<MimePart_t> MimeParts;
+    typedef struct MimeCallbackData_t {
+        const MimePart_t* MimePart;
+        FCurlHttpRequest* Req;
+    }MimeCallbackData_t;
+    std::vector<MimeCallbackData_t> MimeCallbackDateList;
     uint32_t ProxyPort{ std::numeric_limits<uint32_t>::max() };
     std::string ProxyHost;
     std::string ProxyScheme;
@@ -119,7 +124,7 @@ public:
     std::string_view GetURLParameter(std::string_view ParameterName)const override { return ""; }
     std::string_view GetHeader(std::string_view HeaderName)const override;
     std::vector<std::string> GetAllHeaders()const override;
-    std::vector<MimePart_t> GetAllMime() override;
+    const std::vector<MimePart_t>& GetAllMime() override;
     std::string_view GetContentType()const override;
     int64_t GetContentLength()const override { return ContentLength; }
     FCharBuffer& GetContent() override;
@@ -133,6 +138,7 @@ public:
     void Clear();
     friend class FCurlHttpManager;
 private:
+    std::vector<MimePart_t> OutMimePart;
     FCurlHttpRequest* CurlRequest;
     bool bSucceeded{ false };
     bool bIsReady{ false };
