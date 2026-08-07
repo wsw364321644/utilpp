@@ -87,7 +87,7 @@ bool FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64_t 
     Close();
 
     auto& filePath = *FPathBuf::GetThreadSingleton();
-    filePath.SetPath(ConvertU8ViewToView(lpFileName));
+    filePath.SetPath(lpFileName);
 
     DWORD err = 0;
 
@@ -151,6 +151,11 @@ int32_t FRawFile::Read(void* pBuf, uint32_t size, std::error_code& ec)
 {
     return Read(pBuf, size, std::numeric_limits<uint64_t>::max(), ec);
 }
+
+int32_t FRawFile::Write(const void* pBuf, uint32_t size, std::error_code& ec) {
+    return Write(pBuf, size,std::numeric_limits<uint64_t>::max(), ec);
+}
+
 #ifdef WIN32
 
 FRawFile::FRawFile()
@@ -283,6 +288,66 @@ int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset)
     }
 
     return ERR_SUCCESS;
+}
+
+int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec) {
+    DWORD written = 0;
+    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
+    {
+        return written;
+    }
+
+    BOOL res;
+    if (offset == std::numeric_limits<uint64_t>::max()) {
+        res = WriteFile(handle_, pBuf, size, &written,NULL);
+    }
+    else {
+        OVERLAPPED ov = { 0 };
+        ov.Offset = (DWORD)(offset & 0xFFFFFFFF);
+        ov.OffsetHigh = (DWORD)(offset >> 32); // 处理 >4GB 偏移
+        res = WriteFile(handle_, pBuf, size, &written, &ov);
+    }
+    if (written== size)
+    {
+        return written;
+    }
+
+    auto winEC=GetLastError();
+    switch (winEC) {
+    case ERROR_IO_PENDING: {
+
+    }
+    case ERROR_HANDLE_DISK_FULL: {
+        ec = std::make_error_code(std::errc::no_space_on_device);
+        break;
+    }
+    case ERROR_ACCESS_DENIED: {
+        ec = std::make_error_code(std::errc::permission_denied);
+        break;
+    }
+    case ERROR_BROKEN_PIPE: {
+        ec = std::make_error_code(std::errc::broken_pipe);
+        break;
+    }
+    case ERROR_NOT_ENOUGH_MEMORY: {
+        ec = std::make_error_code(std::errc::not_enough_memory);
+        break;
+    }
+    case ERROR_NO_SYSTEM_RESOURCES: {
+        ec = std::make_error_code(std::errc::no_buffer_space);
+        break;
+    }
+    case ERROR_WRITE_FAULT: {
+        ec = std::make_error_code(std::errc::io_error);
+        break;
+    }
+    default: {
+        ec = std::make_error_code(std::errc::io_error);
+        break;
+    }
+    }
+
+    return written;
 }
 
 int32_t FRawFile::Delete()
@@ -566,6 +631,7 @@ int32_t FRawFile::Write(const void* pBuf, uint32_t size)
 
     return ERR_SUCCESS;
 }
+
 int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset)
 {
     ssize_t bytes_written = pwrite(handle_, pBuf, size, offset);
@@ -574,6 +640,31 @@ int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset)
     }
     return ERR_SUCCESS;
 }
+
+int32_t FRawFile::Write(const void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec) {
+    DWORD written = 0;
+    if (pBuf == NULL || handle_ == INVALID_HANDLE_VALUE)
+    {
+        return written;
+    }
+    ssize_t written;
+    if (offset == std::numeric_limits<uint64_t>::max()) {
+        written = write(handle_, pBuf, size);
+        if (written < 0 || written != size)
+        {
+            ec = std::make_error_code(std::errc::io_error);
+        }
+    }
+    else {
+        bytes_written = pwrite(handle_, pBuf, size, offset);
+        if (bytes_written == -1 || written != size) {
+            ec = std::make_error_code(std::errc::io_error);
+        }
+    }
+    return written;
+}
+
+
 int32_t FRawFile::Delete()
 {
     if (!IsOpen())

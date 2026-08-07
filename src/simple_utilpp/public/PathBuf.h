@@ -28,8 +28,8 @@ public:
     std::wstring_view GetViewW() const {
         return std::wstring_view(GetBufW(), GetPathLenW());
     }
-    void SetPath(std::string_view view) {
-        SetPath(view.data(), view.size());
+    void SetPath(std::u8string_view view) {
+        SetPath((const char*)view.data(), view.size());
     }
     void SetPath(const char* path, size_t len) {
         memcpy(GetBufInternal(), path, len);
@@ -37,8 +37,8 @@ public:
         PathLen = len;
         OnPathChanged(false);
     }
-    void SetPathW(std::wstring_view view) {
-        SetPathW(view.data(), view.size());
+    void SetPathW(std::u16string_view view) {
+        SetPathW((const wchar_t*)view.data(), view.size());
     }
     void SetPathW(const wchar_t* path, size_t len) {
         memcpy(GetBufInternalW(), path, len * sizeof(wchar_t));

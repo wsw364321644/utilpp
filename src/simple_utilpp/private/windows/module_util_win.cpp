@@ -87,12 +87,10 @@ void* add_module_dir(const char* path, size_t size)
     if (!path) {
         return nullptr;
     }
-    PathCache.SetPath(std::string_view(path, size));
+    PathCache.SetPath(std::u8string_view((const char8_t*)path, size));
     auto wpath = PathCache.GetPrependFileNamespacesW();
     auto cookie = AddDllDirectory(wpath);
     return new DirInfoWin_t(cookie);
-
-
 }
 
 void* add_module_wdir(const wchar_t* path, size_t size)

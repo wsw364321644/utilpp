@@ -348,10 +348,22 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::err
     }
 
     auto err = GetLastError();
-    if (!((flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) && err == ERROR_PATH_NOT_FOUND)) {
-        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
-        SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file : {}. ErrorCode is {}", pathw, err);
-        return handle;
+    if (flag == UTIL_CREATE_ALWAYS || flag == UTIL_OPEN_ALWAYS) {
+        if (!(err == ERROR_PATH_NOT_FOUND || err == ERROR_FILE_NOT_FOUND)) {
+            ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+            SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file : {}. ErrorCode is {}", pathw, err);
+            return handle;
+        }
+    }else{
+        if (err == ERROR_PATH_NOT_FOUND || err == ERROR_FILE_NOT_FOUND) {
+            ec = std::make_error_code(std::errc::no_such_file_or_directory);
+            return handle;
+        }
+        else {
+            ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
+            SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file : {}. ErrorCode is {}", pathw, err);
+            return handle;
+        }
     }
     auto fileName=pathBuf.PopPathW();
     // Path not found? Create the directory

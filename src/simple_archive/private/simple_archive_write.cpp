@@ -56,7 +56,7 @@ void FArchiveWriteHelper::ArchiveFolder(FPathBuf& dir, std::u8string_view archiv
             archive_write_close(a);
         }
     );
-    charBuf.Reverse(1 << 13);
+    charBuf.Reserve(1 << 13);
     DirUtil::IterateDirRecursively(dir,
         [&](DirEntry_t& dirEntry,bool& bExit,bool& bEnter) {
             bool bExclude{ false };

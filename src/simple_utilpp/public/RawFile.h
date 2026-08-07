@@ -22,7 +22,9 @@ public:
     int32_t Read(void* pBuf, uint32_t size,std::error_code& ec);
     int32_t Read(void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec);
     int32_t Write(const void *pBuf, uint32_t size);
-    int32_t Write(const void* pBuf, uint32_t size,uint64_t);
+    int32_t Write(const void* pBuf, uint32_t size,uint64_t offset);
+    int32_t Write(const void* pBuf, uint32_t size, std::error_code& ec);
+    int32_t Write(const void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec);
     int32_t Seek(uint64_t uPos);
     uint64_t Tell();
     void Flush();
