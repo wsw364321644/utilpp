@@ -107,7 +107,7 @@ if(UTILPP_ENABLE_ARCHIVE)
 endif()
 
 if(UTILPP_ENABLE_IPC)
-	ImportProject(libuv ${STATIC_CRT} ${SSH} TAG v1.51.0)
+	ImportProject(libuv ${STATIC_CRT} ${SSH} TAG v1.52.1)
 	add_subdirectory(src/ipc_util)
 endif()
 
