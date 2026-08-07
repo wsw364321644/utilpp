@@ -191,7 +191,7 @@ bool FDownloadFile::Init()
     }
 
     auto& pathBuf = *FPathBuf::GetThreadSingleton();
-    pathBuf.SetPath(WorkPath);
+    pathBuf.SetPath(ConvertViewToU8View( WorkPath));
     if (!DirUtil::CreateDir(pathBuf)) {
         return false;
     }
@@ -206,7 +206,7 @@ bool FDownloadFile::Init()
 
     std::filesystem::path TempPath = WorkPath;
     TempPath.append(ID + "." + DownloadTempExtensionStr);
-    pathBuf.SetPathW(TempPath.wstring());
+    pathBuf.SetPathW(TempPath.u16string());
     if (FileStream.Open(pathBuf, UTIL_OPEN_ALWAYS, Size) != ERR_SUCCESS) {
         SIMPLELOG_LOGGER_ERROR(nullptr, "open file failed path:{}", TempPath.string());
         return false;
@@ -214,7 +214,7 @@ bool FDownloadFile::Init()
 
     std::filesystem::path RecoveryInfoPath = WorkPath;
     RecoveryInfoPath.append(ID + "." + DownloadDiskDataExtensionStr);
-    pathBuf.SetPathW(RecoveryInfoPath.wstring());
+    pathBuf.SetPathW(RecoveryInfoPath.u16string());
     if (RecoveryInfoFile.Open(pathBuf, UTIL_OPEN_ALWAYS) != ERR_SUCCESS) {
         SIMPLELOG_LOGGER_ERROR(nullptr, "open file failed path:{}", RecoveryInfoPath.string());
         return false;
@@ -750,7 +750,7 @@ DownloadTaskHandle_t FDownloader::AddTask(std::u8string_view url, std::u8string_
 void FDownloader::LoadDiskTask(std::u8string_view pathStr)
 {
     auto& pathBuf = *FPathBuf::GetThreadSingleton();
-    pathBuf.SetPath(ConvertU8ViewToView(pathStr));
+    pathBuf.SetPath(pathStr);
     DirUtil::IterateDir(pathBuf,
         [this, pathStr](DirEntry_t& entry)->bool {
             std::error_code ec;
@@ -848,6 +848,7 @@ void FDownloader::Tick(float delSec)
             preq->EncodeURL();
             preq->SetVerb(VERB_HEAD);
             preq->SetHeader("User-Agent", "Downloader");
+            preq->SetHeader("Referer", preq->GetURL());
             auto pweakFile = pfile->weak_from_this();
             preq->OnProcessRequestComplete() =
                 [this, pweakFile, handle](HttpRequestPtr req, HttpResponsePtr rep, bool res) {
@@ -856,6 +857,10 @@ void FDownloader::Tick(float delSec)
                     return;
                 }
                 if (!res || rep->GetContentLength() == 0) {
+                    pfile->Finish(EDownloadCode::SERVER_ERROR, "net error");
+                    return;
+                }
+                if (rep->GetResponseCode()<200|| rep->GetResponseCode()>=300) {
                     pfile->Finish(EDownloadCode::SERVER_ERROR, "net error");
                     return;
                 }
@@ -906,7 +911,7 @@ void FDownloader::Tick(float delSec)
                 }
                 if (!pfile->Content) {
                     auto& pathBuf = *FPathBuf::GetThreadSingleton();
-                    pathBuf.SetPath(pfile->Path);
+                    pathBuf.SetPath(ConvertViewToU8View( pfile->Path));
                     if (DirUtil::IsExist(pathBuf)) {
                         pfile->Finish(EDownloadCode::FILE_EXIST, "file exist");
                         return;
