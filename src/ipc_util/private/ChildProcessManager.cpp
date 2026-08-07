@@ -248,7 +248,7 @@ void FChildProcessManager::RegisterOnRead(CommonHandle32_t handle, FOnReadDelega
     if (pair == processes.end()) {
         return;
     }
-    pair->second->OnReadDelegate = delegate;
+    pair->second->OnReadDelegate = std::move(delegate);
 }
 void FChildProcessManager::RegisterOnExit(CommonHandle32_t handle, FOnExitDelegate delegate)
 {
@@ -256,7 +256,7 @@ void FChildProcessManager::RegisterOnExit(CommonHandle32_t handle, FOnExitDelega
     if (pair == processes.end()) {
         return;
     }
-    pair->second->OnExitDelegate = delegate;
+    pair->second->OnExitDelegate = std::move(delegate);
 }
 bool FChildProcessManager::CheckIsFinished(CommonHandle32_t handle)
 {
