@@ -78,7 +78,7 @@ int32_t FRawFile::Open(std::u8string_view lpFileName, uint32_t uOpenFlag, uint64
     {
         return ERR_ARGUMENT;
     }
-    filePath.SetPath(ConvertU8ViewToView(lpFileName).data(), lpFileName.size());
+    filePath.SetPath(lpFileName);
     return InternalOpen(filePath,uOpenFlag, uExpectSize);
 }
 
