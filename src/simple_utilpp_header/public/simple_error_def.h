@@ -7,6 +7,7 @@ namespace utilpp {
         CUE_UNKNOW=0x02,
         CUE_DUPLICATE_CALL = 0x03,
         CUE_CANCELED= 0x04,
+        CUE_NOT_ENOUGH_SPACE= 0x05,
         CUE_FILE_OP = 0x10,
         CUE_FILE_NOT_EXIST = 0x11,
         CUE_NET_ERROR = 0x80,
