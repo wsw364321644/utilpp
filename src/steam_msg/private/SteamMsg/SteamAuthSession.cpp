@@ -53,7 +53,9 @@ void FSteamAuthSession::ClearCurrentAuth()
     AccountName.clear();
     RefreshToken.clear();
     Password.clear();
-    AuthRequestHandlePtr->bFinished = true;
+    if (AuthRequestHandlePtr) {
+        AuthRequestHandlePtr->bFinished = true;
+    }
     AuthSessionStatus = ESteamClientAuthSessionStatus::Unauthorized;
 
 }

@@ -4,21 +4,22 @@
 #include "RawFile.h"
 #include <moodycamel/concurrentqueue.h>
 
-typedef struct DirtyRange_t{
+typedef struct DirtyRange_t {
     void* BeginPos;
     void* EndPos;
 }DirtyRange_t;
 
 class FFileBackedBuffer :public IFileBackedBuffer {
 public:
-    bool Init(uint32_t size, std::u8string_view fileName ,std::error_code& ec) override {
+    bool Init(uint32_t size, std::u8string_view fileName, std::error_code& ec) override {
         Buf.Resize(size);
-        auto bres=BackupFile.Open(fileName, UTIL_OPEN_ALWAYS,0,ec);
+        auto bres = BackupFile.Open(fileName, UTIL_OPEN_ALWAYS, 0, ec);
         if (!bres) {
             return false;
         }
 
         if (ec == std::make_error_code(std::errc::file_exists)) {
+            ec.clear();
             auto readed = BackupFile.Read(Buf.Data(), size, ec);
             if (ec) {
                 return false;
@@ -28,15 +29,21 @@ public:
                 ec = std::make_error_code(std::errc::bad_message);
                 return true;
             }
+            else {
+                ec = std::make_error_code(std::errc::file_exists);
+                return true;
+            }
         }
         else {
+            ec.clear();
             memset(Buf.Data(), 0, Buf.Size());
             BackupFile.Write(Buf.Data(), Buf.Size());
+            return true;
         }
         return true;
     }
 
-    void* GetPtr(uint32_t offset) const override{
+    void* GetPtr(uint32_t offset) const override {
         return Buf.Data() + offset;
     }
 
@@ -69,11 +76,11 @@ public:
         DirtyRanges.enqueue(DirtyRange_t{ begin,end });
     }
 
-    void IOTick(float delSec) override{
+    void IOTick(float delSec) override {
         std::array<DirtyRange_t, 10> tmp;
         while (true) {
             auto outSize = DirtyRanges.try_dequeue_bulk(tmp.data(), tmp.size());
-            DirtyRangeCache.insert(DirtyRangeCache.end(), tmp.begin(), tmp.end());
+            DirtyRangeCache.insert(DirtyRangeCache.end(), tmp.begin(), tmp.begin() + outSize);
             if (outSize < tmp.size()) {
                 break;
             }
@@ -89,7 +96,7 @@ public:
             }
         );
 
-        size_t w = 0; 
+        size_t w = 0;
         for (size_t i = 1; i < DirtyRangeCache.size(); ++i) {
             if (DirtyRangeCache[i].BeginPos <= DirtyRangeCache[w].EndPos) {
                 DirtyRangeCache[w].EndPos = std::max(DirtyRangeCache[w].EndPos, DirtyRangeCache[i].EndPos);
