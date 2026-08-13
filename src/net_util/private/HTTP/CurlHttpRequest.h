@@ -17,7 +17,6 @@ class FCurlHttpRequest :public IHttpRequest {
 public:
     ~FCurlHttpRequest() override;
     std::string_view GetURL()const override;
-    std::string_view GetURLParameter(std::string_view ParameterName)const override;
     std::string_view GetHeader(std::string_view HeaderName)const override;
     std::vector<std::string> GetAllHeaders()const override;
     std::string_view GetContentType()const override;
@@ -59,16 +58,18 @@ public:
     void Tick(float DeltaSeconds) override;
     float GetElapsedTime() override;
     void EnableRespContent(bool bEnable) override;
-    void EncodeURL()override;
 
+    void SetNeedURLEncode(bool flag) override {
+        bNeedURLEncode = flag;
+    }
     friend class FCurlHttpManager;
 private:
-
     FCurlHttpRequest(FCurlHttpManager* inManager);
     curl_proxytype GetCURLProxyScheme()const;
     size_t DebugCallback(CURL* Handle, curl_infotype DebugInfoType, char* DebugInfo, size_t DebugInfoSize, void* UserData);
     static size_t StaticDebugCallback(CURL* Handle, curl_infotype DebugInfoType, char* DebugInfo, size_t DebugInfoSize, void* UserData);
 
+    bool bNeedURLEncode{ false };
     /** Pointer to an easy handle specific to this request */
     CURL* EasyHandle{ 0 };
     /** List of custom headers to be passed to CURL */
@@ -121,7 +122,6 @@ public:
     FCurlHttpResponse(FCurlHttpRequest* inCurlRequest) :CurlRequest(inCurlRequest) {};
     ~FCurlHttpResponse() override {};
     std::string_view GetURL()const override { return EffectiveUrl; };
-    std::string_view GetURLParameter(std::string_view ParameterName)const override { return ""; }
     std::string_view GetHeader(std::string_view HeaderName)const override;
     std::vector<std::string> GetAllHeaders()const override;
     const std::vector<MimePart_t>& GetAllMime() override;

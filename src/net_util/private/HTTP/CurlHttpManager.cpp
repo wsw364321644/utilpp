@@ -3,6 +3,7 @@
 #include "HTTP/CurlHttpRequest.h"
 #include <CharBuffer.h>
 
+#include <uri.h>
 #include <LoggerHelper.h>
 #include <string>
 #include <regex>
@@ -352,6 +353,22 @@ bool FCurlHttpManager::SetupLocalRequest(CurlHttpRequestPtr creq)
     // Mark as in-flight to prevent overlapped requests using the same object
     creq->CompletionStatus = EHttpRequestStatus::Processing;
     if (creq->URL.empty()) {
+        if (!creq->GenerateURL()) {
+            return false;
+        }
+    }
+    else if(creq->bNeedURLEncode){
+        ParsedURL_t urlRes;
+        ParseUrl(creq->URL,urlRes);
+        creq->SetScheme(urlRes.outScheme);
+        creq->SetHost(urlRes.outAuthority);
+        creq->SetPath(urlRes.outPath);
+        uint32_t port;
+        std::from_chars(urlRes.outPort.data(), urlRes.outPort.data() + urlRes.outPort.size(),port);
+        creq->SetPortNum(port);
+        for (auto& [key,value] : urlRes.outQuery) {
+            creq->SetQuery(key,value);
+        }
         if (!creq->GenerateURL()) {
             return false;
         }

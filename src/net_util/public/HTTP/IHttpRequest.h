@@ -1,10 +1,11 @@
 #pragma once
 
+#include <string_convert.h>
+#include <CharBuffer.h>
 #include <vector>
 #include <string>
 #include <functional>
 #include <memory>
-#include <CharBuffer.h>
 
 #define InfiniteRange std::numeric_limits<uint64_t>::max()
 typedef std::shared_ptr<class IHttpRequest> HttpRequestPtr;
@@ -54,16 +55,6 @@ public:
      * @return the URL string.
      */
     virtual std::string_view GetURL() const = 0;
-
-    /**
-     * Gets an URL parameter.
-     * expected format is ?Key=Value&Key=Value...
-     * If that format is not used, this function will not work.
-     *
-     * @param ParameterName - the parameter to request.
-     * @return the parameter value string.
-     */
-    virtual std::string_view GetURLParameter(std::string_view ParameterName) const = 0;
 
     /**
      * Gets the value of a header, or empty string if not found.
@@ -130,6 +121,8 @@ public:
      * @param Verb - verb to use.
      */
     virtual void SetVerb(std::string_view Verb) = 0;
+
+    virtual void SetNeedURLEncode(bool flag) = 0;
 
     /**
      * Sets the URL for the request
@@ -261,8 +254,6 @@ public:
     /// <param name="bDisable"></param>
     virtual void EnableRespContent(bool bEnable) = 0;
 
-    ///encode entire URL .path part will auto encode
-    virtual void EncodeURL() = 0;
     /**
      * Destructor for overrides
      */
@@ -307,3 +298,26 @@ public:
 };
 
 
+
+inline bool IsUnreservedChar(const char& c) {
+    return std::isalnum(static_cast<unsigned char>(c)) ||
+        c == '-' || c == '_' || c == '.' || c == '~';
+}
+
+inline bool IsNotUrlEncoded(std::u8string_view u8url) {
+    auto url=ConvertU8ViewToView(u8url);
+    for (size_t i = 0; i < url.length(); ++i) {
+        auto& c = url[i];
+        if (IsUnreservedChar(c)) continue;
+        if (c == '%') {
+            if (i + 2 < url.length() &&
+                std::isxdigit(static_cast<unsigned char>(url[i + 1])) &&
+                std::isxdigit(static_cast<unsigned char>(url[i + 2]))) {
+                i += 2;
+                continue;
+            }
+        }
+        return true;
+    }
+    return false;
+}

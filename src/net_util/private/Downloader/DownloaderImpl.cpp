@@ -845,7 +845,9 @@ void FDownloader::Tick(float delSec)
         case EFileTaskStatus::Idle: {
             auto preq = HttpManager.NewRequest();
             preq->SetURL(pfile->URL);
-            preq->EncodeURL();
+            if (IsNotUrlEncoded(ConvertViewToU8View(pfile->URL))) {
+                preq->SetNeedURLEncode(true);
+            }
             preq->SetVerb(VERB_HEAD);
             preq->SetHeader("User-Agent", "Downloader");
             preq->SetHeader("Referer", preq->GetURL());

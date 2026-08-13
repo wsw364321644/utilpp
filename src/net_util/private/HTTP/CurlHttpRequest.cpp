@@ -50,26 +50,6 @@ std::string_view FCurlHttpRequest::GetURL() const
     return URL;
 }
 
-std::string_view FCurlHttpRequest::GetURLParameter(std::string_view ParameterName) const
-{
-    using std::operator""sv;
-    ParsedURL_t res;
-    ParseUrl(URL, res);
-    if (!res.outQuery.empty()) {
-        auto t = std::views::split(res.outQuery, "&"sv);
-        for (const auto kv : std::views::split(res.outQuery, "&"sv)) {
-            auto sres=std::views::split(std::string_view(kv), "="sv);
-            if (std::ranges::distance(sres)!=2) {
-                continue;
-            }
-            if (ParameterName.compare((*sres.begin()).data()) == 0) {
-                return (*sres.begin()++).data();
-            }
-        }
-    }
-    return std::string_view();
-}
-
 std::string_view FCurlHttpRequest::GetHeader(std::string_view HeaderName)const
 {
     auto itr = Headers.find(std::string(HeaderName));
@@ -122,6 +102,8 @@ bool FCurlHttpRequest::GenerateURL()
     CURLU* urlp{ nullptr };
     CURLUcode rc{ CURLUcode::CURLUE_OK };
     char* url{ nullptr };
+    unsigned int fURLEncode{ 0 };
+
     if (Host.empty()) {
         return false;
     }
@@ -134,6 +116,9 @@ bool FCurlHttpRequest::GenerateURL()
             curl_url_cleanup(urlp);
         }
     );
+    if (bNeedURLEncode) {
+        fURLEncode |= CURLU_URLENCODE;
+    }
     //rc = curl_url_set(urlp, CURLUPART_FRAGMENT, "anchor", 0);
     //rc = curl_url_set(urlp, CURLUPART_USER, "john", 0);
     //rc = curl_url_set(urlp, CURLUPART_PASSWORD, "doe", 0);
@@ -149,7 +134,9 @@ bool FCurlHttpRequest::GenerateURL()
         }
     }
     if (!Path.empty()) {
-        rc = curl_url_set(urlp, CURLUPART_PATH, Path.c_str(), CURLU_URLENCODE);
+
+        rc = curl_url_set(urlp, CURLUPART_PATH, Path.c_str(), fURLEncode);
+
         if (rc != CURLUcode::CURLUE_OK) {
             return false;
         }
@@ -160,14 +147,14 @@ bool FCurlHttpRequest::GenerateURL()
             return false;
         }
     }
-    for (auto& [key,valueList] : Queries) {
+
+    for (auto& [key, valueList] : Queries) {
         for (auto& value : valueList) {
-            rc = curl_url_set(urlp, CURLUPART_QUERY, (key + "=" + value).c_str(), CURLU_APPENDQUERY | CURLU_URLENCODE);
+            rc = curl_url_set(urlp, CURLUPART_QUERY, (key + "=" + value).c_str(), CURLU_APPENDQUERY | fURLEncode);
             if (rc != CURLUcode::CURLUE_OK) {
                 return false;
             }
         }
-
     }
 
     rc = curl_url_get(urlp, CURLUPART_URL, &url, 0);
@@ -226,7 +213,7 @@ void FCurlHttpRequest::SetContentAsString(std::string_view ContentString)
 
 std::string_view FCurlHttpRequest::GetProxyURL()
 {
-    ProxyURL =std::format("{}://{}:{}", GetProxyScheme(), ProxyHost, GetProxyPort());
+    ProxyURL = std::format("{}://{}:{}", GetProxyScheme(), ProxyHost, GetProxyPort());
     return ProxyURL;
 }
 
@@ -236,7 +223,7 @@ void FCurlHttpRequest::SetProxyURL(std::string_view URL)
     ParseUrl(URL, parsedURL);
     ProxyHost = parsedURL.outAuthority;
     if (!parsedURL.outPort.empty()) {
-        auto res= std::from_chars(parsedURL.outPort.data(), parsedURL.outPort.data()+ parsedURL.outPort.size(), ProxyPort);
+        auto res = std::from_chars(parsedURL.outPort.data(), parsedURL.outPort.data() + parsedURL.outPort.size(), ProxyPort);
     }
     if (!parsedURL.outScheme.empty()) {
         ProxyScheme = parsedURL.outScheme;
@@ -380,8 +367,7 @@ HttpThreadRespContentReceiveDelegateType& FCurlHttpRequest::OnHttpThreadRespCont
 }
 
 void FCurlHttpRequest::CancelRequest()
-{
-}
+{}
 
 EHttpRequestStatus FCurlHttpRequest::GetStatus()
 {
@@ -394,35 +380,16 @@ const HttpResponsePtr FCurlHttpRequest::GetResponse() const
 }
 
 void FCurlHttpRequest::Tick(float DeltaSeconds)
-{
-}
+{}
 
 float FCurlHttpRequest::GetElapsedTime()
 {
-    return std::chrono::duration_cast<std::chrono::microseconds>(LastServerRespondTime -RequestStartTime).count()/float(std::micro::den);
+    return std::chrono::duration_cast<std::chrono::microseconds>(LastServerRespondTime - RequestStartTime).count() / float(std::micro::den);
 }
 
 void FCurlHttpRequest::EnableRespContent(bool bEnable)
 {
     bEnableRespContent = bEnable;
-}
-
-void FCurlHttpRequest::EncodeURL()
-{
-    ParsedURL_t parseRes;
-    ParseUrl(URL, parseRes);
-    Scheme = parseRes.outScheme;
-    Host = parseRes.outAuthority;
-    Path = parseRes.outPath;
-    std::string tempQuery (parseRes.outQuery);
-    if (!parseRes.outPort.empty()) {
-        Port = std::stoi(std::string(parseRes.outPort));
-    }
-    GenerateURL();
-    if (!tempQuery.empty()) {
-        URL += "?";
-        URL += tempQuery;
-    }
 }
 
 
