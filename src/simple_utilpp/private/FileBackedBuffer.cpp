@@ -2,6 +2,8 @@
 
 #include "CharBuffer.h"
 #include "RawFile.h"
+#include "dir_util.h"
+#include "simple_error.h"
 #include <moodycamel/concurrentqueue.h>
 
 typedef struct DirtyRange_t {
@@ -41,6 +43,21 @@ public:
             return true;
         }
         return true;
+    }
+
+    void Close() override {
+        BackupFile.Close();
+    }
+
+    bool Clean(std::error_code& ec) override {
+        Buf.Resize(0);
+        auto view = ConvertViewToU8View(BackupFile.GetFilePath());
+        Close();
+        auto bres=DirUtil::Delete(view);
+        if (!bres) {
+            ec= utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_FILE_OP);
+        }
+        return bres;
     }
 
     void* GetPtr(uint32_t offset) const override {
