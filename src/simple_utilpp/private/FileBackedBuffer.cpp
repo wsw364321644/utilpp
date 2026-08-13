@@ -139,3 +139,8 @@ IFileBackedBuffer* NewFileBackedBuffer()
 {
     return new FFileBackedBuffer;
 }
+
+void FreeFileBackedBuffer(IFileBackedBuffer* ptr)
+{
+    return delete ptr;
+}

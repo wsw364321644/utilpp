@@ -5,6 +5,7 @@
 #include <system_error>
 class SIMPLE_UTIL_EXPORT IFileBackedBuffer {
 public:
+    virtual ~IFileBackedBuffer() {};
     virtual bool Init(uint32_t size, std::u8string_view fileName, std::error_code& ec) = 0;
     virtual void Close() = 0;
     virtual bool Clean(std::error_code& ec) = 0;
@@ -61,3 +62,4 @@ public:
 };
 
 SIMPLE_UTIL_EXPORT IFileBackedBuffer* NewFileBackedBuffer();
+SIMPLE_UTIL_EXPORT void FreeFileBackedBuffer(IFileBackedBuffer*);
