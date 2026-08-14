@@ -345,6 +345,7 @@ void FCurlHttpRequest::Clear()
     LastServerRespondTime = {};
     bEnableRespContent = true;
     bCompleted = false;
+    bNeedURLEncode = false;
 
     HttpRequestCompleteDelegate = nullptr;
     HttpRequestProgressDelegate = nullptr;
