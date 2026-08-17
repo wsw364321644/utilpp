@@ -276,7 +276,8 @@ void FCurlHttpRequest::AppendToHeader(std::string_view HeaderName, std::string_v
 
 void FCurlHttpRequest::SetMimePart(InMimePart_t part)
 {
-    MimeParts.emplace_back(MimePart{ .Name = std::string(part.Name) ,.Data = std::string(part.Data),.FileName = std::string(part.FileName), });
+    MimeParts.emplace_back(MimePart{ .Name = std::string(part.Name) ,.Data = std::string(part.Data),.FileName = std::string(part.FileName)
+    ,.ReadSize = part.ReadSize,.ReadFunc = part.ReadFunc,.SeekFunc = part.SeekFunc,.FreeFunc = part.FreeFunc });
 }
 
 

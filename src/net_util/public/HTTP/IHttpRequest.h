@@ -42,6 +42,15 @@ typedef struct InMimePart {
     std::function<size_t(char*, uint64_t)> ReadFunc;
     std::function<int(uint64_t, int)> SeekFunc;
     std::function<void()> FreeFunc;
+    void Clear() {
+        Name = std::string_view();
+        Data = std::string_view();
+        FileName = std::string_view();
+        ReadSize = 0;
+        ReadFunc = nullptr;
+        SeekFunc = nullptr;
+        FreeFunc = nullptr;
+    }
 }InMimePart_t;
 
 
