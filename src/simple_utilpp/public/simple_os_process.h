@@ -1,13 +1,14 @@
 #pragma once
+#include "simple_os_defs.h"
+#include "simple_export_defs.h"
+#include "simple_export_ppdefs.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <functional>
 #include <system_error>
 #include <std_ext.h>
 #include <handle.h>
-#include "simple_os_defs.h"
-#include "simple_export_defs.h"
-#include "simple_export_ppdefs.h"
+
 
 
 SIMPLE_UTIL_API pid_t get_pid();
@@ -28,3 +29,5 @@ SIMPLE_UTIL_EXPORT std::vector<save_memory_operator_string, allocator_save_memor
 SIMPLE_UTIL_EXPORT CommonHandlePtr_t open_process(pid_t);
 SIMPLE_UTIL_EXPORT void close_process_handle(CommonHandlePtr_t);
 SIMPLE_UTIL_EXPORT bool is_process_exist(CommonHandlePtr_t);
+
+SIMPLE_UTIL_EXPORT F_HANDLE duplicate_handle(CommonHandlePtr_t hProcess, F_HANDLE handle);

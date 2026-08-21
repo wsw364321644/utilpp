@@ -214,3 +214,9 @@ bool is_process_exist(CommonHandlePtr_t handle)
         }
     }
 }
+
+
+F_HANDLE duplicate_handle(CommonHandlePtr_t hProcess, F_HANDLE handle)
+{
+    return (F_HANDLE)handle;
+}

@@ -202,3 +202,12 @@ void CloseSharedMemory(const CommonHandlePtr_t handle)
     delete (WindowsSharedMemoryInfo_t*)handle.ID;
     const_cast<CommonHandlePtr_t&>(handle).Reset();
 }
+
+F_HANDLE SharedMemoryGetOSHandle(const CommonHandlePtr_t handle)
+{
+    if (!handle) {
+        return NULL;
+    }
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
+    return info.HMapFile;
+}

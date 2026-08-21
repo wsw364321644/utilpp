@@ -148,3 +148,26 @@ bool is_process_exist(CommonHandlePtr_t handle)
         return false;
     }
 }
+
+F_HANDLE duplicate_handle(CommonHandlePtr_t hProcess, F_HANDLE handle)
+{
+    if (!hProcess) {
+        return NULL;
+    }
+    auto ptr = (ProcessInfoWin_t*)hProcess.ID;
+    
+    F_HANDLE newHandle;
+    auto bres=DuplicateHandle(
+        GetCurrentProcess(),
+        handle,
+        ptr->hProcess,
+        &newHandle,
+        0,
+        FALSE,
+        DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE
+    );
+    if (!bres) {
+        return NULL;
+    }
+    return newHandle;
+}

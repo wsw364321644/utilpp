@@ -4,6 +4,7 @@
 #include <simple_os_defs.h>
 #include <unordered_map>
 #include <filesystem>
+#include <AclAPI.h>
 typedef struct EventInfoWin_t {
     HANDLE Handle{ NULL };
 }EventInfoWin_t;
@@ -13,7 +14,33 @@ namespace utilpp {
         FCharBuffer buf;
         EventInfoWin_t info;
         const char* nameStr = GetStringViewCStr(name, buf);
-        info.Handle = CreateEventA(NULL, false, false, nameStr);
+
+        // 1. 初始化 Everyone SID
+        PSID pEveryoneSid = NULL;
+        SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+        AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
+            0, 0, 0, 0, 0, 0, 0, &pEveryoneSid);
+
+        // 2. 设置 Everyone 拥有 EVENT_MODIFY_STATE | SYNCHRONIZE 权限
+        EXPLICIT_ACCESS_A ea = { 0 };
+        ea.grfAccessPermissions = EVENT_MODIFY_STATE | SYNCHRONIZE;
+        ea.grfAccessMode = SET_ACCESS;
+        ea.grfInheritance = NO_INHERITANCE;
+        ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+        ea.Trustee.ptstrName = (LPTSTR)pEveryoneSid;
+
+        // 3. 创建 ACL 和安全描述符
+        PACL pAcl = NULL;
+        SetEntriesInAclA(1, &ea, NULL, &pAcl);
+
+        SECURITY_DESCRIPTOR sd;
+        InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
+        SetSecurityDescriptorDacl(&sd, TRUE, pAcl, FALSE);
+
+        // 4. 用这个安全属性创建事件
+        SECURITY_ATTRIBUTES sa = { sizeof(sa), &sd, FALSE };
+
+        info.Handle = CreateEventA(&sa, false, false, nameStr);
         if (!info.Handle) {
             ec = make_ipc_error(EIPCError::IPCE_Unknow);
             return NullHandle;
@@ -36,7 +63,17 @@ namespace utilpp {
         const char* nameStr = GetStringViewCStr(name, buf);
         info.Handle = OpenEventA((EVENT_MODIFY_STATE | SYNCHRONIZE), false, nameStr);
         if (!info.Handle) {
-            ec = make_ipc_error(EIPCError::IPCE_NotExist);
+            DWORD dwRet = GetLastError();
+            switch (dwRet) {
+            case ERROR_ACCESS_DENIED: {
+                ec = make_ipc_error(EIPCError::IPCE_AccessDenied);
+                break;
+            }
+            default: {
+                ec = make_ipc_error(EIPCError::IPCE_NotExist);
+                
+            }
+            }
             return NullHandle;
         }
         ec = make_ipc_error(EIPCError::IPCE_OK);

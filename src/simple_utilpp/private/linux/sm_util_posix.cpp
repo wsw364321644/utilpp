@@ -162,3 +162,15 @@ void CloseSharedMemory(CommonHandle_t* phandle)
         shmctl(handle->HMapFile, IPC_RMID, NULL);
     delete handle;
 }
+
+F_HANDLE SharedMemoryGetOSHandle(const CommonHandlePtr_t phandle)
+{
+    if (!phandle || !phandle->IsValid()) {
+        return NULL;
+    }
+    PosixHandle_t* handle = dynamic_cast<PosixHandle_t*>(phandle);
+    if (!handle) {
+        return NULL;
+    }
+    return handle->HMapFile;
+}

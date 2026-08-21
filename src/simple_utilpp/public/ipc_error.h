@@ -7,6 +7,7 @@ namespace utilpp {
         IPCE_AlreadyExist,
         IPCE_NotExist,
         IPCE_Timeout,
+        IPCE_AccessDenied,
         IPCE_Unknow,
     };
 
