@@ -112,8 +112,13 @@ void* MapReadSharedMemory(const CommonHandlePtr_t handle)
     return pBuf;
 }
 
-void UnmapSharedMemory(const CommonHandlePtr_t,void* ptr)
+void UnmapSharedMemory(const CommonHandlePtr_t handle,void* ptr)
 {
+    if (!handle) {
+        return;
+    }
+    WindowsSharedMemoryInfo_t& info = *(WindowsSharedMemoryInfo_t*)handle.ID;
+    FlushViewOfFile(ptr, info.FileSize);
     UnmapViewOfFile(ptr);
 }
 
