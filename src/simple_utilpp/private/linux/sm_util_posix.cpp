@@ -163,7 +163,7 @@ void CloseSharedMemory(CommonHandle_t* phandle)
     delete handle;
 }
 
-F_HANDLE SharedMemoryGetOSHandle(const CommonHandlePtr_t phandle)
+F_HANDLE ReleaseSharedMemoryGetOSHandle(const CommonHandlePtr_t phandle)
 {
     if (!phandle || !phandle->IsValid()) {
         return NULL;

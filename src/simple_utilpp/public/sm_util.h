@@ -13,4 +13,4 @@ SIMPLE_UTIL_EXPORT void UnmapSharedMemory(const CommonHandlePtr_t,void* ptr);
 SIMPLE_UTIL_EXPORT bool WriteSharedMemory(const CommonHandlePtr_t phandle, void* content, size_t, std::error_code& ec);
 SIMPLE_UTIL_EXPORT bool ReadSharedMemory(const CommonHandlePtr_t phandle, void* content, size_t*, std::error_code& ec);
 SIMPLE_UTIL_EXPORT void CloseSharedMemory(const CommonHandlePtr_t phandle);
-SIMPLE_UTIL_EXPORT F_HANDLE SharedMemoryGetOSHandle(const CommonHandlePtr_t phandle);
+SIMPLE_UTIL_EXPORT F_HANDLE ReleaseSharedMemoryGetOSHandle(const CommonHandlePtr_t phandle);

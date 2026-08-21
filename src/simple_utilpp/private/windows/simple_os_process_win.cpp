@@ -109,7 +109,7 @@ typedef struct ProcessInfoWin_t {
 }ProcessInfoWin_t;
 CommonHandlePtr_t open_process(pid_t pid)
 {
-    auto handle = OpenProcess(SYNCHRONIZE, false, pid);
+    auto handle = OpenProcess(PROCESS_DUP_HANDLE | SYNCHRONIZE, false, pid);
     if (handle == NULL) {
         return NullHandle;
     }
@@ -166,6 +166,7 @@ F_HANDLE duplicate_handle(CommonHandlePtr_t hProcess, F_HANDLE handle)
         FALSE,
         DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE
     );
+    DWORD result = GetLastError();
     if (!bres) {
         return NULL;
     }
