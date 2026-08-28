@@ -27,3 +27,4 @@ inline const wchar_t* GetWStringViewCStr(std::wstring_view view, FCharBuffer& bu
 
 SIMPLE_UTIL_EXPORT bool LoadFileToCharBuffer(FRawFile& file, FCharBuffer& buf, size_t extraSpace = 0);
 
+SIMPLE_UTIL_EXPORT bool GenHexUUID(FCharBuffer& buf);

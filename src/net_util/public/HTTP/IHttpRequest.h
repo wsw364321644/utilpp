@@ -318,6 +318,11 @@ inline bool IsNotUrlEncoded(std::u8string_view u8url) {
     for (size_t i = 0; i < url.length(); ++i) {
         auto& c = url[i];
         if (IsUnreservedChar(c)) continue;
+        if (c == ':' || c == '/' || c == '?' || c == '#' ||
+            c == '[' || c == ']' || c == '@' || c == '!' ||
+            c == '$' || c == '&' || c == '\'' || c == '(' ||
+            c == ')' || c == '*' || c == '+' || c == ',' ||
+            c == ';' || c == '=') continue;
         if (c == '%') {
             if (i + 2 < url.length() &&
                 std::isxdigit(static_cast<unsigned char>(url[i + 1])) &&

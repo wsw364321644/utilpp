@@ -41,11 +41,17 @@ namespace utilpp {
         SECURITY_ATTRIBUTES sa = { sizeof(sa), &sd, FALSE };
 
         info.Handle = CreateEventA(&sa, false, false, nameStr);
+        DWORD dwRet = GetLastError();
         if (!info.Handle) {
-            ec = make_ipc_error(EIPCError::IPCE_Unknow);
+            if (ERROR_ACCESS_DENIED == dwRet) {
+                ec = make_ipc_error(EIPCError::IPCE_AccessDenied);
+            }
+            else {
+                ec = make_ipc_error(EIPCError::IPCE_Unknow);
+            }
             return NullHandle;
         }
-        DWORD dwRet = GetLastError();
+
         if (ERROR_ALREADY_EXISTS == dwRet) {
             ec = make_ipc_error(EIPCError::IPCE_AlreadyExist);
         }
