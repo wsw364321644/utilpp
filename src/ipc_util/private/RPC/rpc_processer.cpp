@@ -131,7 +131,7 @@ RPCHandle_t FJRPCProcesser::SendRequest(IGroupRPC* group, std::shared_ptr<RPCReq
     if (!SendRPCContentDelegate(request, ec)) {
         return NullHandle;
     }
-    auto res = requestMap.try_emplace(counter, request);
+    auto res = requestMap.try_emplace(handle.ID, request);
     if (!res.second) {
         return NullHandle;
     }
