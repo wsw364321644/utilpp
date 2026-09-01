@@ -91,13 +91,15 @@ protected:
     ConsumeResult_t TryConsume(const char* data, uint32_t len);
     FCharBuffer BuildPacket(const char* data, uint32_t len, uint8_t channel = 0);
 private:
+    void Clear();
     void OnRead(IMessageSession*, char*, intptr_t);
     void HeartBeat();
     void AddHeader(FCharBuffer& buf, FCharBuffer key, FCharBuffer value);
 
 private:
 
-    IMessageSession* session;
+    IMessageSession* session{ nullptr };
+    CommonHandle32_t MessageSessionDisconnectHandle{ NullHandle };
     CommonHandle32_t MessageSessionOnReadHandle{NullHandle};
     std::vector<char> readBuf;
     std::vector<std::list<std::shared_ptr<MessagePacket_t>>> messageQueues;

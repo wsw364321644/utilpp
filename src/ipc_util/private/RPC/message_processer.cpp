@@ -29,9 +29,8 @@ FMessageProcesser::FMessageProcesser(IMessageSession* mif) : FMessageProcesser()
 }
 FMessageProcesser::~FMessageProcesser()
 {
-    if (MessageSessionOnReadHandle.IsValid()) {
-        session->ClearOnReadDelegate(MessageSessionOnReadHandle);
-    }
+    Clear();
+
 }
 bool FMessageProcesser::Init(IMessageSession* insession)
 {
@@ -39,6 +38,10 @@ bool FMessageProcesser::Init(IMessageSession* insession)
         return false;
     }
     session = insession;
+    MessageSessionDisconnectHandle=session->AddOnDisconnectDelegate([this](IMessageSession* insession) {
+        Clear();
+        }
+    );
     ConnectionType = session->GetConnectionType();
 
     MessageSessionOnReadHandle = session->AddOnReadDelegate(std::bind(&FMessageProcesser::OnRead, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -56,6 +59,9 @@ FCharBuffer FMessageProcesser::ChangePolicy(uint8_t channel, EMessagePolicy poli
 
 bool FMessageProcesser::SendContent(const char* data, uint32_t len, uint8_t channel)
 {
+    if (!session) {
+        return false;
+    }
     auto buf = BuildPacket(data, len, channel);
     auto handle = session->Write(buf.CStr(), (int)buf.Length());
     return handle.IsValid();
@@ -163,6 +169,21 @@ IMessageProcesser::ConsumeResult_t FMessageProcesser::TryConsume(const char* dat
     return result;
 }
 
+
+void FMessageProcesser::Clear()
+{
+    if (session) {
+        if (MessageSessionOnReadHandle.IsValid()) {
+            session->ClearOnReadDelegate(MessageSessionOnReadHandle);
+        }
+        if (MessageSessionDisconnectHandle) {
+            session->ClearOnDisconnectDelegate(MessageSessionDisconnectHandle);
+        }
+    }
+    session = nullptr;
+    MessageSessionOnReadHandle = NullHandle;
+    MessageSessionDisconnectHandle = NullHandle;
+}
 
 void FMessageProcesser::OnRead(IMessageSession* session, char* str, intptr_t size)
 {

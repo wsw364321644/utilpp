@@ -160,5 +160,8 @@ bool FJRPCProcesser::SendResponse(RPCHandle_t handle, std::shared_ptr<RPCRespons
 {
     std::error_code ec;
     response->SetID(handle.ID);
-    return SendRPCContentDelegate(response, ec);
+    if (SendRPCContentDelegate) {
+        return SendRPCContentDelegate(response, ec);
+    }
+    return false;
 }
