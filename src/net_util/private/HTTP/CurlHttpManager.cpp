@@ -393,8 +393,8 @@ bool FCurlHttpManager::SetupRequest(CurlHttpRequestPtr creq)
     }
 
     SIMPLELOG_LOGGER_INFO(nullptr, "{}: URL='{}'", (void*)creq.get(), creq->GetURL());
-    SIMPLELOG_LOGGER_INFO(nullptr, "{}: Verb='{}'", (void*)creq.get(), creq->GetVerb());
-    SIMPLELOG_LOGGER_INFO(nullptr, "{}: Payload size= {}", (void*)creq.get(), creq->GetContentLength());
+    //SIMPLELOG_LOGGER_INFO(nullptr, "{}: Verb='{}'", (void*)creq.get(), creq->GetVerb());
+    //SIMPLELOG_LOGGER_INFO(nullptr, "{}: Payload size= {}", (void*)creq.get(), creq->GetContentLength());
 
 
     if (creq->URL.empty())
