@@ -16,6 +16,7 @@ MessageClientUV::MessageClientUV() :messageConnectionType(EMessageConnectionType
 }
 MessageClientUV::~MessageClientUV()
 {
+    TriggerOnDisconnectDelegates(this);
     running = false;
     if (uvworkThread.joinable()) {
         uvworkThread.join();

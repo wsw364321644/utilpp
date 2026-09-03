@@ -28,8 +28,17 @@
     DEFINE_DELEGATE_BASE(EventName) \
     void Trigger##EventName##Delegates() \
     { \
-        for (auto& pair : EventName##Delegates) { \
-            pair.second(); \
+        std::vector<CommonHandle32_t> keys;\
+        keys.reserve(EventName##Delegates.size()); \
+        for (const auto& [key, _] : EventName##Delegates) {\
+            keys.push_back(key);\
+        }\
+        for (auto& key :keys) { \
+            auto itr=EventName##Delegates.find(key);\
+            if(itr==EventName##Delegates.end()){\
+                continue;\
+            }\
+            itr->second(); \
         } \
     }
 
@@ -38,8 +47,17 @@
     DEFINE_DELEGATE_BASE(EventName) \
     void Trigger##EventName##Delegates(Param1Type Param1) \
     { \
-        for (auto& pair : EventName##Delegates) { \
-            pair.second(Param1); \
+        std::vector<CommonHandle32_t> keys;\
+        keys.reserve(EventName##Delegates.size()); \
+        for (const auto& [key, _] : EventName##Delegates) {\
+            keys.push_back(key);\
+        }\
+        for (auto& key :keys) { \
+            auto itr=EventName##Delegates.find(key);\
+            if(itr==EventName##Delegates.end()){\
+                continue;\
+            }\
+            itr->second(Param1); \
         } \
     }
 
@@ -48,8 +66,17 @@
     DEFINE_DELEGATE_BASE(EventName) \
     void Trigger##EventName##Delegates(Param1Type Param1,Param2Type Param2) \
     { \
-        for (auto& pair : EventName##Delegates) { \
-            pair.second(Param1,Param2); \
+        std::vector<CommonHandle32_t> keys;\
+        keys.reserve(EventName##Delegates.size()); \
+        for (const auto& [key, _] : EventName##Delegates) {\
+            keys.push_back(key);\
+        }\
+        for (auto& key :keys) { \
+            auto itr=EventName##Delegates.find(key);\
+            if(itr==EventName##Delegates.end()){\
+                continue;\
+            }\
+            itr->second(Param1,Param2); \
         } \
     }
 
@@ -58,8 +85,17 @@
     DEFINE_DELEGATE_BASE(EventName) \
     void Trigger##EventName##Delegates(Param1Type Param1,Param2Type Param2,Param3Type Param3) \
     { \
-        for (auto& pair : EventName##Delegates) { \
-            pair.second(Param1,Param2,Param3); \
+        std::vector<CommonHandle32_t> keys;\
+        keys.reserve(EventName##Delegates.size()); \
+        for (const auto& [key, _] : EventName##Delegates) {\
+            keys.push_back(key);\
+        }\
+        for (auto& key :keys) { \
+            auto itr=EventName##Delegates.find(key);\
+            if(itr==EventName##Delegates.end()){\
+                continue;\
+            }\
+            itr->second(Param1,Param2,Param3); \
         } \
     }
 
