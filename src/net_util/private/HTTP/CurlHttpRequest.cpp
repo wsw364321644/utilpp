@@ -436,7 +436,7 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
 
     case CURLINFO_DATA_IN:
     {
-        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received data ({} bytes)", (void*)this, DebugInfoSize);
+        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received data ({} bytes) - {}", (void*)this, DebugInfoSize, std::string_view(DebugInfo, DebugInfoSize));
     }
     break;
     case CURLINFO_DATA_OUT:
