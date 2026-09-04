@@ -1,12 +1,15 @@
 #pragma once
 #include "ArenaMemoryPool.h"
+#include <string_convert.h>
 #include <rapidjson/document.h>
 #include <string>
 namespace utilpp {
     inline rapidjson::GenericStringRef<std::string_view::value_type> GetStringRef(std::string_view view) {
         return rapidjson::StringRef(view.data(), view.size());
     }
-
+    inline rapidjson::GenericStringRef<std::string_view::value_type> GetStringRef(std::u8string_view u8view) {
+        return GetStringRef(ConvertU8ViewToView(u8view));
+    }
     class RapidJsonAllocatorAdapter {
     public:
         // RapidJSON 要求的静态常量
