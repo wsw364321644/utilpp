@@ -370,5 +370,32 @@ inline char* StrCopy(char* dst,std::string_view view) {
 
 template <typename T>
 std::string_view ConvertSpanToView(std::span<T> span) {
-    return std::string_view((const char*)span.data(), span.size()*sizeof(T));
+    return std::string_view((const char*)span.data(), span.size() * sizeof(T));
 }
+
+inline std::string_view GetLastLine(std::string_view content) {
+    const char* data = content.data();
+    size_t  size = content.size();
+    if (!data || size == 0) {
+        return std::string_view();
+    }
+    const char* p = data + size -1;
+
+    while (p >= data && (*p == '\n' || *p == '\r')) {
+        --p;
+    }
+    if (p < data) {
+        return std::string_view();
+    }
+    const char* line_end = p + 1;
+
+    while (p >= data && *p != '\n') {
+        --p;
+    }
+
+    const char* line_start = p + 1;  // 最后一行的起始位置
+
+    return std::string_view(line_start, line_end);
+}
+
+

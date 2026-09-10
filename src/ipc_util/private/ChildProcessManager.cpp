@@ -83,6 +83,12 @@ typedef struct UVProcess_t {
     FCharBuffer Buf;
     bool bHideWindow{ true };
     bool bDetach{ false };
+    bool bExit{ false };
+    int64_t exit_status;
+    int term_signal;
+    bool bout_pipe_eof{ false };
+    bool berr_pipe_eof{ false };
+
 }UVProcess_t;
 void alloc_buffer(uv_handle_t* handle,
     size_t suggested_size,
@@ -99,6 +105,14 @@ void on_read(uv_stream_t* stream,
     if (nread < 0) {
         if (nread != uv_errno_t::UV_EOF) {
             SIMPLELOG_LOGGER_ERROR(nullptr, "{}", uv_strerror(nread));
+        }
+        else {
+            if (stream == (uv_stream_t*)&p.out_pipe) {
+                p.bout_pipe_eof = true;
+            }
+            else if (stream == (uv_stream_t*)&p.err_pipe) {
+                p.berr_pipe_eof = true;
+            }
         }
     }
     else {
@@ -279,6 +293,15 @@ void FChildProcessManager::Tick(float delSec)
             processes.erase(itr);
         }
     }
+    else {
+        auto& pProcess=processes[currentHandle];
+        if (pProcess->bExit&& pProcess->berr_pipe_eof&& pProcess->bout_pipe_eof) {
+            if (pProcess->OnExitDelegate) {
+                pProcess->OnExitDelegate(pProcess->handle, pProcess->exit_status, pProcess->term_signal);
+            }
+            pProcess->ChildProcessManager->ClearProcessData(pProcess->handle);
+        }
+    }
     uv_run(ploop, uv_run_mode::UV_RUN_NOWAIT);
 }
 
@@ -326,10 +349,9 @@ void FChildProcessManager::OnUvProcessClosed(UVProcess_t* process, int64_t exit_
     //    }
     //    });
     //uv_async_send(&process->async);
-    if (process->OnExitDelegate) {
-        process->OnExitDelegate(process->handle, exit_status, term_signal);
-    }
-    process->ChildProcessManager->ClearProcessData(process->handle);
+    process->bExit = true;
+    process->exit_status = exit_status;
+    process->term_signal = term_signal;
 }
 
 bool FChildProcessManager::InternalSpawnProcess(UVProcess_t* pp)
