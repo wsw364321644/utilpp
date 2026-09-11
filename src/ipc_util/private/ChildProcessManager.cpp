@@ -289,8 +289,11 @@ void FChildProcessManager::Tick(float delSec)
         }
         currentHandle = itr->first;
         if (!InternalSpawnProcess(itr->second.get())) {
-            itr->second->OnExitDelegate(itr->first, -1, 0);
-            processes.erase(itr);
+            auto& pProcess = processes[currentHandle];
+            if (pProcess->OnExitDelegate) {
+                pProcess->OnExitDelegate(itr->first, -1, 0);
+            }
+            pProcess->ChildProcessManager->ClearProcessData(pProcess->handle);
         }
     }
     else {
@@ -313,12 +316,26 @@ void FChildProcessManager::Run()
         if (itr == processes.end()) {
             break;
         }
-        currentHandle = itr->first;
-        if (!InternalSpawnProcess(itr->second.get())) {
-            itr->second->OnExitDelegate(itr->first, -1, 0);
-            processes.erase(itr);
+        if (!currentHandle) {
+            currentHandle = itr->first;
+            auto& pProcess = processes[currentHandle];
+            if (!InternalSpawnProcess(itr->second.get())) {
+                if (pProcess->OnExitDelegate) {
+                    pProcess->OnExitDelegate(itr->first, -1, 0);
+                }
+                pProcess->ChildProcessManager->ClearProcessData(pProcess->handle);
+            }
         }
-    } while (currentHandle.IsValid());
+        else {
+            auto& pProcess = processes[currentHandle];
+            if (pProcess->bExit && pProcess->berr_pipe_eof && pProcess->bout_pipe_eof) {
+                if (pProcess->OnExitDelegate) {
+                    pProcess->OnExitDelegate(pProcess->handle, pProcess->exit_status, pProcess->term_signal);
+                }
+                pProcess->ChildProcessManager->ClearProcessData(pProcess->handle);
+            }
+        }
+    } while (processes.size()>0);
 }
 
 void FChildProcessManager::ClearProcessData(CommonHandle32_t handle)
