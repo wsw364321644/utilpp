@@ -278,6 +278,20 @@ void FCharBuffer::Assign(std::string_view view)
     Assign(view.data(), view.size());
 }
 
+void FCharBuffer::TrimNewline()
+{
+    if (!pBuf || cursor == 0) return;
+
+    size_t len = cursor;
+    while (len > 0 && (pBuf[len - 1] == '\n' || pBuf[len - 1] == '\r'))
+    {
+        --len;
+    }
+
+    cursor = len;
+    if (pBuf) pBuf[len] = '\0';
+}
+
 void FCharBuffer::Clear()
 {
     cursor = 0;

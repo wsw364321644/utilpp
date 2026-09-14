@@ -48,7 +48,7 @@ public:
     void Assign(T first, T last) {
         Assign(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(last) - reinterpret_cast<const char*>(first));
     }
-
+    void TrimNewline();
     void Clear();
     const char *CStr();
     std::string_view View() const;

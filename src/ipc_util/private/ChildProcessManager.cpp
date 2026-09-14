@@ -3,6 +3,7 @@
 #include <singleton.h>
 #include <LoggerHelper.h>
 #include <CharBuffer.h>
+#include <string_convert.h>
 #include <uv.h>
 #include <cstring>
 #include <atomic>
@@ -138,7 +139,7 @@ FChildProcessManager* FChildProcessManager::GetInstance()
 CommonHandle32_t FChildProcessManager::SpawnProcess(const char* _filepath, const char** _args)
 {
     SpawnData_t spawnData;
-    spawnData.Filepath = _filepath;
+    spawnData.Filepath = ConvertViewToU8View(_filepath);
     if (_args) {
         for (int i = 0; _args[i] != nullptr; i++) {
             ++spawnData.Argc;
@@ -243,7 +244,7 @@ pid_t FChildProcessManager::SpawnDetachProcess(SpawnData_t spawnData)
     p.options.args = p.args;
     p.options.flags = flags;
     if (!spawnData.CWD.empty()) {
-        p.options.cwd = spawnData.CWD.data();
+        p.options.cwd = ConvertU8ViewToView(spawnData.CWD).data();
     }
     if (r = uv_spawn(ploop, &p.process, &p.options)) {
         if (r != uv_errno_t::UV_ENOENT) {

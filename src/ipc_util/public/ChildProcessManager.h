@@ -6,8 +6,8 @@
 #include "ipc_util_export.h"
 
 typedef struct SpawnData_t {
-    std::string_view CWD;
-    std::string_view Filepath;
+    std::u8string_view CWD;
+    std::u8string_view Filepath;
     std::string_view* Argvs{ nullptr };
     int Argc{ 0 };
     bool bHideWindow{ false };
