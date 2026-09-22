@@ -34,7 +34,7 @@ public:
     std::shared_ptr<TaskStatus_t> GetTaskStatus(DownloadTaskHandle_t handle) override;
     std::shared_ptr<DownloadFileInfo> GetTaskInfo(DownloadTaskHandle_t handle) override;
     void Tick(float delSec)  override;
-    void IOThreadTick(float delSec) override;
+    void TickIO(float delSec) override;
     FDownloader& operator=(const FDownloader& other) = delete;
     FDownloader(FDownloader&) = delete;
     FDownloader& operator=(const FDownloader&& other) = delete;

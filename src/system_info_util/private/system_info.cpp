@@ -3,12 +3,14 @@
 #include <std_ext.h>
 #include <string_convert.h>
 #include <FunctionExitHelper.h>
+#include <rapidjson_cache.h>
+#include <simdjson_cache.h>
 
+#include <magic_enum/magic_enum.hpp>
 #include <simdjson.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
-
 #include <cstring>
 #include <memory>
 
@@ -326,47 +328,47 @@ namespace utilpp {
     void CpuInfoToJson(CpuInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("ProcessorBrandString", rapidjson::Value(info.ProcessorBrandString,a), a);
-        obj.AddMember("IdentificationString", rapidjson::Value(info.IdentificationString, a), a);
-        obj.AddMember("ProcessorBaseFrequencyMHz", info.ProcessorBaseFrequencyMHz, a);
-        obj.AddMember("MaximumFrequencyMHz", info.MaximumFrequencyMHz, a);
-        obj.AddMember("BusFrequencyMHz", info.BusFrequencyMHz, a);
-        obj.AddMember("LogicalCoreNum", info.LogicalCoreNum, a);
-        obj.AddMember("CoreNum", info.CoreNum, a);
+        obj.AddMember("processorBrandString", rapidjson::Value(info.ProcessorBrandString,a), a);
+        obj.AddMember("identificationString", rapidjson::Value(info.IdentificationString, a), a);
+        obj.AddMember("processorBaseFrequencyMHz", info.ProcessorBaseFrequencyMHz, a);
+        obj.AddMember("maximumFrequencyMHz", info.MaximumFrequencyMHz, a);
+        obj.AddMember("busFrequencyMHz", info.BusFrequencyMHz, a);
+        obj.AddMember("logicalCoreNum", info.LogicalCoreNum, a);
+        obj.AddMember("coreNum", info.CoreNum, a);
     }
     void CpuInfoFromJson(simdjson::ondemand::object obj, CpuInfo_t& info)
     {
-        auto strres = obj["ProcessorBrandString"].get_string();
+        auto strres = obj["processorBrandString"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         StrCopy(info.ProcessorBrandString, strres.value_unsafe());
-        strres = obj["IdentificationString"].get_string();
+        strres = obj["identificationString"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         StrCopy(info.IdentificationString, strres.value_unsafe());
-        auto uintres = obj["ProcessorBaseFrequencyMHz"].get_uint64();
+        auto uintres = obj["processorBaseFrequencyMHz"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.ProcessorBaseFrequencyMHz = uintres.value_unsafe();
-        uintres = obj["MaximumFrequencyMHz"].get_uint64();
+        uintres = obj["maximumFrequencyMHz"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.MaximumFrequencyMHz = uintres.value_unsafe();
-        uintres = obj["BusFrequencyMHz"].get_uint64();
+        uintres = obj["busFrequencyMHz"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.BusFrequencyMHz = uintres.value_unsafe();
-        uintres = obj["LogicalCoreNum"].get_uint64();
+        uintres = obj["logicalCoreNum"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.LogicalCoreNum = uintres.value_unsafe();
-        uintres = obj["CoreNum"].get_uint64();
+        uintres = obj["coreNum"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -376,17 +378,17 @@ namespace utilpp {
     void OSInfoToJson(OSInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("OSName", rapidjson::Value(info.OSName, a), a);
-        obj.AddMember("DeviceGUID", rapidjson::Value(info.DeviceGUID, a), a);
+        obj.AddMember("osName", rapidjson::Value(info.OSName, a), a);
+        obj.AddMember("deviceGUID", rapidjson::Value(info.DeviceGUID, a), a);
     }
     void OSInfoFromJson(simdjson::ondemand::object obj, OSInfo_t& info)
     {
-        auto strres = obj["OSName"].get_string();
+        auto strres = obj["osName"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         StrCopy(info.OSName, strres.value_unsafe());
-        strres = obj["DeviceGUID"].get_string();
+        strres = obj["deviceGUID"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -396,17 +398,17 @@ namespace utilpp {
     void BIOSInfoToJson(BIOSInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("BaseBoardProduct", rapidjson::Value(info.BaseBoardProduct, a), a);
-        obj.AddMember("BaseBoardManufacturer", rapidjson::Value(info.BaseBoardManufacturer, a), a);
+        obj.AddMember("baseBoardProduct", rapidjson::Value(info.BaseBoardProduct, a), a);
+        obj.AddMember("baseBoardManufacturer", rapidjson::Value(info.BaseBoardManufacturer, a), a);
     }
     void BIOSInfoFromJson(simdjson::ondemand::object obj, BIOSInfo_t& info)
     {
-        auto strres = obj["BaseBoardProduct"].get_string();
+        auto strres = obj["baseBoardProduct"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         StrCopy(info.BaseBoardProduct, strres.value_unsafe());
-        strres = obj["BaseBoardManufacturer"].get_string();
+        strres = obj["baseBoardManufacturer"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -416,29 +418,29 @@ namespace utilpp {
     void PhysicalMemoryInfoToJson(PhysicalMemoryInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("Manufacturer", rapidjson::Value(info.Manufacturer, a), a);
-        obj.AddMember("TotalBytes", info.TotalBytes, a);
-        obj.AddMember("Speed", info.Speed, a);
-        obj.AddMember("SMBIOSMemoryType", info.SMBIOSMemoryType, a);
+        obj.AddMember("manufacturer", rapidjson::Value(info.Manufacturer, a), a);
+        obj.AddMember("totalBytes", info.TotalBytes, a);
+        obj.AddMember("speed", info.Speed, a);
+        obj.AddMember("smbiosMemoryType", info.SMBIOSMemoryType, a);
     }
     void PhysicalMemoryInfoFromJson(simdjson::ondemand::object obj, PhysicalMemoryInfo_t& info)
     {
-        auto strres = obj["Manufacturer"].get_string();
+        auto strres = obj["manufacturer"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         StrCopy(info.Manufacturer, strres.value_unsafe());
-        auto uintres = obj["TotalBytes"].get_uint64();
+        auto uintres = obj["totalBytes"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.TotalBytes = uintres.value_unsafe();
-        uintres = obj["Speed"].get_uint64();
+        uintres = obj["speed"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.Speed = uintres.value_unsafe();
-        uintres = obj["SMBIOSMemoryType"].get_uint64();
+        uintres = obj["smbiosMemoryType"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -447,29 +449,29 @@ namespace utilpp {
     void MemInfoToJson(MemInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("TotalBytes", info.TotalBytes, a);
-        obj.AddMember("MemoryLoad", info.MemoryLoad, a);
+        obj.AddMember("totalBytes", info.TotalBytes, a);
+        obj.AddMember("memoryLoad", info.MemoryLoad, a);
         rapidjson::Document arr(rapidjson::kArrayType, &a);
         for (int i = 0; i < info.Num;i++) {
             rapidjson::Document arrItem(rapidjson::kObjectType, &a);
             PhysicalMemoryInfoToJson(info.PhysicalMemoryInfos[i], arrItem);
             arr.PushBack(arrItem, a);
         }
-        obj.AddMember("PhysicalMemoryInfos", arr, a);
+        obj.AddMember("physicalMemoryInfos", arr, a);
     }
     void MemInfoFromJson(simdjson::ondemand::object obj, MemInfo_t& info)
     {
-        auto uintres = obj["TotalBytes"].get_uint64();
+        auto uintres = obj["totalBytes"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.TotalBytes = uintres.value_unsafe();
-        uintres = obj["MemoryLoad"].get_uint64();
+        uintres = obj["memoryLoad"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.MemoryLoad = uintres.value_unsafe();
-        auto arrres = obj["PhysicalMemoryInfos"].get_array();
+        auto arrres = obj["physicalMemoryInfos"].get_array();
         if (arrres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -486,17 +488,17 @@ namespace utilpp {
     void DriverInfoToJson(DriverInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("Model", rapidjson::Value(info.Model, a), a);
-        obj.AddMember("TotalBytes", info.TotalBytes, a);
+        obj.AddMember("model", rapidjson::Value(info.Model, a), a);
+        obj.AddMember("totalBytes", info.TotalBytes, a);
     }
     void DriverInfoFromJson(simdjson::ondemand::object obj, DriverInfo_t& info)
     {
-        auto strres = obj["Model"].get_string();
+        auto strres = obj["model"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         StrCopy(info.Model, strres.value_unsafe());
-        auto uintres = obj["TotalBytes"].get_uint64();
+        auto uintres = obj["totalBytes"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -505,29 +507,40 @@ namespace utilpp {
     void LogicalDriverInfoToJson(LogicalDriverInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("DriverType", std::to_underlying(info.DriverType), a);
-        obj.AddMember("FreeBytesToCaller", info.FreeBytesToCaller, a);
-        obj.AddMember("TotalBytes", info.TotalBytes, a);
-        obj.AddMember("FreeBytes", info.FreeBytes, a);
+        
+        obj.AddMember("logicalDriveName", utilpp::GetStringRef(info.LogicalDriveName), a);
+        obj.AddMember("driverType", utilpp::GetStringRef(magic_enum::enum_name(info.DriverType)), a);
+        obj.AddMember("freeBytesToCaller", info.FreeBytesToCaller, a);
+        obj.AddMember("totalBytes", info.TotalBytes, a);
+        obj.AddMember("freeBytes", info.FreeBytes, a);
     }
     void LogicalDriverInfoFromJson(simdjson::ondemand::object obj, LogicalDriverInfo_t& info)
     {
-        auto uintres = obj["DriverType"].get_uint64();
-        if (uintres.error() != simdjson::error_code::SUCCESS) {
+        auto strres = obj["logicalDriveName"].get_string();
+        if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
-        info.DriverType = EDriverType(uintres.value_unsafe());
-        uintres = obj["FreeBytesToCaller"].get_uint64();
+        memcpy(info.LogicalDriveName, strres.value_unsafe().data(), strres.value_unsafe().size() );
+        strres = obj["driverType"].get_string();
+        if (strres.error() != simdjson::error_code::SUCCESS) {
+            return;
+        }
+        auto opt = magic_enum::enum_cast<EDriverType>(strres.value_unsafe());
+        if (!opt.has_value()) {
+            return;
+        }
+        info.DriverType = opt.value();
+        auto uintres = obj["freeBytesToCaller"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.FreeBytesToCaller = uintres.value_unsafe();
-        uintres = obj["TotalBytes"].get_uint64();
+        uintres = obj["totalBytes"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
         info.TotalBytes = uintres.value_unsafe();
-        uintres = obj["FreeBytes"].get_uint64();
+        uintres = obj["freeBytes"].get_uint64();
         if (uintres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -542,18 +555,18 @@ namespace utilpp {
             DriverInfoToJson(info.Drivers[i], arrItem);
             arr.PushBack(arrItem, a);
         }
-        obj.AddMember("Drivers", arr, a);
+        obj.AddMember("drivers", arr, a);
         arr.SetArray();
         for (int i = 0; i < info.NumLogical; i++) {
             rapidjson::Document arrItem(rapidjson::kObjectType, &a);
             LogicalDriverInfoToJson(info.LogicalDrivers[i], arrItem);
             arr.PushBack(arrItem, a);
         }
-        obj.AddMember("LogicalDrivers", arr, a);
+        obj.AddMember("logicalDrivers", arr, a);
     }
     void DriverInfosFromJson(simdjson::ondemand::object obj ,DriverInfos_t& info)
     {
-        auto arrres = obj["Drivers"].get_array();
+        auto arrres = obj["drivers"].get_array();
         if (arrres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -565,7 +578,7 @@ namespace utilpp {
             }
             DriverInfoFromJson(objres.value_unsafe(), info.Drivers[info.Num++]);
         }
-        arrres = obj["LogicalDrivers"].get_array();
+        arrres = obj["logicalDrivers"].get_array();
         if (arrres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -582,11 +595,11 @@ namespace utilpp {
     void DisplayInfoToJson(DisplayInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("DisplayName", rapidjson::Value(info.DisplayName, a), a);
+        obj.AddMember("displayName", rapidjson::Value(info.DisplayName, a), a);
     }
     void DisplayInfoFromJson(simdjson::ondemand::object obj, DisplayInfo_t& info)
     {
-        auto strres = obj["DisplayName"].get_string();
+        auto strres = obj["displayName"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -601,11 +614,11 @@ namespace utilpp {
             DisplayInfoToJson(info.Displays[i], arrItem);
             arr.PushBack(arrItem, a);
         }
-        obj.AddMember("Displays", arr, a);
+        obj.AddMember("displays", arr, a);
     }
     void DisplayInfosFromJson(simdjson::ondemand::object obj, DisplayInfos_t& info)
     {
-        auto arrres = obj["Displays"].get_array();
+        auto arrres = obj["displays"].get_array();
         if (arrres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -622,11 +635,11 @@ namespace utilpp {
     void VideoControllerInfoToJson(VideoControllerInfo_t& info, rapidjson::Document& obj)
     {
         auto& a = obj.GetAllocator();
-        obj.AddMember("Name", rapidjson::Value(info.Name, a), a);
+        obj.AddMember("name", rapidjson::Value(info.Name, a), a);
     }
     void VideoControllerInfoFromJson(simdjson::ondemand::object obj, VideoControllerInfo_t& info)
     {
-        auto strres = obj["Name"].get_string();
+        auto strres = obj["name"].get_string();
         if (strres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -641,11 +654,11 @@ namespace utilpp {
             VideoControllerInfoToJson(info.Controllers[i], arrItem);
             arr.PushBack(arrItem, a);
         }
-        obj.AddMember("Controllers", arr, a);
+        obj.AddMember("controllers", arr, a);
     }
     void VideoControllerInfosFromJson(simdjson::ondemand::object obj, VideoControllerInfos_t& info)
     {
-        auto arrres = obj["Controllers"].get_array();
+        auto arrres = obj["controllers"].get_array();
         if (arrres.error() != simdjson::error_code::SUCCESS) {
             return;
         }
@@ -666,63 +679,64 @@ namespace utilpp {
         auto& a = doc.GetAllocator();
         rapidjson::Document obj(rapidjson::kObjectType,&a);
         CpuInfoToJson(info.CpuInfo, obj);
-        doc.AddMember("CpuInfo", obj, a);
+        doc.AddMember("cpuInfo", obj, a);
         obj.SetObject();
         OSInfoToJson(info.OSInfo, obj);
-        doc.AddMember("OSInfo", obj, a);
+        doc.AddMember("osInfo", obj, a);
         obj.SetObject();
         BIOSInfoToJson(info.BIOSInfo, obj);
-        doc.AddMember("BIOSInfo", obj, a);
+        doc.AddMember("biosInfo", obj, a);
         obj.SetObject();
         MemInfoToJson(info.MemInfo, obj);
-        doc.AddMember("MemInfo", obj, a);
+        doc.AddMember("memInfo", obj, a);
         obj.SetObject();
         DriverInfosToJson(info.DriverInfos, obj);
-        doc.AddMember("DriverInfos", obj, a);
+        doc.AddMember("driverInfos", obj, a);
         obj.SetObject();
         DisplayInfosToJson(info.DisplayInfos, obj);
-        doc.AddMember("DisplayInfos", obj, a);
+        doc.AddMember("displayInfos", obj, a);
         obj.SetObject();
         VideoControllerInfosToJson(info.VideoControllerInfos, obj);
-        doc.AddMember("VideoControllerInfos", obj, a);
+        doc.AddMember("videoControllerInfos", obj, a);
         if (!doc.Accept(writer)) {
         }
         return;
     }
-    bool StringToSysInfo(const char* str, SystemInfo_t& info) {
+    bool StringToSysInfo(FCharBuffer& str, SystemInfo_t& info) {
+        str.Reserve(str.Size() + simdjson::SIMDJSON_PADDING);
         simdjson::ondemand::parser parser;
-        simdjson::ondemand::document doc = parser.iterate(str);
-        auto objres=doc["CpuInfo"].get_object();
+        simdjson::ondemand::document doc = parser.iterate(str.Data(), str.Size(), str.Capacity());
+        auto objres=doc["cpuInfo"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         CpuInfoFromJson(objres.value_unsafe(), info.CpuInfo);
-        objres = doc["OSInfo"].get_object();
+        objres = doc["osInfo"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         OSInfoFromJson(objres.value_unsafe(), info.OSInfo);
-        objres = doc["BIOSInfo"].get_object();
+        objres = doc["biosInfo"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         BIOSInfoFromJson(objres.value_unsafe(), info.BIOSInfo);
-        objres = doc["MemInfo"].get_object();
+        objres = doc["memInfo"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         MemInfoFromJson(objres.value_unsafe(), info.MemInfo);
-        objres = doc["DriverInfos"].get_object();
+        objres = doc["driverInfos"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         DriverInfosFromJson(objres.value_unsafe(), info.DriverInfos);
-        objres = doc["DisplayInfos"].get_object();
+        objres = doc["displayInfos"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }
         DisplayInfosFromJson(objres.value_unsafe(), info.DisplayInfos);
-        objres = doc["VideoControllerInfos"].get_object();
+        objres = doc["videoControllerInfos"].get_object();
         if (objres.error() != simdjson::error_code::SUCCESS) {
             return false;
         }

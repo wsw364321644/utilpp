@@ -27,6 +27,7 @@ public:
     int32_t Write(const void* pBuf, uint32_t size, uint64_t offset, std::error_code& ec);
     int32_t Seek(uint64_t uPos);
     uint64_t Tell();
+    bool Resize(uint64_t size,std::error_code& ec);
     void Flush();
     void Close();
     int32_t Delete();

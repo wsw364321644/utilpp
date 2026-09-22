@@ -8,6 +8,7 @@
 #include <format>
 #include <system_error>
 #include <fcntl.h>
+#include <assert.h>
 #ifdef WIN32
 #include <io.h>
 #else
@@ -374,8 +375,7 @@ void FRawFile::Close()
         close(fd);
         fd = -1;
         handle_ = INVALID_HANDLE_VALUE;
-    }else if (handle_ != INVALID_HANDLE_VALUE)
-    {
+    }else if (handle_ != INVALID_HANDLE_VALUE){
         CloseHandle(handle_);
         handle_ = INVALID_HANDLE_VALUE;
     }
@@ -423,6 +423,21 @@ uint64_t FRawFile::Tell()
     }
 
     return (static_cast<uint64_t>(low) | (static_cast<uint64_t>(high) << 32));
+}
+
+bool FRawFile::Resize(uint64_t size, std::error_code& ec)
+{
+    assert(handle_!= INVALID_HANDLE_VALUE);
+    if (Seek(size) != ERR_SUCCESS) {
+        ec = std::make_error_code(std::errc::io_error);
+        return false;
+    }
+    if(!SetEndOfFile(handle_)) {
+        ec = std::make_error_code(std::errc::io_error);
+        return false;
+    }
+    Seek(0);
+    return true;
 }
 
 void FRawFile::Flush()
@@ -729,8 +744,24 @@ uint64_t FRawFile::Tell()
     return uPos;
 }
 
+bool FRawFile::Resize(uint64_t size, std::error_code& ec)
+{
+    assert(handle_ == INVALID_HANDLE_VALUE);
+    if (ftruncate(handle_, size) != 0) {
+        ec = std::make_error_code(std::errc::io_error);
+        return false;
+    }
+    if (Seek(0) != ERR_SUCCESS) {
+        ec = std::make_error_code(std::errc::io_error);
+        return false;
+    }
+    return true;
+}
+
 void FRawFile::Flush()
 {
+    //fsync(fd);
+    fdatasync(fd);
 }
 
 uint64_t FRawFile::GetSize()

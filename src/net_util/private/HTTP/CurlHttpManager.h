@@ -33,7 +33,7 @@ public:
     void FreeRequest(HttpRequestPtr) override;
     bool ProcessRequest(HttpRequestPtr) override;
     void Tick(float delSec) override;
-    void HttpThreadTick(float delSec) override;
+    void TickNetwork(float delSec) override;
 
     static struct CurlRequestOptions_t
     {

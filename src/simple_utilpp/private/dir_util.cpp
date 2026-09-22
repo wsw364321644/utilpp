@@ -9,6 +9,16 @@
 #include "dir_util.h"
 #include "dir_util_internal.h"
 #include <filesystem>
+
+#ifdef _WIN32
+#include <shellapi.h>
+#pragma comment(lib, "shell32.lib")
+#elif defined(__linux__)
+#include <cstdlib>
+#elif defined(__APPLE__)
+#include <cstdlib>
+#endif
+
 thread_local FPathBuf PathBuf;
 thread_local FPathBuf PathBuf2;
 
@@ -44,3 +54,50 @@ std::u8string_view DirUtil::FileName(std::u8string_view  path)
 //    }
 //    return true;
 //}
+
+
+
+static std::string ShellEscape(const std::string& str) {
+    std::string result;
+    result.reserve(str.size() + 2);
+    result += '\'';  // 用单引号包裹
+    for (char c : str) {
+        if (c == '\'') {
+            // 单引号无法在单引号内转义，需要闭合后拼接
+            result += "'\\''";
+        }
+        else {
+            result += c;
+        }
+    }
+    result += '\'';
+    return result;
+}
+bool DirUtil::OpenExplorer(std::u8string_view path)
+{
+    if (path.empty()) {
+        return false;
+    }
+
+#ifdef _WIN32
+    std::filesystem::path target = path;
+    HINSTANCE result = ShellExecuteW(
+        NULL,
+        L"open",
+        target.wstring().c_str(),
+        NULL,
+        NULL,
+        SW_SHOWDEFAULT
+    );
+    return (reinterpret_cast<intptr_t>(result) > 32);
+
+#elif defined(__linux__)
+    std::string cmd = std::format("xdg-open {} &", ShellEscape(ConvertU8ViewToString(path)));
+    return std::system(cmd.c_str()) == 0;
+#elif defined(__APPLE__)
+    std::string cmd = std::format("open {} &", ShellEscape(ConvertU8ViewToString(path)));
+    return std::system(cmd.c_str()) == 0;
+#else
+#error "Unsupported platform"
+#endif
+}

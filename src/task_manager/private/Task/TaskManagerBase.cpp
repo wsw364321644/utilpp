@@ -164,6 +164,11 @@ void FTaskManagerBase::Tick()
             CancelableTasks.erase(taskHandle);
             break;
         }
+        case ETaskType::TT_Timer: {
+            assert(std::dynamic_pointer_cast<TimerTaskData_t>(pTaskData)->Repeat.count() == 0);
+            TimerTasks.erase(taskHandle);
+            break;
+        }
         default: {
             assert(false && "impossible finished type");
         }

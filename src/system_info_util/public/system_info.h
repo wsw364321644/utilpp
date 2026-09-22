@@ -62,8 +62,8 @@ namespace utilpp {
     };
 
     typedef struct CpuInfo_t {
-        char ProcessorBrandString[BRAND_STR_MAX];
-        char IdentificationString[VENDOR_STR_MAX];
+        char ProcessorBrandString[BRAND_STR_MAX]{};
+        char IdentificationString[VENDOR_STR_MAX]{};
         uint64_t ProcessorBaseFrequencyMHz;
         uint64_t MaximumFrequencyMHz;
         uint64_t BusFrequencyMHz;
@@ -74,7 +74,7 @@ namespace utilpp {
     }CpuInfo_t;
 
     typedef struct PhysicalMemoryInfo_t {
-        char Manufacturer[SYS_MANUFACTURER_MAX];
+        char Manufacturer[SYS_MANUFACTURER_MAX]{};
         uint64_t TotalBytes;
         uint32_t Speed;
         uint32_t SMBIOSMemoryType;
@@ -88,12 +88,12 @@ namespace utilpp {
 
 
     typedef struct OSInfo_t {
-        char OSName[OS_NAME_MAX];
-        char DeviceGUID[OS_GUIDLEN];
+        char OSName[OS_NAME_MAX]{};
+        char DeviceGUID[OS_GUIDLEN]{};
     }OSInfo_t;
 
     typedef struct DisplayInfo_t {
-        char DisplayName[DISPLAY_NAME_MAX];
+        char DisplayName[DISPLAY_NAME_MAX]{};
     }DisplayInfo_t;
     typedef struct DisplayInfos_t {
         DisplayInfo_t Displays[DISPLAY_NUM_MAX];
@@ -101,7 +101,7 @@ namespace utilpp {
     }DisplayInfos_t;
 
     typedef struct LogicalDriverInfo_t {
-        char LogicalDriveName[LOGICAL_DRIVE_NAME_MAX];
+        char LogicalDriveName[LOGICAL_DRIVE_NAME_MAX]{};
         EDriverType DriverType;
         uint64_t FreeBytesToCaller;
         uint64_t TotalBytes;
@@ -121,12 +121,12 @@ namespace utilpp {
     }DriverInfos_t;
 
     typedef struct BIOSInfo_t {
-        char BaseBoardProduct[SYS_PRODUCT_MAX];
-        char BaseBoardManufacturer[SYS_MANUFACTURER_MAX];
+        char BaseBoardProduct[SYS_PRODUCT_MAX]{};
+        char BaseBoardManufacturer[SYS_MANUFACTURER_MAX]{};
     }BIOSInfo_t;
 
     typedef struct VideoControllerInfo_t {
-        char Name[SYS_PRODUCT_MAX];
+        char Name[SYS_PRODUCT_MAX]{};
         uint16_t Availability;
     }VideoControllerInfo_t;
     typedef struct VideoControllerInfos_t {
@@ -158,5 +158,5 @@ namespace utilpp {
 
 
     SYSTEM_INFO_EXPORT void SysInfoToString(SystemInfo_t& info, FCharBuffer& buf);
-    SYSTEM_INFO_EXPORT bool StringToSysInfo(const char* str, SystemInfo_t& info);
+    SYSTEM_INFO_EXPORT bool StringToSysInfo(FCharBuffer& str, SystemInfo_t& info);
 }

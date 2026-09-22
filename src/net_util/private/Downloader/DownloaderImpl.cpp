@@ -1018,7 +1018,7 @@ void FDownloader::Tick(float delSec)
 }
 
 
-void FDownloader::IOThreadTick(float delSec)
+void FDownloader::TickIO(float delSec)
 {
     do {
         auto count = BufInIO.try_dequeue_bulk(BufInIOBuf, BUF_NUM);

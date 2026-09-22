@@ -7,10 +7,13 @@ class SIMPLE_UTIL_EXPORT IFileBackedBuffer {
 public:
     virtual ~IFileBackedBuffer() {};
     virtual bool Init(uint32_t size, std::u8string_view fileName, std::error_code& ec) = 0;
+    virtual bool Init(std::u8string_view fileName, std::error_code& ec) = 0;
     virtual void Close() = 0;
     virtual bool Clean(std::error_code& ec) = 0;
+    virtual bool Resize(uint32_t size, std::error_code& ec) = 0;
+    virtual uint32_t GetSize() = 0;
     /// @brief write data to disk
-    virtual void IOTick(float delSec) = 0;
+    virtual void TickIO(float delSec) = 0;
     virtual void* GetPtr(uint32_t offset)const = 0;
     virtual void WriteData(void* target, uint8_t& val) = 0;
     virtual void WriteData(void* target, uint16_t& val) = 0;

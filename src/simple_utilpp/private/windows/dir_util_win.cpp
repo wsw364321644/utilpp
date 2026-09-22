@@ -15,6 +15,7 @@
 #include <wchar.h>
 #include <ctre-unicode.hpp>
 #include <simple_os_defs.h>
+
  //https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid
 #include <shlobj_core.h>
 
@@ -110,7 +111,7 @@ bool RecursiveIterateDir(FPathBuf& pathBuf, DirUtil::IterateDirCallback& cb, uin
     DirUtil::IterateDirRecursivelyCallback internalCB = [&](DirEntry_t& e, bool& bExit, bool& bEnter) {
         bExit = !cb(e);
         };
-    return RecursiveIterateDir(pathBuf,internalCB,depth, IterateDirOrder);
+    return RecursiveIterateDir(pathBuf, internalCB, depth, IterateDirOrder);
 }
 
 std::u8string_view DirUtil::AbsolutePath(std::u8string_view  path)
@@ -354,7 +355,8 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::err
             SIMPLELOG_LOGGER_WARN(nullptr, "Can't open the file : {}. ErrorCode is {}", pathw, err);
             return handle;
         }
-    }else{
+    }
+    else {
         if (err == ERROR_PATH_NOT_FOUND || err == ERROR_FILE_NOT_FOUND) {
             ec = std::make_error_code(std::errc::no_such_file_or_directory);
             return handle;
@@ -365,9 +367,9 @@ F_HANDLE DirUtil::RecursiveCreateFile(FPathBuf& pathBuf, uint32_t flag, std::err
             return handle;
         }
     }
-    auto fileName=pathBuf.PopPathW();
+    auto fileName = pathBuf.PopPathW();
     // Path not found? Create the directory
-    if (!InternalCreateDir((wchar_t*)pathBuf.GetPrependFileNamespacesW(), pathBuf.PathPrependLen, pathBuf.GetPathLenW()+ pathBuf.PathPrependLen)) {
+    if (!InternalCreateDir((wchar_t*)pathBuf.GetPrependFileNamespacesW(), pathBuf.PathPrependLen, pathBuf.GetPathLenW() + pathBuf.PathPrependLen)) {
         ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_UNKNOW);
         return handle;
     }
@@ -475,7 +477,7 @@ bool DirUtil::Copy(FPathBuf& pathBuf, FPathBuf& newfilePathBuf, CopyProgressCall
     }
     else {
         if (bCopyFile) {
-            auto filename=newfilePathBuf.PopPathW();
+            auto filename = newfilePathBuf.PopPathW();
             if (!CreateDir(newfilePathBuf)) {
                 return false;
             }

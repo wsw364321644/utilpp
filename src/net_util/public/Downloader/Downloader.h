@@ -52,7 +52,7 @@ public:
 
 /**
 * rely on IHttpManager
-* need call Tick&HttpThreadTick on IHttpManager external
+* need call Tick&TickNetwork on IHttpManager external
 */
 class  IDownloader
 {
@@ -75,6 +75,6 @@ public:
     virtual std::shared_ptr<TaskStatus_t> GetTaskStatus(DownloadTaskHandle_t handle) = 0;
     virtual std::shared_ptr<DownloadFileInfo> GetTaskInfo(DownloadTaskHandle_t handle) = 0;
     virtual void Tick(float delSec) = 0;
-    virtual void IOThreadTick(float delSec) = 0;
+    virtual void TickIO(float delSec) = 0;
 
 };

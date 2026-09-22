@@ -89,4 +89,5 @@ public:
 
     static std::u8string_view GetVSwherePath(std::error_code& ec);
     static std::u8string_view GetOSDirectory(std::error_code& ec);
+    static bool OpenExplorer(std::u8string_view  path);
 };

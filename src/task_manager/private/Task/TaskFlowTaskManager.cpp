@@ -56,14 +56,23 @@ void FTaskFlowTaskManager::TickTaskWorkflow(std::shared_ptr<TaskWorkflow_t> pWor
         }
     }
 
-    for (auto& [tHandle, pTaskData] : pWorkflowData->TimerTasks) {
+    for (auto itr = pWorkflowData->TimerTasks.begin(); itr != pWorkflowData->TimerTasks.end();) {
+        auto& [tHandle, pTaskData] = *itr;
         if (pTaskData->Timeout <= deltime) {
-            pTaskData->Timeout = pTaskData->Repeat;
             pTaskData->Task(tHandle);
+            if (pTaskData->Repeat == std::chrono::nanoseconds(0)) {
+                ThreadFinishTask(tHandle, pTaskData);
+                itr=pWorkflowData->TimerTasks.erase(itr);
+                continue;
+            }
+            else {
+                pTaskData->Timeout = pTaskData->Repeat;
+            }
         }
         else {
             pTaskData->Timeout -= deltime;
         }
+        itr++;
     }
 
     if (needTick) {
@@ -74,7 +83,7 @@ void FTaskFlowTaskManager::TickTaskWorkflow(std::shared_ptr<TaskWorkflow_t> pWor
 
     for (auto& [tHandle, pTaskData] : pWorkflowData->Tasks) {
         pTaskData->Task();
-        SyncFinishedTaskDatas.enqueue(std::make_tuple(tHandle, pTaskData));
+        ThreadFinishTask(tHandle, pTaskData);
     }
     pWorkflowData->Tasks.clear();
 }

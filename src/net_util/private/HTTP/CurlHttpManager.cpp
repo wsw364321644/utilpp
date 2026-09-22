@@ -115,7 +115,7 @@ void FCurlHttpManager::Tick(float delSec)
     }
 }
 
-void FCurlHttpManager::HttpThreadTick(float delSec)
+void FCurlHttpManager::TickNetwork(float delSec)
 {
     HttpThreadAddTask();
     auto RunningThreadedRequestsNum = HandlesToRequests.size();
