@@ -47,7 +47,7 @@ FCharBuffer& FCharBuffer::operator=(FCharBuffer&& r)noexcept {
 FCharBuffer& FCharBuffer::operator=(const FCharBuffer& r)noexcept {
     freeptr = r.freeptr;
     mallocptr = r.mallocptr;
-    Assign(r.Data(), r.Length());
+    Assign(r.pBuf, r.Length());
     readCursor = r.readCursor;
     return *this;
 }
@@ -312,11 +312,15 @@ const char* FCharBuffer::CStr()
 }
 std::string_view FCharBuffer::View() const
 {
-    return std::string_view(Data(),Length());
+    return std::string_view(pBuf,Length());
 }
-char *const& FCharBuffer::Data() const
+char * FCharBuffer::Data() noexcept
 {
     return pBuf;
+}
+char* FCharBuffer::data() noexcept
+{
+    return Data();
 }
 void FCharBuffer::SetLength(size_t l)
 {
@@ -329,9 +333,14 @@ size_t FCharBuffer::Length() const
     return cursor;
 }
 
-size_t FCharBuffer::Size() const
+size_t FCharBuffer::Size() const noexcept
 {
     return cursor;
+}
+
+size_t FCharBuffer::size() const noexcept
+{
+    return Size();
 }
 
 size_t FCharBuffer::Capacity() const

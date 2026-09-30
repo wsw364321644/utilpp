@@ -52,10 +52,12 @@ public:
     void Clear();
     const char *CStr();
     std::string_view View() const;
-    char*const & Data() const;
+    char* Data()noexcept;
+    char* data()noexcept;
     void SetLength(size_t);
     size_t Length() const;
-    size_t Size() const;
+    size_t Size() const noexcept;
+    size_t size() const noexcept;
     size_t Capacity() const;
     bool Empty() const;
     FCharBuffer& Seekg(size_t);
