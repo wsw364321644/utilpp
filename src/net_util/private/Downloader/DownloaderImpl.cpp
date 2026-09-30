@@ -125,6 +125,7 @@ public:
     std::atomic_bool bTriggerProgressCB{ false };
     std::string Path;
     std::string WorkPath;
+    std::string FileName;
 
     FCharBuffer* Content{ nullptr };
     kj::Array<uint8_t> ChunksCompleteFlag;
@@ -225,6 +226,7 @@ bool FDownloadFile::Init()
 
 bool FDownloadFile::UpdateOnlineFilename(std::string_view filename)
 {
+    FileName = filename;
     if (Content) {
         return false;
     }
@@ -590,16 +592,19 @@ std::shared_ptr<TaskStatus_t> FDownloader::GetTaskStatus(std::shared_ptr<FDownlo
 std::shared_ptr<DownloadFileInfo> FDownloader::GetTaskInfo(std::shared_ptr<FDownloadFile> pfile) {
     auto& info = *OutFileInfo;
     info.FilePath = ConvertViewToU8View(pfile->Path);
+    info.FileName = ConvertViewToU8View(pfile->FileName);
     info.URL = ConvertViewToU8View(pfile->URL);
     info.ChunkNum = pfile->ChunkNum;
     return OutFileInfo;
 }
 DownloadTaskHandle_t FDownloader::AddTask(FDownloadFile* file, std::error_code& ec)
 {
-    auto itr = FilePathView.find(ConvertViewToU8View(file->Path));
-    if (itr != FilePathView.end()) {
-        ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_DUPLICATE_CALL);
-        return itr->second;
+    if (!file->Path.empty()) {
+        auto itr = FilePathView.find(ConvertViewToU8View(file->Path));
+        if (itr != FilePathView.end()) {
+            ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_DUPLICATE_CALL);
+            return itr->second;
+        }
     }
     auto respair = Files.try_emplace(DownloadTaskHandle(DownloadTaskHandle_t::task_count), file);
     file->Init();
