@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <linux/limits.h>
+#include <sstream>
+#include <fstream>
 thread_local DirUtil::IterateDirCallback cb;
 thread_local DirEntry_t out;
 bool InternalCreateDir(char *path, mode_t mode)
@@ -357,7 +359,7 @@ std::u8string_view DirUtil::SearchFileInPath(FPathBuf &pathBuf, std::error_code 
     if (std::filesystem::exists(program_path) && std::filesystem::is_regular_file(program_path))
     {
         pathBuf2.SetPath(ConvertU8StringToView(program_path.u8string()).data(), ConvertU8StringToView(program_path.u8string()).size());
-        return ConvertViewToU8View(PathBuf2.GetBuf());
+        return PathBuf2.GetU8View());
     }
 
     const char *path_env = std::getenv("PATH");
@@ -390,4 +392,69 @@ std::u8string_view DirUtil::GetOSDirectory(std::error_code& ec)
 {
     ec=make_common_used_error(ECommonUsedError::CUE_NOT_SUPPORT);
     return std::u8string_view();
+}
+
+std::u8string_view DirUtil::GetDesktopPath(std::error_code& ec)
+{
+    const char* configHome = getenv("XDG_CONFIG_HOME");
+    std::string configFile;
+    if (configHome && configHome[0] == '/') {
+        configFile = std::string(configHome) + "/user-dirs.dirs";
+    }
+    else {
+        const char* home = getenv("HOME");
+        if (!home) {
+            return std::u8string_view();
+        }
+        configFile = std::string(home) + "/.config/user-dirs.dirs";
+    }
+
+    std::ifstream file(configFile);
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.find("XDG_DESKTOP_DIR=") == 0) {
+            // 解析 XDG_DESKTOP_DIR="$HOME/Desktop"
+            std::string value = line.substr(line.find('=') + 1);
+            // 去除引号
+            if (!value.empty() && value.front() == '"') value.erase(0, 1);
+            if (!value.empty() && value.back() == '"') value.pop_back();
+            // 替换 $HOME
+            size_t pos = value.find("$HOME");
+            if (pos != std::string::npos) {
+                const char* home = getenv("HOME");
+                value.replace(pos, 5, home ? home : "");
+            }
+            PathBuf.SetPath(value.c_str(), value.size());
+            return PathBuf.GetU8View();
+        }
+    }
+
+    // Fallback
+    const char* home = getenv("HOME");
+    if (!home) {
+        return std::u8string_view();
+    }
+    auto path = std::string(home) + "/Desktop";
+    PathBuf.SetPath(path.c_str(), path.size());
+    return PathBuf.GetU8View();
+
+bool DirUtil::CreateShortcut(ShortcutOptions_t ShortcutOptions)
+{
+    std::ofstream out(ConvertU8ViewToString(ShortcutOptions.ShortcutPath));
+    if (!out.is_open()) return false;
+    out << "[Desktop Entry]\n";
+    out << "Version=1.0\n";
+    out << "Type=Application\n";
+    out << "Name=" << (ShortcutOptions.DisplayName.empty() ? ConvertU8ViewToView(ShortcutOptions.TargetPath) : ConvertU8ViewToView(ShortcutOptions.DisplayName)) << "\n";
+    out << "Exec=" << ConvertU8ViewToView(ShortcutOptions.TargetPath);
+    out << "\n";
+    if (!ShortcutOptions.IconPath.empty())
+        out << "Icon=" << ConvertU8ViewToView(ShortcutOptions.IconPath) << "\n";
+    if (!ShortcutOptions.WorkDir.empty())
+        out << "Path=" << ConvertU8ViewToView(ShortcutOptions.WorkDir) << "\n";
+    out << "Terminal=false\n";
+    out.close();
+
+    // 设置可执行权限（某些桌面环境要求）
+    chmod(ConvertU8ViewToView(ShortcutOptions.ShortcutPath).data(), 0755);
 }

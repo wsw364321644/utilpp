@@ -89,5 +89,16 @@ public:
 
     static std::u8string_view GetVSwherePath(std::error_code& ec);
     static std::u8string_view GetOSDirectory(std::error_code& ec);
+    static std::u8string_view GetDesktopPath(std::error_code& ec);
     static bool OpenExplorer(std::u8string_view  path);
+
+    typedef struct ShortcutOptions_t {
+        std::u8string_view TargetPath;      // 启动url
+        std::u8string_view ShortcutPath;    // 快捷方式保存路径
+        std::u8string_view IconPath;        // 图标路径（Windows/Linux 有效）
+        std::u8string_view WorkDir;         // 工作目录（Windows/Linux 有效）
+        std::u8string_view DisplayName;     // 显示名称（Linux 有效）
+    }ShortcutOptions_t;
+    static bool CreateShortcut(ShortcutOptions_t ShortcutOptions);
+
 };

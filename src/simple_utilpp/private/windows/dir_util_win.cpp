@@ -18,7 +18,11 @@
 
  //https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid
 #include <shlobj_core.h>
-
+#include <shobjidl.h>   // IShellLink, IPersistFile
+#include <shlguid.h>    // IID_IShellLink, IID_IPersistFile
+#include <intshcut.h>      // FMTID_Intshcut, PID_IS_ICONFILE, PID_IS_ICONINDEX 等
+#include <objbase.h>       // IPropertySetStorage, IPropertyStorage
+#pragma comment(lib, "propsys.lib")
 thread_local DirEntry_t out;
 bool InternalCreateDir(wchar_t* pathw, size_t prependlen, size_t len) {
     for (size_t i = prependlen; i <= len; i++) {
@@ -618,23 +622,27 @@ std::u8string_view DirUtil::SearchFileInPath(FPathBuf& pathBuf, std::error_code&
         return std::u8string_view();
     }
     ec.clear();
-    return ConvertViewToU8View({ PathBuf2.GetBuf(),PathBuf.GetPathLen() });
+    return PathBuf2.GetU8View();
 }
 
 std::u8string_view DirUtil::GetVSwherePath(std::error_code& ec)
 {
     PWSTR programFilesX86Path = nullptr;
     HRESULT hr = SHGetKnownFolderPath(FOLDERID_ProgramFilesX86, 0, NULL, &programFilesX86Path);
+    FunctionExitHelper_t guardPath(
+        [&programFilesX86Path]() {
+            CoTaskMemFree(programFilesX86Path);
+        }
+    );
     if (FAILED(hr)) {
         ec = utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_NOT_SUPPORT);
         return std::u8string_view();
     }
     PathBuf.SetPathW(programFilesX86Path, GetStringLengthW(programFilesX86Path));
-    CoTaskMemFree(programFilesX86Path);
     PathBuf.AppendPathW(L"Microsoft Visual Studio");
     PathBuf.AppendPathW(L"Installer");
     PathBuf.AppendPathW(L"vswhere.exe");
-    return ConvertViewToU8View({ PathBuf.GetBuf(),PathBuf.GetPathLen() });
+    return PathBuf.GetU8View();
 }
 
 std::u8string_view DirUtil::GetOSDirectory(std::error_code& ec)
@@ -646,5 +654,146 @@ std::u8string_view DirUtil::GetOSDirectory(std::error_code& ec)
     }
     PathBuf.UpdatePathLen(len);
     ec.clear();
-    return ConvertViewToU8View({ PathBuf.GetBuf(),PathBuf.GetPathLen() });
+    return PathBuf.GetU8View();
+}
+
+std::u8string_view DirUtil::GetDesktopPath(std::error_code& ec)
+{
+    PWSTR path = nullptr;
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_Desktop, 0, nullptr, &path);
+    FunctionExitHelper_t guardPath(
+        [&path]() {
+            CoTaskMemFree(path);
+        }
+    );
+    if (FAILED(hr)) {
+        ec = std::error_code(GetLastError(), std::system_category());
+        return std::u8string_view();
+    }
+    PathBuf.SetPathW(path, GetStringLengthW(path));
+    return PathBuf.GetU8View();
+}
+
+bool DirUtil::CreateShortcut(ShortcutOptions_t ShortcutOptions)
+{
+    HRESULT hr = CoInitialize(nullptr);
+    if (FAILED(hr)) {
+        return false;
+    }
+    IPersistFile* pPersistFile = nullptr;
+    bool success = false;
+    std::filesystem::path tagetPath = ShortcutOptions.ShortcutPath;
+    if (tagetPath.extension() == ".lnk") {
+        IShellLinkW* pShellLink = nullptr;
+        auto TargetPath16 = U8ToU16(ShortcutOptions.TargetPath);
+        do {
+            // 1. 创建 IShellLink 实例
+            hr = CoCreateInstance(
+                CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+                IID_IShellLinkW, reinterpret_cast<void**>(&pShellLink));
+            if (FAILED(hr)) break;
+
+            // 2. 设置目标路径
+            hr = pShellLink->SetPath(ConvertU16ViewToWView(TargetPath16).data());
+            if (FAILED(hr)) break;
+
+            // 3. 设置工作目录
+            if (!ShortcutOptions.WorkDir.empty()) {
+                auto WorkDir16 = U8ToU16(ShortcutOptions.WorkDir);
+                pShellLink->SetWorkingDirectory(ConvertU16ViewToWView(WorkDir16).data());
+                if (FAILED(hr)) break;
+            }
+            if (!ShortcutOptions.IconPath.empty()) {
+                auto IconPath16 = U8ToU16(ShortcutOptions.IconPath);
+                hr = pShellLink->SetIconLocation(ConvertU16ViewToWView(IconPath16).data(), 0);
+                if (FAILED(hr)) break;
+            }
+
+            // 5. 获取 IPersistFile 接口以保存到磁盘
+            hr = pShellLink->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&pPersistFile));
+            if (FAILED(hr)) break;
+
+            // 6. 保存 .lnk 文件
+            auto ShortcutPath16 = U8ToU16(ShortcutOptions.ShortcutPath);
+            hr = pPersistFile->Save(ConvertU16ViewToWView(ShortcutPath16).data(), TRUE);
+            if (SUCCEEDED(hr)) success = true;
+
+        } while (false);
+        if (pPersistFile) pPersistFile->Release();
+        if (pShellLink)   pShellLink->Release();
+    }
+    else {
+        //https://learn.microsoft.com/en-us/windows/win32/lwef/internet-shortcuts#creating-an-internet-shortcut-from-a-url
+        IUniformResourceLocatorW* pUrl = nullptr;
+        IPropertySetStorage* pPropSetStg = nullptr;
+        IPropertyStorage* pPropStg = nullptr;
+        auto TargetPath16 = U8ToU16(ShortcutOptions.TargetPath);
+        auto ShortcutPath16 = U8ToU16(ShortcutOptions.ShortcutPath);
+        do {
+            hr = CoCreateInstance(
+                CLSID_InternetShortcut, nullptr, CLSCTX_INPROC_SERVER,
+                IID_IUniformResourceLocatorW,
+                reinterpret_cast<void**>(&pUrl));
+            if (FAILED(hr)) break;
+
+            hr = pUrl->SetURL(ConvertU16ViewToWView(TargetPath16).data(), 0);
+            if (FAILED(hr)) break;
+
+            hr = pUrl->QueryInterface(IID_IPersistFile,
+                reinterpret_cast<void**>(&pPersistFile));
+            if (FAILED(hr)) break;
+
+            if (!ShortcutOptions.IconPath.empty()) {
+                auto IconPath16 = U8ToU16(ShortcutOptions.IconPath);
+
+                hr = pPersistFile->Save(ConvertU16ViewToWView(ShortcutPath16).data(), TRUE);
+                if (FAILED(hr)) break;
+
+                hr = pUrl->QueryInterface(IID_IPropertySetStorage,
+                    reinterpret_cast<void**>(&pPropSetStg));
+                if (FAILED(hr)) break;
+
+                hr = pPropSetStg->Open(
+                    FMTID_Intshcut,
+                    STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
+                    &pPropStg);
+                if (FAILED(hr)) break;
+
+                // 5. 写入图标属性
+                PROPSPEC propspec[2] = {};
+                PROPVARIANT propvar[2] = {};
+
+                // IconFile
+                propspec[0].ulKind = PRSPEC_PROPID;
+                propspec[0].propid = PID_IS_ICONFILE;
+                propvar[0].vt = VT_LPWSTR;
+                propvar[0].pwszVal = (LPWSTR)ConvertU16ViewToWView(IconPath16).data();
+
+                // IconIndex
+                propspec[1].ulKind = PRSPEC_PROPID;
+                propspec[1].propid = PID_IS_ICONINDEX;
+                propvar[1].vt = VT_I4;
+                propvar[1].lVal = 0;
+
+                hr = pPropStg->WriteMultiple(2, propspec, propvar, 0);
+                if (FAILED(hr)) break;
+
+                // 6. 提交并重新保存
+                hr = pPropStg->Commit(STGC_DEFAULT);
+                if (FAILED(hr)) break;
+            }
+
+            hr = pPersistFile->Save(ConvertU16ViewToWView(ShortcutPath16).data(), TRUE);
+            success = SUCCEEDED(hr);
+
+        } while (false);
+
+        if (pPropStg)     pPropStg->Release();
+        if (pPropSetStg)  pPropSetStg->Release();
+        if (pPersistFile) pPersistFile->Release();
+        if (pUrl)         pUrl->Release();
+    }
+
+    CoUninitialize();
+    return success;
 }
