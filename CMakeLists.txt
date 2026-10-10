@@ -19,6 +19,7 @@ option(UTILPP_ENABLE_CPUID "enable system info cpuid feature" OFF)
 option(UTILPP_ENABLE_ARCHIVE "enable archive" OFF)
 option(UTILPP_WITH_STATIC_LIBARCHIVE "use static libarchive" ON)
 option(UTILPP_DISABLE_INSTALL "disable installation" OFF)
+option(UTILPP_GEN_CODE "first-configure flag" OFF)
 
 if(UTILPP_STATIC_CRT)
 	set(STATIC_CRT STATIC_CRT)

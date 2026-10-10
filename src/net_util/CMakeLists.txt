@@ -1,6 +1,6 @@
 find_package(CapnProto REQUIRED)
 
-if(NOT NET_UTIL_GENERATE_CAPNP_FILES)
+if(UTILPP_GEN_CODE)
     execute_process(COMMAND ${CapnProto_DIR}/../../../bin/capnp
         compile
         --output=${CapnProto_DIR}/../../../bin/capnpc-c++:private/Downloader
@@ -8,7 +8,6 @@ if(NOT NET_UTIL_GENERATE_CAPNP_FILES)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE result)
     message(STATUS "result --output=${CAPNPC_CXX_EXECUTABLE}:private/Downloader")
-    set(NET_UTIL_GENERATE_CAPNP_FILES ON CACHE BOOL "net uitl Generate capnp files")
 endif()
 
 NewTargetSource()
