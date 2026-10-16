@@ -197,15 +197,12 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
         uint32_t HeaderSize = SizeInBlocks * BlockSizeInBytes;
         if (HeaderSize > 0 && HeaderSize <= CURL_MAX_HTTP_HEADER)
         {
-            std::vector<char> AnsiHeader;
-            AnsiHeader.resize(HeaderSize + 1);
+            std::string Header(static_cast<const char*>(Ptr), HeaderSize);
+            while (!Header.empty() && (Header.back() == '\r' || Header.back() == '\n'))
+            {
+                Header.pop_back();
+            }
 
-            memcpy(AnsiHeader.data(), Ptr, HeaderSize);
-            AnsiHeader[HeaderSize] = 0;
-
-            std::string Header(AnsiHeader.data());
-            Header = std::regex_replace(Header, std::regex(R"(\n)"), "");
-            Header = std::regex_replace(Header, std::regex(R"(\r)"), "");
 
             //SIMPLELOG_LOGGER_INFO(nullptr, "ReceiveResponseHeaderCallback {}: Received response header '{}'.", (void*)cresp.get(), Header);
             std::string HeaderKey, HeaderValue;
@@ -213,7 +210,20 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
             if (i != std::string::npos)
             {
                 HeaderKey = Header.substr(0, i);
+                std::transform(HeaderKey.begin(), HeaderKey.end(), HeaderKey.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+
                 HeaderValue = Header.substr(i + 1, Header.size());
+                auto vStart = HeaderValue.find_first_not_of(" \t");
+                auto vEnd = HeaderValue.find_last_not_of(" \t");
+                if (vStart != std::string::npos)
+                {
+                    HeaderValue = HeaderValue.substr(vStart, vEnd - vStart + 1);
+                }
+                else
+                {
+                    HeaderValue.clear();
+                }
                 auto itr = cresp->Headers.find(HeaderKey);
                 if (itr != cresp->Headers.end()) {
                     cresp->Headers[HeaderKey].append(", ");
@@ -224,13 +234,13 @@ size_t FCurlHttpManager::ReceiveResponseHeaderCallback(void* Ptr, size_t SizeInB
                 }
 
                 //Store the content length so OnRequestProgress() delegates have something to work with
-                if (HeaderKey == TEXT("Content-Length"))
+                if (HeaderKey == "content-length")
                 {
                     cresp->ContentLength = std::atoi(HeaderValue.c_str());
                 }
             }
             else {
-                cresp->Headers[HeaderKey] = "";
+                cresp->Headers[Header] = "";
             }
             return HeaderSize;
         }

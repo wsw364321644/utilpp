@@ -45,7 +45,7 @@ private:
     void OnWSDataReceived(const std::shared_ptr<IWebsocketClient>& pWSClient, const char* content, size_t len);
 
     bool ResetUnmatchedDB();
-    void DBDropTable();
+    bool DBDropTable();
 
 
     FSteamGlobalID& GetNextJobID() {
@@ -56,10 +56,6 @@ private:
     HttpManagerPtr pHttpManager;
     IWebsocketConnectionManager* pWSManager{nullptr};
     std::shared_ptr<IWebsocketClient> pWSClient;
-
-
-
-
 
     bool bShouldReconnect{ false };
     FDelayRecorder ReconnectDelayRecorder;

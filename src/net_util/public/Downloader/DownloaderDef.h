@@ -72,7 +72,7 @@ typedef struct TaskStatus_s {
     uint64_t PreDownloadSize{ 0 };
     uint64_t LastTime{ 0 };
     uint64_t PreTime{ 0 };
-    bool IsCompelete{ false };
+    bool IsComplete{ false };
     std::vector<uint8_t> ChunksCompleteFlag;
 }TaskStatus_t;
 

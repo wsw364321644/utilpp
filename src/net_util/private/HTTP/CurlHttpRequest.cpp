@@ -436,7 +436,15 @@ size_t FCurlHttpRequest::DebugCallback(CURL* Handle, curl_infotype DebugInfoType
 
     case CURLINFO_DATA_IN:
     {
-        SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received data ({} bytes) - {}", (void*)this, DebugInfoSize, std::string_view(DebugInfo, DebugInfoSize));
+#ifndef _NDEBUG
+        auto p = Response->GetContentType();
+        if (p.find("json") != std::string::npos) {
+            SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received data ({} bytes) - {}", (void*)this, DebugInfoSize, std::string_view(DebugInfo, DebugInfoSize));
+        }
+        else {
+            SIMPLELOG_LOGGER_DEBUG(nullptr, "{}: Received data ({} bytes)", (void*)this, DebugInfoSize);
+        }
+#endif
     }
     break;
     case CURLINFO_DATA_OUT:
@@ -474,7 +482,7 @@ size_t FCurlHttpRequest::StaticDebugCallback(CURL* Handle, curl_infotype DebugIn
 
 std::string_view FCurlHttpResponse::GetHeader(std::string_view HeaderName) const
 {
-    auto itr = Headers.find(std::string(HeaderName));
+    auto itr = Headers.find(HeaderName);
     if (itr != Headers.end()) {
         return std::string_view(itr->second);
     }
@@ -495,7 +503,7 @@ const std::vector<MimePart_t>& FCurlHttpResponse::GetAllMime()
 
 std::string_view FCurlHttpResponse::GetContentType() const
 {
-    return GetHeader("Content-Type");
+    return GetHeader("content-type");
 }
 
 FCharBuffer& FCurlHttpResponse::GetContent()

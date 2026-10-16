@@ -661,11 +661,17 @@ bool FSteamClient::ResetUnmatchedDB()
     return bReset;
 }
 
-void FSteamClient::DBDropTable()
+bool FSteamClient::DBDropTable()
 {
-    Sqlite << "DROP TABLE IF EXISTS steam_users;";
-    Sqlite << "DROP TABLE IF EXISTS steam_servers;";
-    Sqlite << "DROP TABLE IF EXISTS metadata;";
+    try {
+        Sqlite << "DROP TABLE IF EXISTS steam_users;";
+        Sqlite << "DROP TABLE IF EXISTS steam_servers;";
+        Sqlite << "DROP TABLE IF EXISTS metadata;";
+    }
+    catch (...) {
+        return false;
+    }
+    return true;
 }
 
 void FSteamClient::Reconnect(bool bNeedDelay)

@@ -291,12 +291,12 @@ bool FSteamAuthSession::UpdateAccountCache()
     //}
     try {
         Owner->Sqlite << R"(
-INSERT OR REPLACE INTO STEAMUSER (steam_id,account_name,acces_token,refresh_token)  
-VALUES (:steam_id, :account_name, :acces_token, :refresh_token); 
+INSERT OR REPLACE INTO STEAMUSER (steam_id,account_name,access_token,refresh_token)  
+VALUES (:steam_id, :account_name, :access_token, :refresh_token); 
 )"
 , soci::use(Owner->SteamAccoutnInfo.SteamID, "steam_id")
 , soci::use(AccountName, "account_name")
-, soci::use(AccessToken, "acces_token")
+, soci::use(AccessToken, "access_token")
 , soci::use(RefreshToken, "refresh_token")
 ;
     }

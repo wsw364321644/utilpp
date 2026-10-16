@@ -146,7 +146,7 @@ private:
     std::string EffectiveUrl{};
     std::atomic_int64_t ContentLength{ -1 };
     std::atomic_int64_t TotalBytesRead{ 0 };
-    std::unordered_map<std::string, std::string> Headers;
+    std::unordered_map<std::string, std::string,string_hash,std::equal_to<>> Headers;
     FCharBuffer Content;
     char* UserBuf{ 0 };
     int64_t UserBufLen{ 0 };

@@ -45,6 +45,7 @@ AddSourceFolder(RECURSE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 source_group(TREE ${PROJECT_SOURCE_DIR} FILES ${SourceFiles})
 
 function(add_lib TARGET_NAME)
+	target_sources(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/SteamDDL.sql)
 	set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "utilpp")
 	target_compile_features(${TARGET_NAME} PRIVATE cxx_std_23)
 	set_target_properties(${TARGET_NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)

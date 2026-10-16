@@ -580,7 +580,7 @@ std::shared_ptr<TaskStatus_t> FDownloader::GetTaskStatus(std::shared_ptr<FDownlo
     status.PreDownloadSize = pfile->PreDownloadSize.load();
     status.LastTime = pfile->LastTime.load();
     status.PreTime = pfile->PreTime.load();
-    status.IsCompelete = pfile->Status == EFileTaskStatus::Finished;
+    status.IsComplete = pfile->Status == EFileTaskStatus::Finished;
 
     status.ChunksCompleteFlag.resize(pfile->ChunksCompleteFlag.size());
     for (int i = 0; i < pfile->ChunksCompleteFlag.size(); i++) {
