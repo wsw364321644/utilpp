@@ -7,10 +7,13 @@
 #include <queue>
 #include <unordered_map>
 #include <memory>
+#include <any>
+#include <optional>
 
 struct TaskChain_t;
 class ITaskChainNodeBase {
 public:
+    virtual ~ITaskChainNodeBase() = default;
     void SetWorkflow(WorkflowHandle_t workflowHandle) {
         WorkflowHandle = workflowHandle;
     }
@@ -18,12 +21,17 @@ public:
         Owner = owner;
     }
     virtual void Post() = 0;
+
+    virtual void ExtractResultToContext(std::any& context) = 0;
+    virtual void InjectInputFromContext(std::any& context) = 0;
+
     WorkflowHandle_t WorkflowHandle;
     TaskChain_t* Owner;
 };
 
 class IFutureWrapperBase {
 public:
+    virtual ~IFutureWrapperBase() = default;
     virtual bool IsComplete() = 0;
 };
 
@@ -42,24 +50,43 @@ typedef struct TaskChain_t {
     std::queue<std::shared_ptr<ITaskChainNodeBase>> TaskChainNodes;
     std::shared_ptr<IFutureWrapperBase> pFuture;
     CommonTaskHandle_t TaskHandle;
+    std::any DataContext;
 }TaskChain_t;
 
 
-template <typename F, typename R = std::invoke_result_t<std::decay_t<F>>, std::enable_if_t<!std::is_invocable_v<std::decay_t<F>, std::shared_ptr<std::promise<R>>>, int> = 0>
+template <typename PrevR, typename F>
 class FTaskChainNode :public ITaskChainNodeBase,
-    public std::enable_shared_from_this<FTaskChainNode<F, R>> {
+    public std::enable_shared_from_this<FTaskChainNode<PrevR,F>> {
 public:
+    using R = SafeInvokeResult_t<F, PrevR>;
+    using InputType = std::conditional_t<std::is_void_v<PrevR>, std::monostate, PrevR>;
+    using StorageType = std::conditional_t<std::is_void_v<R>, std::monostate, R>;
+
     FTaskChainNode(F&& func, std::function<void()> onComplete) :Func(std::forward<F>(func)),OnComplete(std::move(onComplete)) {}
     void Post() {
         auto self= this->shared_from_this();
+        if constexpr (!std::is_void_v<PrevR>) {
+            InjectInputFromContext(Owner->DataContext);
+        }
         auto [hTask, future] = GetTaskManagerSingleton()->AddTask(WorkflowHandle,
             [this, self]() {
                 if constexpr (std::is_void_v<R>) {
-                    Func();
+                    if constexpr (std::is_void_v<PrevR>) {
+                        Func();
+                    }
+                    else {
+                        Func(std::move(*Input));
+                    }
                 }
                 else {
-                    Ret = Func();
+                    if constexpr (std::is_void_v<PrevR>) {
+                        Ret = Func();
+                    }
+                    else {
+                        Ret = Func(std::move(*Input));
+                    }
                 }
+                ExtractResultToContext(Owner->DataContext);
                 if (WorkflowHandle == GetTaskManagerSingleton()->GetMainThread()) {
                     OnComplete();
                 }
@@ -73,13 +100,28 @@ public:
 
             }
         );
-        auto pFuture = std::make_shared<FFutureWrapper<R>>();
+        auto pFuture = std::make_shared<FFutureWrapper<void>>();
         pFuture->Future = std::move(future);
         Owner->pFuture = pFuture;
         Owner->TaskHandle = hTask;
     }
+
+    void ExtractResultToContext(std::any& context) override {
+        if constexpr (!std::is_void_v<R>) {
+            context = std::move(Ret);
+        }
+    }
+
+    void InjectInputFromContext(std::any& context) override {
+        if constexpr (!std::is_void_v<PrevR>) {
+            if (context.has_value()) {
+                Input = std::any_cast<PrevR>(std::move(context));
+            }
+        }
+    }
+
     F Func;
     std::function<void()> OnComplete;
-    using StorageType = std::conditional_t<std::is_void_v<R>, std::monostate, R>;
     StorageType Ret{};
+    std::optional<InputType> Input;
 };

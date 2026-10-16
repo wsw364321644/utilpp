@@ -10,6 +10,19 @@
 #include "task_manager_export_defs.h"
 constexpr std::chrono::nanoseconds DEFAULT_REPEAT_TIME = (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(1)) / 60);
 
+template <typename F, typename PrevR, bool = std::is_void_v<PrevR>>
+struct SafeInvokeResult {
+    using type = std::invoke_result_t<std::decay_t<F>, PrevR>;
+};
+
+template <typename F, typename PrevR>
+struct SafeInvokeResult<F, PrevR, true> {
+    using type = std::invoke_result_t<std::decay_t<F>>;
+};
+
+template <typename F, typename PrevR>
+using SafeInvokeResult_t = typename SafeInvokeResult<F, PrevR>::type;
+
 class  ITaskManager;
 
 typedef struct CommonTaskHandle_t : CommonHandle32_t
