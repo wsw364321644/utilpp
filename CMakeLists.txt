@@ -1,11 +1,30 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 4.4)
 include(FetchContent)
 
 set(VERSION "0.0.1")
 project(UTILPP VERSION ${VERSION})
+if(MSVC AND NOT DEFINED CMAKE_ASM_COMPILER)
+	get_filename_component(_utilpp_msvc_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+	find_program(_utilpp_ml
+		NAMES
+		ml64.exe
+		ml.exe
+		HINTS
+		"${_utilpp_msvc_bin}"
+		NO_DEFAULT_PATH
+	)
+	if(_utilpp_ml)
+		set(CMAKE_ASM_COMPILER "${_utilpp_ml}" CACHE FILEPATH "ASM compiler")
+	endif()
+	unset(_utilpp_msvc_bin)
+	unset(_utilpp_ml)
+endif()
+
 include(GNUInstallDirs)
 enable_language(C CXX ASM)
+
 set(CMAKE_DEBUG_POSTFIX d)
+
 option(UTILPP_STATIC_CRT "determine build STATIC CRT Build ." OFF)
 option(UTILPP_GIT_SSH "git via ssh" OFF)
 option(UTILPP_ENABLE_IPC "enable ipc_util" OFF)
@@ -44,6 +63,8 @@ if(PROJECT_IS_TOP_LEVEL)
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
 		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 	endif()
+	set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELEASE)
+	set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL RELEASE)
 endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
