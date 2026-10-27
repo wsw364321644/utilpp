@@ -21,6 +21,24 @@ bool GetOSEnvironmentVariable(std::u8string_view VarName, char* outBuf, uint32_t
     return true;
 }
 
+bool GetOSEnvironmentVariable(std::u8string_view VarName, FCharBuffer& buf)
+{
+    auto VarName16 = U8ToU16(VarName);
+    auto wbuf = new wchar_t[0x7FFF];
+    FunctionExitHelper_t wbufGuard([&]() {
+        delete[] wbuf;
+        });
+    auto wlen = GetEnvironmentVariableW(ConvertU16ViewToWView(VarName16).data(), wbuf, 0x7FFF);
+    if (wlen == 0) {
+        return false;
+    }
+     size_t bufLen=U16ToU8Buf(wbuf, size_t(wlen), nullptr, 0);
+     buf.Reserve(bufLen + 1);
+     bufLen=U16ToU8Buf(wbuf, size_t(wlen), buf.Data(), buf.Capacity());
+     buf.SetLength(bufLen);
+    return true;
+}
+
 bool SetOSEnvironmentVariable(std::u8string_view VarName, std::u8string_view buf)
 {
     auto VarName16 = U8ToU16(VarName);

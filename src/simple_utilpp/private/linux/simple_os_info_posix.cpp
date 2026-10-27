@@ -22,6 +22,20 @@ bool GetOSEnvironmentVariable(std::u8string_view VarName, char* outBuf, uint32_t
     return true;
 }
 
+bool GetOSEnvironmentVariable(std::u8string_view VarName, FCharBuffer& buf)
+{
+    char* ptr = std::getenv((const char *)VarName.data());
+    if (!ptr) {
+        return false;
+    }
+    size_t len = std::strlen(ptr);
+    buf.Reserve(len+1);
+    buf.SetLength(len);
+    std::memcpy(buf.Data(), ptr, len+1);
+    return true;
+}
+
+
 bool SetOSEnvironmentVariable(std::u8string_view VarName, std::u8string_view buf)
 {
     auto pair=std::format("{}={}", ConvertU8ViewToView(VarName), ConvertU8ViewToView(buf));
