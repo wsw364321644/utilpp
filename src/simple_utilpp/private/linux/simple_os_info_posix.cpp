@@ -7,7 +7,7 @@ bool GetOSEnvironmentVariable(std::u8string_view VarName, char* outBuf, uint32_t
     if (!bufLen) {
         return false;
     }
-    char* ptr = std::getenv();
+    char* ptr = std::getenv((const char *)VarName.data());
     if (!ptr) {
         *bufLen=0;
         return false;
@@ -24,14 +24,35 @@ bool GetOSEnvironmentVariable(std::u8string_view VarName, char* outBuf, uint32_t
 
 bool SetOSEnvironmentVariable(std::u8string_view VarName, std::u8string_view buf)
 {
-    char* bufPtr = new char[VarName.length() + buf.length() + 2]; 
-    FunctionExitHelper_t bufGuard([&]() { delete[] bufPtr; });
-    memcpy(bufPtr, VarName.data(), VarName.length());
-    bufPtr[VarName.length()] = '=';
-    memcpy(bufPtr + VarName.length() + 1, buf.data(), buf.length());
-    bufPtr[VarName.length() + 1 + buf.length()] = '\0';
-    if (putenv(bufPtr)!=0){
+    auto pair=std::format("{}={}", ConvertU8ViewToView(VarName), ConvertU8ViewToView(buf));
+    if (putenv(pair.c_str())!=0){
         return false;
     }
+    return true;
+}
+
+bool GetOSEnvironmentStringsW(FCharBuffer& buf)
+{
+    for (char** env = environ; env && *env; ++env)
+    {
+        const char* entry = *env;
+        auto str16=U8ToU16(entry,strlen(entry));
+        buf.Append((const char *)str16.data(), str16.length()*sizeof(wchar_t));
+        buf.Append((const char *)L'\0', sizeof(wchar_t));
+    }
+    buf.Append((const char *)L'\0', sizeof(wchar_t));
+    return true;
+}
+
+bool GetOSEnvironmentStringsA(FCharBuffer& buf)
+{
+    for (char** env = environ; env && *env; ++env)
+    {
+        const char* entry = *env;
+        size_t len = std::strlen(entry);
+        buf.Append(entry, len);
+        buf.Put('\0');
+    }
+    buf.Put('\0');
     return true;
 }
