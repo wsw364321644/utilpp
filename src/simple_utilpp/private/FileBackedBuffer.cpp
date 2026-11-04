@@ -16,14 +16,19 @@ class FFileBackedBuffer :public IFileBackedBuffer {
 public:
     bool Init(uint32_t size, std::u8string_view fileName, std::error_code& ec) override;
     bool Init(std::u8string_view fileName, std::error_code& ec)override;
+    bool IsOpen()override {
+        return Data != nullptr;
+    }
     void Close() override {
+        TickIO(0);
         CloseMap();
         BackupFile.Close();
     }
 
     bool Clean(std::error_code& ec) override {
+        CloseMap();
+        BackupFile.Close();
         auto view = ConvertViewToU8View(BackupFile.GetFilePath());
-        Close();
         auto bres=DirUtil::Delete(view);
         if (!bres) {
             ec= utilpp::make_common_used_error(utilpp::ECommonUsedError::CUE_FILE_OP);

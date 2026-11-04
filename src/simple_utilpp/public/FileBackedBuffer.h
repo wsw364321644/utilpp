@@ -8,6 +8,7 @@ public:
     virtual ~IFileBackedBuffer() {};
     virtual bool Init(uint32_t size, std::u8string_view fileName, std::error_code& ec) = 0;
     virtual bool Init(std::u8string_view fileName, std::error_code& ec) = 0;
+    virtual bool IsOpen();
     virtual void Close() = 0;
     virtual bool Clean(std::error_code& ec) = 0;
     virtual bool Resize(uint32_t size, std::error_code& ec) = 0;
