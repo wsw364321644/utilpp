@@ -145,7 +145,7 @@ public:
     std::tuple<CommonTaskHandle_t, std::future<R>> AddTask(WorkflowHandle_t WorkflowHandle, F&& task) {
         const std::shared_ptr<std::promise<R>> task_promise = std::make_shared<std::promise<R>>();
         auto handle = AddTaskNoReturn(WorkflowHandle,
-            [task = std::forward<F>(task), task_promise]() {
+            [task = std::forward<F>(task), task_promise]()mutable {
                 try
                 {
                     if constexpr (std::is_void_v<R>)
