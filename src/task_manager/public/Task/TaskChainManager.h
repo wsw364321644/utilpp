@@ -123,10 +123,11 @@ public:
     FTaskChainBuilder()
         : FTaskChainBuilder(NullHandle, NullHandle) {}
 
+    FTaskChainBuilder(const FTaskChainBuilder&) = delete;
+    FTaskChainBuilder& operator=(const FTaskChainBuilder&) = delete;
+    FTaskChainBuilder(FTaskChainBuilder&&) noexcept = default;
+    FTaskChainBuilder& operator=(FTaskChainBuilder&&) noexcept = default;
     ~FTaskChainBuilder() {
-        if (m_chain) {
-            GetTaskChainManagerSingleton()->Cancel(m_chain);
-        }
     }
 
     template <typename F>
