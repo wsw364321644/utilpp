@@ -126,7 +126,7 @@ public:
     }
     void UpdatePathLen(size_t newSize = std::numeric_limits<size_t>::max()) {
         if (newSize == std::numeric_limits<size_t>::max()) {
-            newSize = GetStringLength(GetBuf());
+            newSize = GetStringLength(GetBufInternal());
         }
         if (newSize> std::char_traits<char8_t>::length(FILE_NAMESPACES)) {
             if (std::char_traits<char8_t>::compare(FILE_NAMESPACES, (const char8_t*)GetBufInternal(), std::char_traits<char8_t>::length(FILE_NAMESPACES)) == 0) {
@@ -143,7 +143,7 @@ public:
     }
     void UpdatePathLenW(size_t newSize = std::numeric_limits<size_t>::max()) {
         if (newSize == std::numeric_limits<size_t>::max()) {
-            newSize = GetStringLengthW(GetBufW());
+            newSize = GetStringLengthW(GetBufInternalW());
         }
         if (newSize > std::char_traits<wchar_t>::length(FILE_NAMESPACESW)) {
             if (std::char_traits<wchar_t>::compare(FILE_NAMESPACESW, GetBufInternalW(), std::char_traits<wchar_t>::length(FILE_NAMESPACESW)) == 0) {
@@ -172,7 +172,7 @@ public:
     }
     void AppendPath(const char* path, size_t len) {
         ToPath();
-        if (GetBufInternal()[PathLen - 1] != '\\' && GetBufInternal()[PathLen - 1] != '/') {
+        if (PathLen>0 && GetBufInternal()[PathLen - 1] != '\\' && GetBufInternal()[PathLen - 1] != '/') {
             GetBufInternal()[PathLen++] = static_cast<char>(std::filesystem::path::preferred_separator);
         }
         if (!path || len == 0) {
